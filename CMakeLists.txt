@@ -57,3 +57,4 @@ endif(ANDROID_WRAPPER)
 
 include_directories(${PROJECT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 add_library(arthymio MODULE ${ARThymio_SOURCES})
+target_link_libraries(arthymio ${OpenCV_LIBRARIES})

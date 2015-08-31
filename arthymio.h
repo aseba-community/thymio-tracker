@@ -4,7 +4,8 @@
 
 #include <opencv2/core/core.hpp>
 
+int process(const cv::Mat& input, cv::Mat& output);
+
 int get_rows(const cv::Mat& m);
-int sum(int a, int b);
 
 #endif // _ARTHYMIO_H

@@ -7,9 +7,16 @@
 extern "C" {
 #endif
 
-JNIEXPORT jint JNICALL Java_ch_epfl_cvlab_arthymio_ARThymio_sum(JNIEnv *, jclass, jint a, jint b)
+/*
+ * Class:     ch_epfl_cvlab_arthymio_ARThymio
+ * Method:    n_process
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ch_epfl_cvlab_arthymio_ARThymio_n_1process(JNIEnv *, jclass, jlong ptr_input, jlong ptr_output)
 {
-    return sum(a, b);
+    cv::Mat* input = reinterpret_cast<cv::Mat*>(ptr_input);
+    cv::Mat* output = reinterpret_cast<cv::Mat*>(ptr_output);
+    return process(*input, *output);
 }
 
 /*
