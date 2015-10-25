@@ -6,10 +6,15 @@
 cmake_minimum_required(VERSION 2.8)
 project(ARThymio)
 
-set(ANDROID_WRAPPER ON CACHE BOOL "Compile Android/Java wrapper")
+set(ANDROID_WRAPPER ON CACHE BOOL "Compile for Android with Java wrapper")
 
 set(ARThymio_SOURCES
-    arthymio.cpp)
+    src/arthymio.cpp
+    src/GH.cpp
+    src/Blobber.cpp
+    src/Models.cpp
+    src/Generic.cpp
+    )
 
 if(ANDROID_WRAPPER)
     
@@ -52,11 +57,24 @@ if(ANDROID_WRAPPER)
         ${ARThymio_SOURCES}
         ch_epfl_cvlab_arthymio_ARThymio.h
         android/jni/ch_epfl_cvlab_arthymio_ARThymio.cpp)
-    
+
+else(ANDROID_WRAPPER)
+    find_package(OpenCV REQUIRED)
 endif(ANDROID_WRAPPER)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-include_directories(${PROJECT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
-add_library(arthymio MODULE ${ARThymio_SOURCES})
+include_directories(${PROJECT_SOURCE_DIR}/src ${OpenCV_INCLUDE_DIRS})
+
+if(ANDROID_WRAPPER)
+    
+    add_library(arthymio MODULE ${ARThymio_SOURCES})
+    
+else(ANDROID_WRAPPER)
+    
+    add_library(arthymio SHARED ${ARThymio_SOURCES})
+    add_subdirectory(tests)
+
+endif(ANDROID_WRAPPER)
+
 target_link_libraries(arthymio ${OpenCV_LIBRARIES})

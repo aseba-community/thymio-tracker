@@ -1,0 +1,7 @@
+
+1. Remove "using namespace" from header files - DONE
+2. Use a single name style for types. Same for variables. Members starting with m*?
+3. Remove drawing functions from Models.
+4. Create state in arthymio.cpp.
+5. Use std::string, not char
+6. Add const methods

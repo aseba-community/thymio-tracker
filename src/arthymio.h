@@ -6,6 +6,4 @@
 
 int process(const cv::Mat& input, cv::Mat& output);
 
-int get_rows(const cv::Mat& m);
-
 #endif // _ARTHYMIO_H
