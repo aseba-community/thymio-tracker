@@ -55,6 +55,8 @@ if(ANDROID_WRAPPER)
     
 endif(ANDROID_WRAPPER)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 include_directories(${PROJECT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 add_library(arthymio MODULE ${ARThymio_SOURCES})
 target_link_libraries(arthymio ${OpenCV_LIBRARIES})
