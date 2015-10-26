@@ -5,6 +5,7 @@
 #include "Models.hpp"
 
 #include <vector>
+#include <stdexcept>
 
 #include <opencv2/calib3d.hpp>
 
@@ -31,7 +32,10 @@ void loadCalibration(const std::string& filename, IntrinsicCalibration* calibrat
     cv::FileStorage fs;
     fs.open(filename, cv::FileStorage::READ);
     if(!fs.isOpened())
+    {
+        std::cerr << "Could not open " << filename << std::endl;
         throw std::runtime_error("Calibration file not found!");
+    }
     
     fs["camera_matrix"] >> calibration->cameraMatrix;
     fs["distortion_coefficients"] >> calibration->distCoeffs;

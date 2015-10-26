@@ -440,7 +440,10 @@ void GH::loadFromFile(const std::string& filename)
                     of.read((char *)&HashTable[i*(nbBinPerDim.y*nbIds) + j*nbIds + id], sizeof(int));
     }
     else
+    {
+        std::cerr << "Could not open " << filename << std::endl;
         throw std::runtime_error("GH::loadFromFile > File not found!");
+    }
     of.close();
 }
 
