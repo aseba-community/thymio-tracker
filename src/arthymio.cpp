@@ -51,13 +51,13 @@ void loadCalibration(const std::string& filename, IntrinsicCalibration* calibrat
 
 void init()
 {
-    // static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
-    static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
+     static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
+    //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     mGH.loadFromFile(ghfilename);
-    
-    // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration);
     cv::Size imgSize;
-    loadCalibration("/sdcard/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
+    
+     loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
+    ////loadCalibration("/sdcard/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
     
     initialized = true;
 }

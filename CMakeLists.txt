@@ -14,6 +14,11 @@ set(ARThymio_SOURCES
     src/Blobber.cpp
     src/Models.cpp
     src/Generic.cpp
+    src/arthymio.h
+    src/Blobber.hpp
+    src/Generic.hpp
+    src/GH.hpp
+    src/Models.hpp
     )
 
 if(ANDROID_WRAPPER)
