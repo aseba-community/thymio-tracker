@@ -14,6 +14,7 @@ static bool mFound = false;
 static GH mGH;
 static ArthymioBlobModel mRobot;
 static IntrinsicCalibration calibration;
+static float mScale = 0.33;
 
 void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& matches)
 {
@@ -27,7 +28,7 @@ void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& match
     }
 }
 
-void loadCalibration(const std::string& filename, IntrinsicCalibration* calibration)
+void loadCalibration(const std::string& filename, IntrinsicCalibration* calibration, cv::Size* imgSize, float scale = 1.0)
 {
     cv::FileStorage fs;
     fs.open(filename, cv::FileStorage::READ);
@@ -39,14 +40,24 @@ void loadCalibration(const std::string& filename, IntrinsicCalibration* calibrat
     
     fs["camera_matrix"] >> calibration->cameraMatrix;
     fs["distortion_coefficients"] >> calibration->distCoeffs;
+    fs["image_width"] >> imgSize->width;
+    fs["image_height"] >> imgSize->height;
+    
+    cv::Size sourceSize = *imgSize;
+    imgSize->width *= scale;
+    imgSize->height *= scale;
+    resizeCameraMatrix(calibration->cameraMatrix, sourceSize, *imgSize);
 }
 
 void init()
 {
-    static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
+    // static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
+    static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     mGH.loadFromFile(ghfilename);
     
-    loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration);
+    // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration);
+    cv::Size imgSize;
+    loadCalibration("/sdcard/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
     
     initialized = true;
 }
@@ -56,7 +67,8 @@ int process(const cv::Mat& input, cv::Mat& output)
     if(!initialized)
         init();
     
-    input.copyTo(output);
+    // input.copyTo(output);
+    cv::resize(input, output, cv::Size(0, 0), mScale, mScale);
     
     cv::Affine3d robotPose;
     std::vector<DetectionGH> matches;
