@@ -1,0 +1,255 @@
+
+#include "Grouping.hpp"
+
+#include <stdexcept>
+
+#include <opencv2/calib3d/calib3d.hpp> //solvePnP
+#include <opencv2/imgproc.hpp>
+
+using namespace cv;
+using namespace std;
+
+Grouping::Grouping()
+{
+    nbNeigboursMax=5;
+    
+    cv::SimpleBlobDetectorInertia::Params params;
+    params.thresholdStep = 10;
+    params.minThreshold = 80;
+    params.maxThreshold = 200;
+    params.minDistBetweenBlobs = 4;
+    params.minRepeatability = 3;
+    
+    params.filterByColor = true;
+    params.blobColor = 0;
+    
+    params.filterByArea = true;
+    params.minArea = 5;
+    params.maxArea = 800;
+    
+    params.filterByCircularity = true;
+    params.minCircularity = 0.6;
+    params.maxCircularity = 1.4;
+    
+    params.filterByInertia = true;
+    params.minInertiaRatio = 0.3;
+    params.maxInertiaRatio = 1.0;
+    
+    params.filterByConvexity = false;
+    sbd = cv::SimpleBlobDetectorInertia::create(params);
+    
+}
+
+void Grouping::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const
+{
+    Mat gray;
+    cv::cvtColor(input, gray, CV_RGB2GRAY);
+    
+    // blob detector
+    sbd->detect(gray, blobs);
+}
+
+struct sort_wrt_second {
+    bool operator()(const std::pair<int,float> &left, const std::pair<int,float> &right) {
+        return left.second < right.second;
+    }
+};
+
+void Grouping::getClosestNeigbors(int p, const vector<KeyPoint>& mVerticesDes, vector<int>& idNeigbors) const
+{
+    //create pairs of point indexes and corresponding distance and sort with respect to deistance
+    vector< pair<int,float> > pairIdDist;
+    //only use keypoints after p to not have duplicated pairs
+    for(int i=p+1;i<mVerticesDes.size();i++)
+    {
+        pair<int,float> newPair;
+        newPair.first=i;
+        newPair.second=norm(mVerticesDes[i].pt-mVerticesDes[p].pt);
+        pairIdDist.push_back(newPair);
+    }
+    
+    //sort it
+    std::sort(pairIdDist.begin(), pairIdDist.end(), sort_wrt_second());
+    
+    //return first elements
+    for(int i=0;i<pairIdDist.size() && i<nbNeigboursMax;i++)
+        idNeigbors.push_back(pairIdDist[i].first);
+    
+}
+
+void Grouping::getBlobsAndPairs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
+{
+    //get blobs
+    extractBlobs(img, blobs);
+    
+    for(int p=0;p<blobs.size();p++)
+    {
+        //for each point have to find the nbPtBasis closest points
+        vector<int> idNeigbors;
+        //only get neigbours indexed after p
+        getClosestNeigbors(p, blobs, idNeigbors);
+        
+        //check resulting pairs
+        for(int i=0;i<idNeigbors.size();i++)
+        {
+            float d_on_ss=norm(blobs[p].pt-blobs[idNeigbors[i]].pt)/sqrt(blobs[p].size*blobs[idNeigbors[i]].size);
+            float scale_dist=sqrt((blobs[p].size-blobs[idNeigbors[i]].size)*(blobs[p].size-blobs[idNeigbors[i]].size));
+            //check with respect to stat we got in blobStat
+            //if(d_on_ss>1.4 && d_on_ss<2.1)//ratio distance/scale is good, then add pair
+            if(d_on_ss>1. && d_on_ss<3.)//ratio distance/scale is good, then add pair
+                if(scale_dist<2)//pairs of blobs are close so scale diff should not be too big
+                    blobPairs.push_back(BlobPair(p,idNeigbors[i]));
+        }
+    }
+}
+
+void Grouping::getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets)
+{
+    for(int p=0;p<blobPairs.size();p++)
+    {
+        //get the pairs which overlap
+        //note that in pair we always have id1 < id2
+        for(int p2=p+1;p2<blobPairs.size();p2++)
+        {
+            BlobTriplet newTriplet;
+        
+            //check if overlap
+            if(blobPairs[p].ids[0]==blobPairs[p2].ids[0])
+            {
+                newTriplet.ids[0]=blobPairs[p].ids[0];newTriplet.ids[1]=blobPairs[p].ids[1];newTriplet.ids[2]=blobPairs[p2].ids[1];
+            }
+            else if(blobPairs[p].ids[0]==blobPairs[p2].ids[1])
+            {
+                newTriplet.ids[0]=blobPairs[p].ids[0];newTriplet.ids[1]=blobPairs[p].ids[1];newTriplet.ids[2]=blobPairs[p2].ids[0];
+            }
+            else if(blobPairs[p].ids[1]==blobPairs[p2].ids[0])
+            {
+                newTriplet.ids[0]=blobPairs[p].ids[1];newTriplet.ids[1]=blobPairs[p].ids[0];newTriplet.ids[2]=blobPairs[p2].ids[1];
+            }
+            else if(blobPairs[p].ids[1]==blobPairs[p2].ids[1])
+            {
+                newTriplet.ids[0]=blobPairs[p].ids[1];newTriplet.ids[1]=blobPairs[p].ids[0];newTriplet.ids[2]=blobPairs[p2].ids[0];
+            }
+            else
+                continue;
+            
+            
+            
+            //check if their is an homography which fits and respect inertia
+            vector<KeyPoint> blobPoints;
+            blobPoints.push_back(blobs[newTriplet.ids[0]]);
+            blobPoints.push_back(blobs[newTriplet.ids[1]]);
+            blobPoints.push_back(blobs[newTriplet.ids[2]]);
+            
+            for(int m=0;m<3;m++)//for all the possible arrangement of the points
+            {
+                //get arranged points
+                vector<Point2f> blobPointsArranged;
+                blobPointsArranged.push_back(blobPoints[m % 3].pt);  //0 0 1 1 2 2
+                blobPointsArranged.push_back(blobPoints[(m+1) % 3].pt);  //1 2 0 2 0 1
+                blobPointsArranged.push_back(blobPoints[(m+2) % 3].pt);  //2 1 2 0 1 0
+                
+                //just check inertia
+                //basis vectors:
+                Point2f v1=blobPointsArranged[1]-blobPointsArranged[0];
+                Point2f v2=blobPointsArranged[2]-blobPointsArranged[0];
+                
+                //normalize
+                float maxNorm=(norm(v1)>norm(v2))?norm(v1):norm(v2);
+                v1 = v1/maxNorm;
+                v2 = v2/maxNorm;
+                
+                //inetria of blobs should be related to area formed by v1 and v2
+                //get the area with determinant
+                float inertia_des = v1.x*v2.y-v1.y*v2.x;
+                if(inertia_des<0)inertia_des=-inertia_des;
+                
+                float inertia_error=0;
+                for(int i=0;i<blobPoints.size();i++)
+                {
+                    inertia_error+=sqrt((blobPoints[i].response-inertia_des)*(blobPoints[i].response-inertia_des));
+                    //cout<<"blobPoints["<<i<<"].response = "<<blobPoints[i].response<<"  inertia des = "<<inertia_des<<endl;
+                }
+                inertia_error=inertia_error/blobPoints.size();
+                //cout<<"error = "<<inertia_error<<endl;
+                
+                if(inertia_error<0.3 && //want the inertia to match perspective transfo
+                   inertia_des>0.2) //want to have a solution that is feasible (if inertia_des is too smal then wont detect blobs
+                {
+                    blobTriplets.push_back(newTriplet);
+                    break;
+                }
+                
+            }
+        }           
+    }
+}
+
+void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets)
+{
+    //many ways to do, for now go through list of triplets and check if shares 2 points with other triangles,
+    //if doesn't remove it from list, if does create quadruplets and remove all other triangle contained in quadruplets
+    std::vector<BlobTriplet> blobTripletsCopy=blobTriplets;
+    
+    while(blobTripletsCopy.size()>0)
+    {
+        bool found=false;
+        for(int t=1;t<blobTripletsCopy.size();t++)
+        {
+            //count how many points first triplet has in common with triplet[t]
+            int pt_in_common=0;
+            for(int i=0;i<3;i++)
+                for(int i2=0;i2<3;i2++)
+                    if(blobTripletsCopy[0].ids[i]==blobTripletsCopy[t].ids[i2])
+                        pt_in_common++;
+            
+            if (pt_in_common==2) {
+                found=true;
+                
+                //create quadruplet
+                BlobQuadruplets newQuadruplets;
+                for(int i=0;i<3;i++)newQuadruplets.ids[i]=blobTripletsCopy[0].ids[i];
+                for(int i2=0;i2<3;i2++)//search for id in blobTriplets[t] too add
+                {
+                    bool bfound=false;
+                    for(int i=0;i<3;i++)
+                        if(blobTripletsCopy[0].ids[i]==blobTripletsCopy[t].ids[i2])bfound=true;
+                    
+                    if(!bfound)
+                    {
+                        newQuadruplets.ids[3]=blobTripletsCopy[t].ids[i2];
+                        break;
+                    }
+                }
+                //add quadruplet
+                blobQuadriplets.push_back(newQuadruplets);
+                
+                //remove triplets 0 and t
+                blobTripletsCopy.erase(blobTripletsCopy.begin()+t);
+                blobTripletsCopy.erase(blobTripletsCopy.begin());
+                
+                //search for all the other triplets included in quadruplet
+                for(int t2=blobTripletsCopy.size()-1;t2>=0;t2--)
+                {
+                    //count how many points first triplet has in common with triplet[t]
+                    int pt_in_common2=0;
+                    for(int i=0;i<4;i++)
+                        for(int i2=0;i2<3;i2++)
+                            if(newQuadruplets.ids[i]==blobTripletsCopy[t2].ids[i2])
+                                pt_in_common2++;
+                    
+                    if(pt_in_common2==3)
+                        blobTripletsCopy.erase(blobTripletsCopy.begin()+t2);
+                 }
+                
+                break;
+            }                
+        }
+        
+        //if first triplet was not found then remove it
+        if(!found)
+            blobTripletsCopy.erase(blobTripletsCopy.begin());
+    }
+    
+}
+
