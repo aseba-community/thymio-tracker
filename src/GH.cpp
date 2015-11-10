@@ -9,12 +9,13 @@
 using namespace cv;
 using namespace std;
 
-GH::GH()
+GH::GH(IntrinsicCalibration _camCalib)
 {
+    cameraCalibration=_camCalib;
     //for now we will consider 3 neigboring points to define bases
     nbPtBasis=2;
     
-    cv::SimpleBlobDetectorInertia::Params params;
+    cv::SimpleBlobDetector::Params params;
     params.thresholdStep = 10;
     params.minThreshold = 50;
     params.maxThreshold = 200;
@@ -37,7 +38,7 @@ GH::GH()
     params.maxInertiaRatio = 1.3;
     
     params.filterByConvexity = false;
-    sbd = cv::SimpleBlobDetectorInertia::create(params);
+    sbd = cv::SimpleBlobDetector::create(params);
 }
 
 GH::~GH()
@@ -71,7 +72,6 @@ struct sort_wrt_second {
     }
 };
 
-
 void GH::getClosestNeigbors(int p, const vector<Point2f>& mVerticesDes, vector<int>& idNeigbors) const
 {
     //create pairs of point indexes and corresponding distance and sort with respect to deistance
@@ -94,12 +94,6 @@ void GH::getClosestNeigbors(int p, const vector<Point2f>& mVerticesDes, vector<i
     
 }
 
-
-bool testDirectionBasis(Point2f basis1,Point2f basis2)
-{
-    float crossProd=basis1.x*basis2.y-basis1.y*basis2.x;
-    return crossProd>0;
-}
 
 void GH::setModel(vector<Point2f> *projPoints, int nbPoses)
 {
@@ -228,6 +222,7 @@ void GH::setModel(vector<Point2f> *projPoints, int nbPoses)
     
     //probably would benefit from HT smoothing...
     //=> not any more as we do that with perspective transformation knowledge
+    //actually could estimate variance of computed coordinates in local basis and blur using computed variance
     //blurHashTable();
 }
 
@@ -249,7 +244,7 @@ void GH::blurHashTable()
                     {
                         int ic=i+i2;
                         int jc=j+j2;
-                        if(i>=0 && ic<nbBinPerDim.x && jc>=0 && jc<nbBinPerDim.y)
+                        if(ic>=0 && ic<nbBinPerDim.x && jc>=0 && jc<nbBinPerDim.y)
                         {
                             //just set pyramidal coef eg for radius = 2 => [1 2 3 2 1]
                             int coef = (1+radiusBlur-abs(i2))*(1+radiusBlur-abs(j2));
@@ -291,7 +286,7 @@ void GH::getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionGH> &m
     
     //get list of points from blob (will have to be removed later as just a copy of blobs)
     vector<Point2f> mPoints;
-    for(int p=0;p<blobs.size();p++)mPoints.push_back(blobs[p].pt);
+    for(int p=0;p<blobs.size();p++)mPoints.push_back(toMeters(cameraCalibration.cameraMatrix,blobs[p].pt));
     
     //empty output vectors
     matches.clear();

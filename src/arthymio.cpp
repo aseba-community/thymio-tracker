@@ -14,7 +14,7 @@ static bool mFound = false;
 static GH mGH;
 static ArthymioBlobModel mRobot;
 static IntrinsicCalibration calibration;
-static float mScale = 0.33;
+static float mScale = 1.0;
 
 void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& matches)
 {
@@ -28,7 +28,7 @@ void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& match
     }
 }
 
-void loadCalibration(const std::string& filename, IntrinsicCalibration* calibration, cv::Size* imgSize, float scale = 1.0)
+void loadCalibration(const std::string& filename, IntrinsicCalibration* calibration, const cv::Size* imgSize)
 {
     cv::FileStorage fs;
     fs.open(filename, cv::FileStorage::READ);
@@ -38,37 +38,34 @@ void loadCalibration(const std::string& filename, IntrinsicCalibration* calibrat
         throw std::runtime_error("Calibration file not found!");
     }
     
-    fs["camera_matrix"] >> calibration->cameraMatrix;
-    fs["distortion_coefficients"] >> calibration->distCoeffs;
-    fs["image_width"] >> imgSize->width;
-    fs["image_height"] >> imgSize->height;
+    readCalibrationFromFileStorage(fs,*calibration);
+    rescaleCalibration(*calibration, *imgSize);
     
-    cv::Size sourceSize = *imgSize;
-    imgSize->width *= scale;
-    imgSize->height *= scale;
-    resizeCameraMatrix(calibration->cameraMatrix, sourceSize, *imgSize);
+    fs.release();
 }
 
-void init()
+void init(const cv::Size &imgSize)
 {
      static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     mGH.loadFromFile(ghfilename);
-    cv::Size imgSize;
     
-     loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
+    loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
+    //loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize);
     ////loadCalibration("/sdcard/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
+    mGH.setCalibration(calibration);
     
     initialized = true;
 }
 
 int process(const cv::Mat& input, cv::Mat& output)
 {
-    if(!initialized)
-        init();
-    
     // input.copyTo(output);
     cv::resize(input, output, cv::Size(0, 0), mScale, mScale);
+
+    if(!initialized)
+        init(output.size());
+    
     
     cv::Affine3d robotPose;
     std::vector<DetectionGH> matches;

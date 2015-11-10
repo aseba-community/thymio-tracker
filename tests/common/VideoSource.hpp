@@ -44,7 +44,7 @@ class videoSource
     //resized img if resized
     Mat imgResized;
     //output img size
-    Size imgSize;
+    //Size imgSize; //now in camera intrinsic calibration
     
     //did we ask the image to be resized
     bool resized;
@@ -54,12 +54,12 @@ class videoSourceSeq : public videoSource
 {
 public:
     //constructor with calibration
-    videoSourceSeq(char *_printfPath,CameraType _camType,int id0=0);
+    videoSourceSeq(const char *_printfPath,CameraType _camType,int id0=0);
     
     void grabNewFrame();
 private:
     //where to read image sequence
-    char *printfPath;
+    const char *printfPath;
     //current index read
     int frameId;
     //have we reached the end

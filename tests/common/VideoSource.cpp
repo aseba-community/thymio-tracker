@@ -28,10 +28,12 @@ videoSource::videoSource(CameraType _camType)
     if(!fs.isOpened())
         throw std::runtime_error("Calibration file not found!");
     
-    imgSize.width = (int) fs["image_width"];
-    imgSize.height = (int) fs["image_height"];
+    mCalibration.imageSize.width = (int) fs["image_width"];
+    mCalibration.imageSize.height = (int) fs["image_height"];
     fs["camera_matrix"] >> mCalibration.cameraMatrix;
     fs["distortion_coefficients"] >> mCalibration.distCoeffs;
+    
+    fs.release();
 }
 
 void videoSource::resizeSource(Size _newSize)
@@ -39,26 +41,26 @@ void videoSource::resizeSource(Size _newSize)
     resized=true;
     
     //have to change camera calibration
-    resizeCameraMatrix(mCalibration.cameraMatrix,imgSize,_newSize);
+    resizeCameraMatrix(mCalibration.cameraMatrix,mCalibration.imageSize,_newSize);
     
     //change output image size
-    imgSize=_newSize;
+    mCalibration.imageSize=_newSize;
 }
 void videoSource::resizeSource(float _r)
 {
     resized=true;
     
     //change output iamge size
-    Size sourceSize=imgSize;
-    imgSize.width=_r*sourceSize.width;imgSize.height=_r*sourceSize.height;
+    Size sourceSize=mCalibration.imageSize;
+    mCalibration.imageSize.width=_r*sourceSize.width;mCalibration.imageSize.height=_r*sourceSize.height;
 
     //have to change camera calibration
-    resizeCameraMatrix(mCalibration.cameraMatrix,sourceSize,imgSize);
+    resizeCameraMatrix(mCalibration.cameraMatrix,sourceSize,mCalibration.imageSize);
 }
 
 void videoSource::resizeImage()
 {
-    resize(img, imgResized, imgSize, 0, 0);
+    resize(img, imgResized, mCalibration.imageSize, 0, 0);
 }
 
 videoSourceLive::videoSourceLive(CameraType _camType):videoSource(_camType)
@@ -73,7 +75,7 @@ void videoSourceLive::grabNewFrame()
 }
 
 
-videoSourceSeq::videoSourceSeq(char *_printfPath,CameraType _camType,int id0):videoSource(_camType)
+videoSourceSeq::videoSourceSeq(const char *_printfPath,CameraType _camType,int id0):videoSource(_camType)
 {
     frameId=id0;
     printfPath=_printfPath;

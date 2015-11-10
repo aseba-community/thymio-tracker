@@ -11,14 +11,18 @@ set(ANDROID_WRAPPER ON CACHE BOOL "Compile for Android with Java wrapper")
 set(ARThymio_SOURCES
     src/arthymio.cpp
     src/GH.cpp
-    src/Blobber.cpp
+    src/GHscale.cpp
     src/Models.cpp
     src/Generic.cpp
+    src/Grouping.cpp
+    src/BlobInertia.cpp
     src/arthymio.h
-    src/Blobber.hpp
     src/Generic.hpp
     src/GH.hpp
+    src/GHscale.hpp
     src/Models.hpp
+    src/Grouping.hpp
+    src/BlobInertia.hpp
     )
 
 if(ANDROID_WRAPPER)

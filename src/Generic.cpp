@@ -4,6 +4,16 @@
 using namespace cv;
 using namespace std;
 
+void readCalibrationFromFileStorage(cv::FileStorage &fs, IntrinsicCalibration &calibration)
+{
+    fs["camera_matrix"] >> calibration.cameraMatrix;
+    fs["distortion_coefficients"] >> calibration.distCoeffs;
+    calibration.imageSize.width = (int) fs["image_width"];
+    calibration.imageSize.height = (int) fs["image_height"];
+    
+}
+
+
 void resizeCameraMatrix(Mat& _cameraMatrix, const Size& sFrom, const Size& sTo)
 {
     float ratiox=(float)sTo.width/sFrom.width;
@@ -14,6 +24,13 @@ void resizeCameraMatrix(Mat& _cameraMatrix, const Size& sFrom, const Size& sTo)
         _cameraMatrix.at<double>(1,j)=_cameraMatrix.at<double>(1,j)*ratioy;
     }
 }
+
+void rescaleCalibration(IntrinsicCalibration &calibration, const cv::Size& sTo)
+{
+    resizeCameraMatrix(calibration.cameraMatrix,calibration.imageSize,sTo);
+    calibration.imageSize=sTo;
+}
+
 
 Point2f toPixels(const Mat& _cameraMatrix, const Point2f& _m)
 {
@@ -28,6 +45,14 @@ Point2f toMeters(const Mat& _cameraMatrix, const Point2f& _x)
     Point2f pm;
     pm.x=(_x.x-_cameraMatrix.at<double>(0,2))/_cameraMatrix.at<double>(0,0);
     pm.y=(_x.y-_cameraMatrix.at<double>(1,2))/_cameraMatrix.at<double>(1,1);
+    return pm;
+}
+
+Point2f toMeters(const Mat& _cameraMatrix, const Point2i& _x)
+{
+    Point2f pm;
+    pm.x=((float)_x.x-_cameraMatrix.at<double>(0,2))/_cameraMatrix.at<double>(0,0);
+    pm.y=((float)_x.y-_cameraMatrix.at<double>(1,2))/_cameraMatrix.at<double>(1,1);
     return pm;
 }
 
@@ -48,4 +73,13 @@ Mat ProjectZ1_Jac_Dp(const Point3f& mvLastDistCam)
     res.at<float>(1,0)= 0.;     res.at<float>(1,1)= invZ;       res.at<float>(1,2)= -y*invZ;
     res.at<float>(1,3)= -(1+y*y);res.at<float>(1,4)= x*y;       res.at<float>(1,5)= x;
     return res;
+}
+
+cv::Point2f Pointxy(const cv::Point3f& _m){return cv::Point2f(_m.x,_m.y);}
+
+
+bool testDirectionBasis(Point2f basis1,Point2f basis2)
+{
+    float crossProd=basis1.x*basis2.y-basis1.y*basis2.x;
+    return crossProd>0;
 }

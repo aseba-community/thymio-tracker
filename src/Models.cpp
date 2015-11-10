@@ -122,7 +122,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
         {
             
             //check how many points agree
-            float threshold_proj=20.;//set error max to 15 pixels
+            float threshold_proj=5.;//set error max to 5 pixels
             int nbPointAgree=0;
             vector<Point2f> vProjPoints;//project all points
             projectPoints(detectedVertices, rvec, tvec, _mCalib.cameraMatrix, _mCalib.distCoeffs, vProjPoints);
