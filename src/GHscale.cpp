@@ -421,6 +421,11 @@ void GHscale::getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionG
     for(int p=0;p<blobs.size();p++)
         cv::circle(img, blobs[p].pt, (blobs[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), -1);
     
+    getModelPointsFromImage(blobs,matches);
+}
+
+void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector<DetectionGH> &matches) const
+{
     //get list of points from blob (will have to be removed later as just a copy of blobs)
     vector<Point3f> mPoints;
     for(int p=0;p<blobs.size();p++)

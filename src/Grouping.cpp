@@ -15,10 +15,10 @@ Grouping::Grouping()
     
     cv::SimpleBlobDetectorInertia::Params params;
     params.thresholdStep = 10;
-    params.minThreshold = 80;
-    params.maxThreshold = 200;
+    params.minThreshold = 40;
+    params.maxThreshold = 210;
     params.minDistBetweenBlobs = 4;
-    params.minRepeatability = 3;
+    params.minRepeatability = 2;
     
     params.filterByColor = true;
     params.blobColor = 0;

@@ -30,6 +30,7 @@ public:
     void setModel(std::vector<cv::Point3f> *projPoints, int nbPoses);
     //extract blobs, get there 3D position, check which point they correspond to in HashTable
     void getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionGH> &matches) const;
+    void getModelPointsFromImage(const std::vector<cv::KeyPoint> &blobs, std::vector<DetectionGH> &matches) const;
 
     //GH io
     void saveToFile(const std::string& filename) const;
