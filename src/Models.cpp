@@ -13,6 +13,20 @@ void Object3D::draw(Mat& img, const Mat& cameraMatrix, const Mat& distCoeffs, co
     
     for(int v=0;v<mVertices.size();v++)
         drawVertice(mVertices[v], img, cameraMatrix, distCoeffs, poseCam);
+    
+    //draw object frame
+    vector<Point3f> framePoints;
+    framePoints.push_back(Point3f(0,0,0));
+    framePoints.push_back(Point3f(0.03,0,0));
+    framePoints.push_back(Point3f(0,0.03,0));
+    framePoints.push_back(Point3f(0,0,0.03));
+    for(int p=0;p<4;p++)framePoints[p]=pose*framePoints[p];
+    vector<Point2f> vprojVertices;
+    projectPoints(framePoints, poseCam.rvec(), poseCam.translation(), cameraMatrix, distCoeffs, vprojVertices);
+    line(img, vprojVertices[0], vprojVertices[1], Scalar(0,0,255), 2);
+    line(img, vprojVertices[0], vprojVertices[2], Scalar(0,255,0), 2);
+    line(img, vprojVertices[0], vprojVertices[3], Scalar(255,0,0), 2);
+
 }
 
 vector<Point2f> Object3D::projectVertices(const Mat &cameraMatrix, const Mat &distCoeffs, const Affine3d &poseCam) const
@@ -47,8 +61,11 @@ void Object3D::drawEdge(const ModelEdge &_edge, const Mat &img, const Mat &camer
     
     vector<Point2f> vprojVertices;
     projectPoints(LineObj, poseCam.rvec(), poseCam.translation(), cameraMatrix, distCoeffs, vprojVertices);
-    if(LineCam[0].z>0 && LineCam[1].z>0)
+    //if(LineCam[0].z>0 && LineCam[1].z>0)
         line(img, vprojVertices[0], vprojVertices[1], Scalar(0,0,255), 2);
+    
+    
+    
 }
 
 float rotationVSfrontoparallel(const Vec3d &rvec)
@@ -206,42 +223,104 @@ Camera3dModel::Camera3dModel()
 
 ArthymioBlobModel::ArthymioBlobModel()
 {
-    mVertices.push_back(Point3f(0,5.6,0));
-    mVertices.push_back(Point3f(0,4.8,0));
-    mVertices.push_back(Point3f(0,0.8,0));
-    mVertices.push_back(Point3f(0,0,0));
+    //vertices in cm, origin is on corner blob
+    /*mVertices.push_back(Point3f(0,5.6,3.2));
+    mVertices.push_back(Point3f(0,4.8,3.2));
+    mVertices.push_back(Point3f(0,0.8,3.2));
+    mVertices.push_back(Point3f(0,0,3.2));
     
-    mVertices.push_back(Point3f(0.8,4.8,0));
-    mVertices.push_back(Point3f(0.8,0.8,0));
-    mVertices.push_back(Point3f(0.8,0,0));
+    mVertices.push_back(Point3f(0.8,4.8,3.2));
+    mVertices.push_back(Point3f(0.8,0.8,3.2));
+    mVertices.push_back(Point3f(0.8,0,3.2));
     
-    mVertices.push_back(Point3f(8.,4.8,0));
-    mVertices.push_back(Point3f(8.,0.8,0));
-    mVertices.push_back(Point3f(8.,0,0));
+    mVertices.push_back(Point3f(8.,4.8,3.2));
+    mVertices.push_back(Point3f(8.,0.8,3.2));
+    mVertices.push_back(Point3f(8.,0,3.2));
     
-    mVertices.push_back(Point3f(8.8,5.6,0));
-    mVertices.push_back(Point3f(8.8,4.8,0));
-    mVertices.push_back(Point3f(8.8,0.8,0));
-    mVertices.push_back(Point3f(8.8,0,0));
+    mVertices.push_back(Point3f(8.8,5.6,3.2));
+    mVertices.push_back(Point3f(8.8,4.8,3.2));
+    mVertices.push_back(Point3f(8.8,0.8,3.2));
+    mVertices.push_back(Point3f(8.8,0,3.2));*/
+    
+    mVertices.push_back(Point3f(8.8,5.6,3.2));
+    mVertices.push_back(Point3f(8.8,4.8,3.2));
+    mVertices.push_back(Point3f(8.8,0.8,3.2));
+    mVertices.push_back(Point3f(8.8,0,3.2));
+    
+    mVertices.push_back(Point3f(8,4.8,3.2));
+    mVertices.push_back(Point3f(8,0.8,3.2));
+    mVertices.push_back(Point3f(8,0,3.2));
+    
+    mVertices.push_back(Point3f(0.8,4.8,3.2));
+    mVertices.push_back(Point3f(0.8,0.8,3.2));
+    mVertices.push_back(Point3f(0.8,0,3.2));
+    
+    mVertices.push_back(Point3f(8.8,5.6,3.2));
+    mVertices.push_back(Point3f(8.8,4.8,3.2));
+    mVertices.push_back(Point3f(8.8,0.8,3.2));
+    mVertices.push_back(Point3f(8.8,0,3.2));
+
     
     //set them in meter and center them
     for(int v=0;v<14;v++)
         mVertices[v]=(mVertices[v]-Point3f(4.4,2.8,0))/100.;
     
+    
     //if want to display edges
-    vector<Point3f> mVerticesTemp;
+    vector<Point3f> mVerticesTop;
     //create vertices from dimensions
-    mVerticesTemp.push_back(Point3f(-0.65,7.75,0));
-    mVerticesTemp.push_back(Point3f(-0.65,-0.65,0));
-    mVerticesTemp.push_back(Point3f(9.5,-0.65,0));
-    mVerticesTemp.push_back(Point3f(9.5,7.75,0));
+    mVerticesTop.push_back(Point3f(-0.65,7.75,3.2));
+    mVerticesTop.push_back(Point3f(-0.65,-0.65,3.2));
+    mVerticesTop.push_back(Point3f(9.5,-0.65,3.2));
+    mVerticesTop.push_back(Point3f(9.5,7.75,3.2));
+    mVerticesTop.push_back(Point3f(7.,9.4,3.2));
+    mVerticesTop.push_back(Point3f(5.,9.7,3.2));
+    mVerticesTop.push_back(Point3f(2.5,9.4,3.2));
+    
     //set them in meter and center them
-    for(int v=0;v<4;v++)
-        mVerticesTemp[v]=(mVerticesTemp[v]-Point3f(4.4,2.8,0))/100.;
+    for(int v=0;v<mVerticesTop.size();v++)
+        mVerticesTop[v]=(mVerticesTop[v]-Point3f(4.4,2.8,0))/100.;
     
     //from center to image plane
-    mEdges.push_back(ModelEdge(mVerticesTemp[0],mVerticesTemp[1]));
-    mEdges.push_back(ModelEdge(mVerticesTemp[1],mVerticesTemp[2]));
-    mEdges.push_back(ModelEdge(mVerticesTemp[2],mVerticesTemp[3]));
-
+    for(int v=0;v<mVerticesTop.size();v++)
+        mEdges.push_back(ModelEdge(mVerticesTop[v],mVerticesTop[(v+1)%mVerticesTop.size()]));
+    
+    //if want to display edges of bottom part
+    vector<Point3f> mVerticesBottom;
+    //create vertices from dimensions
+    mVerticesBottom.push_back(Point3f(-0.65,7.75,-1.2));
+    mVerticesBottom.push_back(Point3f(-0.65,-0.65,-1.2));
+    mVerticesBottom.push_back(Point3f(9.5,-0.65,-1.2));
+    mVerticesBottom.push_back(Point3f(9.5,7.75,-1.2));
+    mVerticesBottom.push_back(Point3f(7.,9.4,-1.2));
+    mVerticesBottom.push_back(Point3f(5.,9.7,-1.2));
+    mVerticesBottom.push_back(Point3f(2.5,9.4,-1.2));
+    
+    //set them in meter and center them
+    for(int v=0;v<mVerticesBottom.size();v++)
+        mVerticesBottom[v]=(mVerticesBottom[v]-Point3f(4.4,2.8,0))/100.;
+    
+    //from center to image plane
+    for(int v=0;v<mVerticesBottom.size();v++)
+        mEdges.push_back(ModelEdge(mVerticesBottom[v],mVerticesBottom[(v+1)%mVerticesBottom.size()]));
+    
+    //vertical edges
+    vector<Point3f> mVerticesVertical;
+    //create vertices from dimensions
+    mVerticesVertical.push_back(Point3f(-0.65,7.75,3.2));
+    mVerticesVertical.push_back(Point3f(-0.65,7.75,-1.2));
+    mVerticesVertical.push_back(Point3f(-0.65,-0.65,3.2));
+    mVerticesVertical.push_back(Point3f(-0.65,-0.65,-1.2));
+    mVerticesVertical.push_back(Point3f(9.5,-0.65,3.2));
+    mVerticesVertical.push_back(Point3f(9.5,-0.65,-1.2));
+    mVerticesVertical.push_back(Point3f(9.5,7.75,3.2));
+    mVerticesVertical.push_back(Point3f(9.5,7.75,-1.2));
+    //set them in meter and center them
+    for(int v=0;v<mVerticesVertical.size();v++)
+        mVerticesVertical[v]=(mVerticesVertical[v]-Point3f(4.4,2.8,0))/100.;
+    
+    //from center to image plane
+    for(int v=0;v<mVerticesVertical.size()/2;v++)
+        mEdges.push_back(ModelEdge(mVerticesVertical[2*v],mVerticesVertical[2*v+1]));
+    
 }

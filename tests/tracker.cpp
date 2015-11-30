@@ -1,6 +1,5 @@
 //matching by Geometric hashing
 
-#include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -100,40 +99,6 @@ void doGHmatching()
     }
 }
 
-void drawBlobPairs(Mat &img,vector<KeyPoint> &blobs, vector<BlobPair> &blobPairs)
-{
-    //draw Blobs
-    for(int p=0;p<blobs.size();p++)
-        cv::circle(img, blobs[p].pt, (blobs[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), -1);
-    //draw Pairs
-    for(int i=0;i<blobPairs.size();i++)
-        line(img, blobs[blobPairs[i].ids[0]].pt, blobs[blobPairs[i].ids[1]].pt, Scalar(0,0,255), 5);
-}
-
-void drawBlobTriplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobTriplet> &blobTriplets)
-{
-    //draw Triplets
-    for(int i=0;i<blobTriplets.size();i++)
-    {
-        line(img, blobs[blobTriplets[i].ids[0]].pt, blobs[blobTriplets[i].ids[1]].pt, Scalar(155,0,155), 3);
-        line(img, blobs[blobTriplets[i].ids[1]].pt, blobs[blobTriplets[i].ids[2]].pt, Scalar(155,0,155), 3);
-        line(img, blobs[blobTriplets[i].ids[2]].pt, blobs[blobTriplets[i].ids[0]].pt, Scalar(155,0,155), 3);
-    }
-}
-
-void drawBlobQuadruplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobQuadruplets> &blobQuadriplets)
-{
-    //draw Triplets
-    for(int i=0;i<blobQuadriplets.size();i++)
-    {
-        line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[1]].pt, Scalar(0,255,255), 2);
-        line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[2]].pt, Scalar(0,255,255), 2);
-        line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[3]].pt, Scalar(0,255,255), 2);
-        line(img, blobs[blobQuadriplets[i].ids[1]].pt, blobs[blobQuadriplets[i].ids[2]].pt, Scalar(0,255,255), 2);
-        line(img, blobs[blobQuadriplets[i].ids[1]].pt, blobs[blobQuadriplets[i].ids[3]].pt, Scalar(0,255,255), 2);
-        line(img, blobs[blobQuadriplets[i].ids[2]].pt, blobs[blobQuadriplets[i].ids[3]].pt, Scalar(0,255,255), 2);
-    }
-}
 
 void searchGoodPairs()
 {
@@ -183,25 +148,6 @@ void searchGoodPairs()
         //waitKey();
     }
     
-}
-
-void getBlobsInTriplets(const vector<KeyPoint> &blobs,const vector<BlobTriplet> &blobTriplets,vector<KeyPoint> &blobsinTriplets)
-{
-    //get all the ids of the blobs in the triplets, taking care of duplicates
-    vector<int> idBlobsInTripelts;
-    for(int i=0;i<blobTriplets.size();i++)
-    {
-        for(int t=0;t<3;t++)
-        {
-            int idc=blobTriplets[i].ids[t];
-            if(find(idBlobsInTripelts.begin(), idBlobsInTripelts.end(), idc)==idBlobsInTripelts.end())
-                idBlobsInTripelts.push_back(idc);
-        }
-    }
-    //create the new blob vector
-    for(int i=0;i<idBlobsInTripelts.size();i++)
-        blobsinTriplets.push_back(blobs[idBlobsInTripelts[i]]);
-    //blobsinTriplets=blobs;
 }
 
 void GoodPairsAndGH()
@@ -274,6 +220,9 @@ void GoodPairsAndGH()
         drawBlobTriplets(inputImage,blobs,blobTriplets);
         drawPointsAndIds(inputImage,mMatches);
         
+        //check for rectangular blobs
+        //extractAndDrawRectangularBlobs(inputImage);
+        
         
         //process(inputImage);
         imshow(window_name,inputImage);
@@ -285,11 +234,140 @@ void GoodPairsAndGH()
     
 }
 
+#include "opencv2/core/core.hpp"
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/highgui/highgui.hpp"
+
+void keyPointMatching()
+{
+    /// create display window
+    //namedWindow( window_name, WINDOW_AUTOSIZE );
+
+    //std::vector<KeyPoint> keypoints_1,keypoints_2;
+    //SurfFeatureDetector detector1( hessianThreshold, octaves, octaveLayers, upright );
+    
+    Mat imageModel;
+    imageModel = imread("/Users/amaurydame/Libs/ferns_demo-1.1/backCropped.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    //Mat inputImage;
+    //inputImage = imread("/Users/amaurydame/Libs/ferns_demo-1.1/backRobot.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    //inputImage = imread("/Users/amaurydame/Libs/ferns_demo-1.1/backRobot2.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+
+    //FAST(imageModel, keypoints_1, 15);
+    //FAST(inputImage, keypoints_2, 15);
+    
+    //Ptr<ORB> mORB;
+    //mORB = ORB::create();
+    //mORB = ORB::create(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)
+    //mORB = ORB::create(1000,1.2f,4,31,0,2, ORB::FAST_SCORE,31);
+    //mORB->detect(inputImage,keypoints_2);
+    
+    //Ptr<BRISK> mBRISK;
+    //mBRISK = BRISK::create();
+    //mBRISK->detect(inputImage,keypoints_2);
+    
+    //Ptr<KAZE> mKAZE;
+    //mKAZE = KAZE::create();
+    //mKAZE->detect(inputImage,keypoints_2);
+    
+    /*Mat desc1, desc2;
+    Ptr<AKAZE> akaze = AKAZE::create();
+    akaze->detectAndCompute(imageModel, noArray(), keypoints_1, desc1);
+    akaze->detectAndCompute(inputImage, noArray(), keypoints_2, desc2);
+    
+    BFMatcher matcher(NORM_HAMMING);
+    vector< vector<DMatch> > nn_matches;
+    matcher.knnMatch(desc1, desc2, nn_matches, 2);
+    
+    std::vector<DMatch> match1;
+    std::vector<DMatch> match2;
+    
+    for(int i=0; i<nn_matches.size(); i++)
+    {
+        match1.push_back(nn_matches[i][0]);
+        match2.push_back(nn_matches[i][1]);
+    }
+    
+    //Mat img_matches1, img_matches2;
+    //drawMatches(inputImage, keypoints_1, imageModel, keypoints_2, match1, img_matches1);
+    
+    for(int p=0;p<match1.size();p++)
+        cv::circle(inputImage, keypoints_2[match1[p].trainIdx].pt, (keypoints_2[match1[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
+    for(int p=0;p<match2.size();p++)
+        cv::circle(inputImage, keypoints_2[match2[p].trainIdx].pt, (keypoints_2[match2[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
+*/
+    //drawMatches(imageModel, keypoints_1, inputImage, keypoints_2, match1, img_matches1);
+    //drawMatches(imageModel, keypoints_1, inputImage, keypoints_2, match2, img_matches2);
+    
+    //detector1.detect( imageModel, keypoints_1 );
+    //detector1.detect( inputImage, keypoints_2 );
+    
+    //for(int p=0;p<keypoints_2.size();p++)
+    //    cv::circle(inputImage, keypoints_2[p].pt, (keypoints_2[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
+    
+    //imshow(window_name,inputImage);
+    //waitKey();
+    
+    videoSourceLive mVideoSource(EmbeddedCam);
+    mVideoSource.resizeSource(0.5);
+    
+    /// create display window
+    namedWindow( window_name, WINDOW_AUTOSIZE );
+    
+    while(1)
+    {
+        //get new image
+        mVideoSource.grabNewFrame();
+        Mat &inputImageCol=*mVideoSource.GetFramePointer();
+        
+        cv::Mat inputImage;
+        cv::cvtColor(inputImageCol, inputImage, CV_BGR2GRAY);
+        
+        std::vector<KeyPoint> keypoints_1,keypoints_2;
+        Mat desc1, desc2;
+        Ptr<AKAZE> akaze = AKAZE::create();
+        akaze->detectAndCompute(imageModel, noArray(), keypoints_1, desc1);
+        akaze->detectAndCompute(inputImage, noArray(), keypoints_2, desc2);
+        
+        BFMatcher matcher(NORM_HAMMING);
+        vector< vector<DMatch> > nn_matches;
+        matcher.knnMatch(desc1, desc2, nn_matches, 2);
+        
+        std::vector<DMatch> match1;
+        std::vector<DMatch> match2;
+        
+        for(int i=0; i<nn_matches.size(); i++)
+        {
+            match1.push_back(nn_matches[i][0]);
+            match2.push_back(nn_matches[i][1]);
+        }
+        
+        //Mat img_matches1, img_matches2;
+        //drawMatches(inputImage, keypoints_1, imageModel, keypoints_2, match1, img_matches1);
+        
+        for(int p=0;p<match1.size();p++)
+            cv::circle(inputImageCol, keypoints_2[match1[p].trainIdx].pt, (keypoints_2[match1[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
+        for(int p=0;p<match2.size();p++)
+            cv::circle(inputImageCol, keypoints_2[match2[p].trainIdx].pt, (keypoints_2[match2[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
+        
+        //process(inputImage);
+        imshow(window_name,inputImageCol);
+        
+        //press escape to leave loop
+        if(waitKey(5) == 27)break;
+        //waitKey();
+    }
+
+
+
+}
+
 int main( int argc, char** argv )
 {
     //doGHmatching();
-    searchGoodPairs();
-    //GoodPairsAndGH();
+    //searchGoodPairs();
+    GoodPairsAndGH();
+    //keyPointMatching();
     return 0;
 
 }
+

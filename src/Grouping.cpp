@@ -28,10 +28,12 @@ Grouping::Grouping()
     params.maxArea = 800;
     
     params.filterByCircularity = true;
-    params.minCircularity = 0.6;
+    params.minCircularity = 0.8;
+    //params.minCircularity = 0.5;
     params.maxCircularity = 1.4;
     
     params.filterByInertia = true;
+    params.minInertiaRatio = 0.1;
     params.minInertiaRatio = 0.3;
     params.maxInertiaRatio = 1.0;
     
@@ -251,5 +253,59 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
             blobTripletsCopy.erase(blobTripletsCopy.begin());
     }
     
+}
+
+
+void drawBlobPairs(Mat &img,vector<KeyPoint> &blobs, vector<BlobPair> &blobPairs)
+{
+    //draw Blobs
+    for(int p=0;p<blobs.size();p++)
+        cv::circle(img, blobs[p].pt, (blobs[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), -1);
+    //draw Pairs
+    for(int i=0;i<blobPairs.size();i++)
+        line(img, blobs[blobPairs[i].ids[0]].pt, blobs[blobPairs[i].ids[1]].pt, Scalar(0,0,255), 5);
+}
+
+void drawBlobTriplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobTriplet> &blobTriplets)
+{
+    //draw Triplets
+    for(int i=0;i<blobTriplets.size();i++)
+    {
+        line(img, blobs[blobTriplets[i].ids[0]].pt, blobs[blobTriplets[i].ids[1]].pt, Scalar(155,0,155), 3);
+        line(img, blobs[blobTriplets[i].ids[1]].pt, blobs[blobTriplets[i].ids[2]].pt, Scalar(155,0,155), 3);
+        line(img, blobs[blobTriplets[i].ids[2]].pt, blobs[blobTriplets[i].ids[0]].pt, Scalar(155,0,155), 3);
+    }
+}
+
+void drawBlobQuadruplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobQuadruplets> &blobQuadriplets)
+{
+    //draw Triplets
+    for(int i=0;i<blobQuadriplets.size();i++)
+    {
+        line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[1]].pt, Scalar(0,255,255), 2);
+        line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[2]].pt, Scalar(0,255,255), 2);
+        line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[3]].pt, Scalar(0,255,255), 2);
+        line(img, blobs[blobQuadriplets[i].ids[1]].pt, blobs[blobQuadriplets[i].ids[2]].pt, Scalar(0,255,255), 2);
+        line(img, blobs[blobQuadriplets[i].ids[1]].pt, blobs[blobQuadriplets[i].ids[3]].pt, Scalar(0,255,255), 2);
+        line(img, blobs[blobQuadriplets[i].ids[2]].pt, blobs[blobQuadriplets[i].ids[3]].pt, Scalar(0,255,255), 2);
+    }
+}
+void getBlobsInTriplets(const vector<KeyPoint> &blobs,const vector<BlobTriplet> &blobTriplets,vector<KeyPoint> &blobsinTriplets)
+{
+    //get all the ids of the blobs in the triplets, taking care of duplicates
+    vector<int> idBlobsInTripelts;
+    for(int i=0;i<blobTriplets.size();i++)
+    {
+        for(int t=0;t<3;t++)
+        {
+            int idc=blobTriplets[i].ids[t];
+            if(find(idBlobsInTripelts.begin(), idBlobsInTripelts.end(), idc)==idBlobsInTripelts.end())
+                idBlobsInTripelts.push_back(idc);
+        }
+    }
+    //create the new blob vector
+    for(int i=0;i<idBlobsInTripelts.size();i++)
+        blobsinTriplets.push_back(blobs[idBlobsInTripelts[i]]);
+    //blobsinTriplets=blobs;
 }
 
