@@ -74,13 +74,10 @@ void loadCalibration(const std::string& filename,
 
 void init(const cv::Size &imgSize)
 {
-<<<<<<< HEAD
-     static const std::string ghfilename = "../data/GHscale_Arth_Perspective.dat";
+    
+static const std::string ghfilename = "../data/GHscale_Arth_Perspective.dat";
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
-=======
-    // static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
-    static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
->>>>>>> d40f77109c18dea3f54fbdd459801ce16aefa2b2
+
     mGH.loadFromFile(ghfilename);
     
     // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
