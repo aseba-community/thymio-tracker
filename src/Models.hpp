@@ -63,9 +63,9 @@ public:
     Camera3dModel();
 };
 
-class ArthymioBlobModel: public Object3D
+class ThymioBlobModel: public Object3D
 {
 public:
     //constructor
-    ArthymioBlobModel();
+    ThymioBlobModel();
 };

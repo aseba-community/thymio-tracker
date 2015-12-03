@@ -51,7 +51,7 @@ private:
     const std::string mGeomHashingFile;
     double mScale;
     GHscale mGH;
-    ArthymioBlobModel mRobot;
+    ThymioBlobModel mRobot;
     IntrinsicCalibration mCalibration;
     Grouping mGrouping;
     

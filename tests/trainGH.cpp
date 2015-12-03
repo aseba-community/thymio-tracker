@@ -14,7 +14,7 @@ int main(int argc, const char * argv[])
 {
     //create visualization tool
     Visualization3D vizu;
-    ArthymioBlobModel mRobot;
+    ThymioBlobModel mRobot;
     vizu.addObject(mRobot);
     
     //create an sphere of camera watching object

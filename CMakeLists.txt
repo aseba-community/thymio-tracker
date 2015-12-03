@@ -4,19 +4,19 @@
 #    $ cmake ..  -DANDROID_WRAPPER=ON -DCMAKE_TOOLCHAIN_FILE=../android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DOpenCV_DIR=../../../deps/OpenCV-android-sdk/sdk/native/jni/
 
 cmake_minimum_required(VERSION 2.8)
-project(ARThymio)
+project(ThymioTracker)
 
 set(ANDROID_WRAPPER OFF CACHE BOOL "Compile for Android with Java wrapper")
 
-set(ARThymio_SOURCES
-    src/arthymio.cpp
+set(ThymioTracker_SOURCES
+    src/ThymioTracker.cpp
     src/GH.cpp
     src/GHscale.cpp
     src/Models.cpp
     src/Generic.cpp
     src/Grouping.cpp
     src/BlobInertia.cpp
-    src/arthymio.h
+    src/ThymioTracker.h
     src/Generic.hpp
     src/GH.hpp
     src/GHscale.hpp
@@ -39,14 +39,14 @@ if(ANDROID_WRAPPER)
     # set(CMAKE_JAVA_COMPILE_FLAGS "-source" "1.6" "-target" "1.6")
 
     # JAR
-    set(ARThymio_JAVA_SOURCES
+    set(ThymioTracker_JAVA_SOURCES
         android/java/ch/epfl/cvlab/arthymio/ARThymio.java)
     set(CMAKE_JAVA_INCLUDE_PATH
         ${CMAKE_JAVA_INCLUDE_PATH}
         "${OpenCV_ANDROID_SDK}/java/src")
-    add_jar(arthymio_android SOURCES ${ARThymio_JAVA_SOURCES})
-    get_target_property(_classDir arthymio_android CLASSDIR)
-    get_target_property(_jarFile arthymio_android JAR_FILE)
+    add_jar(thymiotracker_android SOURCES ${ThymioTracker_JAVA_SOURCES})
+    get_target_property(_classDir thymiotracker_android CLASSDIR)
+    get_target_property(_jarFile thymiotracker_android JAR_FILE)
 
     # JNI header
     set(_stubDir ${CMAKE_CURRENT_BINARY_DIR})
@@ -62,8 +62,8 @@ if(ANDROID_WRAPPER)
         ${JAVA_INCLUDE_PATH}
         ${_stubDir})
 
-    set(ARThymio_SOURCES
-        ${ARThymio_SOURCES}
+    set(ThymioTracker_SOURCES
+        ${ThymioTracker_SOURCES}
         ch_epfl_cvlab_arthymio_ARThymio.h
         android/jni/ch_epfl_cvlab_arthymio_ARThymio.cpp)
 
@@ -77,13 +77,13 @@ include_directories(${PROJECT_SOURCE_DIR}/src ${OpenCV_INCLUDE_DIRS})
 
 if(ANDROID_WRAPPER)
     
-    add_library(arthymio MODULE ${ARThymio_SOURCES})
+    add_library(thymiotracker MODULE ${ThymioTracker_SOURCES})
     
 else(ANDROID_WRAPPER)
     
-    add_library(arthymio SHARED ${ARThymio_SOURCES})
+    add_library(thymiotracker SHARED ${ThymioTracker_SOURCES})
     add_subdirectory(tests)
 
 endif(ANDROID_WRAPPER)
 
-target_link_libraries(arthymio ${OpenCV_LIBRARIES})
+target_link_libraries(thymiotracker ${OpenCV_LIBRARIES})

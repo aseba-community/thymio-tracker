@@ -1,7 +1,7 @@
 
 #include "ch_epfl_cvlab_arthymio_ARThymio.h"
 
-#include "arthymio.h"
+#include "ThymioTracker.h"
 
 #ifdef __cplusplus
 extern "C" {

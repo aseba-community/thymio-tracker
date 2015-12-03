@@ -77,7 +77,7 @@ void doGHmatching()
         mGH.getModelPointsFromImage(inputImage,mMatches);
         
         //compute robots pose
-        ArthymioBlobModel mRobot;
+        ThymioBlobModel mRobot;
         found = mRobot.getPose(mVideoSource.mCalibration,mMatches,robotPose,!found);
         
         cout << double( 1000.*(clock() - startTime) ) / (double)CLOCKS_PER_SEC<< " ms." << endl;
@@ -206,7 +206,7 @@ void GoodPairsAndGH()
         //mGH.getModelPointsFromImage(inputImage,mMatches);
         
         //compute robots pose
-        ArthymioBlobModel mRobot;
+        ThymioBlobModel mRobot;
         found = mRobot.getPose(mVideoSource.mCalibration,mMatches,robotPose,!found);
         
         if(found)//draw model from found pose

@@ -16,7 +16,7 @@ set(common_SOURCES
         common/Visualization3D.hpp)
 
 add_library(common SHARED ${common_SOURCES})
-target_link_libraries(common ${OpenCV_LIBRARIES} arthymio)
+target_link_libraries(common ${OpenCV_LIBRARIES} thymiotracker)
 
 set(exec_SOURCES
         trainGH.cpp
@@ -30,6 +30,6 @@ foreach(source ${exec_SOURCES})
 
   # From source compile the binary and add link rules
   add_executable(${binary} ${source})
-  target_link_libraries(${binary} ${OpenCV_LIBRARIES} arthymio common)
+  target_link_libraries(${binary} ${OpenCV_LIBRARIES} thymiotracker common)
 
 endforeach(source)

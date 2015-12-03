@@ -1,5 +1,5 @@
 
-#include "arthymio.h"
+#include "ThymioTracker.h"
 
 #include "VideoSource.hpp"
 

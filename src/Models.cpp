@@ -221,7 +221,7 @@ Camera3dModel::Camera3dModel()
     mEdges.push_back(ModelEdge(mVerticesTemp[4],mVerticesTemp[1]));
 }
 
-ArthymioBlobModel::ArthymioBlobModel()
+ThymioBlobModel::ThymioBlobModel()
 {
     //vertices in cm, origin is on corner blob
     /*mVertices.push_back(Point3f(0,5.6,3.2));
