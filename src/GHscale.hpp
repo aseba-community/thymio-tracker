@@ -15,6 +15,8 @@
 
 #include "Generic.hpp"
 
+namespace thymio_tracker
+{
 
 class GHscale
 {
@@ -70,3 +72,5 @@ private:
     //number of neigbors considered for each point to define bases
     int nbPtBasis;
 };
+
+}

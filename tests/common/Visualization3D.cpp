@@ -1,5 +1,7 @@
 #include "Visualization3D.hpp"
 
+using namespace std;
+using namespace cv;
 
 bool ButtonLDown=false;
 int posx_prec,posy_prec;
@@ -60,7 +62,7 @@ Visualization3D::Visualization3D()
     
     //create background
     imBackground= Mat(405, 720, CV_8UC3, Scalar(0,0,0));
-    resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
+    tt::resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
     
     //create window
     namedWindow( windowName, WINDOW_AUTOSIZE );
@@ -69,7 +71,7 @@ Visualization3D::Visualization3D()
     
 }
 
-void Visualization3D::addObject(Object3D &_obj)
+void Visualization3D::addObject(tt::Object3D &_obj)
 {
     mObjects.push_back(_obj);
     draw();

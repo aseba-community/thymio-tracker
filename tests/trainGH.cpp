@@ -10,15 +10,18 @@
 
 using namespace std;
 using namespace cv;
+
+namespace tt = thymio_tracker;
+
 int main(int argc, const char * argv[])
 {
     //create visualization tool
     Visualization3D vizu;
-    ThymioBlobModel mRobot;
+    tt::ThymioBlobModel mRobot;
     vizu.addObject(mRobot);
     
     //create an sphere of camera watching object
-    vector<Camera3dModel> vCams;
+    vector<tt::Camera3dModel> vCams;
     float radiusSphere=0.3;//radius sphere
     //float distCamCam=0.25*radiusSphere;
     //float minLatitude=M_PI/6.;
@@ -37,7 +40,7 @@ int main(int argc, const char * argv[])
         if(l==0)//pole
         {
             //pole => want only one cam
-            Camera3dModel newCam;
+            tt::Camera3dModel newCam;
             newCam.pose=newCam.pose.translate(Vec3d(0.0,0.0,-radiusSphere));
             
             vCams.push_back(newCam);
@@ -53,7 +56,7 @@ int main(int argc, const char * argv[])
                 float longitude=2.*M_PI*cl/nbCamInLat;
                 
                 //rotate around z
-                Camera3dModel newCam;
+                tt::Camera3dModel newCam;
                 newCam.pose=newCam.pose.rotate(Vec3d(0.0,0.0,longitude));
                 
                 //rotate for latitude and zoom out
@@ -81,7 +84,7 @@ int main(int argc, const char * argv[])
     FileStorage fs;    fs.open("/Users/amaurydame/Data/nexus/CamCalib/nexus_camera_calib.xml", FileStorage::READ);
     fs["camera_matrix"] >> cameraMatrix;fs["distortion_coefficients"] >> distCoeffs;
     Mat imBackground(405, 720, CV_8UC3, Scalar(0,0,0));
-    resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
+    tt::resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
     moveWindow(window_name, 720, 0);
 
 #define USE_SCALE
@@ -117,10 +120,10 @@ int main(int argc, const char * argv[])
     
     //give that to GH
 #ifndef USE_SCALE
-    GH mGH;//here will train with coodrinates in meters so calibration does not matter
+    tt::GH mGH;//here will train with coodrinates in meters so calibration does not matter
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
 #else
-    GHscale mGH;//here will train with coodrinates in meters so calibration does not matter
+    tt::GHscale mGH;//here will train with coodrinates in meters so calibration does not matter
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
     

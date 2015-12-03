@@ -15,6 +15,9 @@
 
 #include "Generic.hpp"
 
+namespace thymio_tracker
+{
+
 class GH
 {
 public:
@@ -64,3 +67,5 @@ private:
     //number of neigbors considered for each point to define bases
     int nbPtBasis;
 };
+
+}

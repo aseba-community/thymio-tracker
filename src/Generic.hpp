@@ -7,6 +7,9 @@
 #include <iostream>
 #include <vector>
 
+namespace thymio_tracker
+{
+
 struct IntrinsicCalibration {
     cv::Size imageSize;
     cv::Mat cameraMatrix;
@@ -43,3 +46,4 @@ cv::Point2f Pointxy(const cv::Point3f& _m);
 //check direction triangle
 bool testDirectionBasis(cv::Point2f basis1,cv::Point2f basis2);
 
+}

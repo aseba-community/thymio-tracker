@@ -13,6 +13,9 @@
 #include "Generic.hpp"
 #include "GH.hpp"
 
+namespace thymio_tracker
+{
+
 // TODO: 
 struct ModelEdge {
     cv::Point3f ptFrom;
@@ -69,3 +72,5 @@ public:
     //constructor
     ThymioBlobModel();
 };
+
+}

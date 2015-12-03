@@ -9,19 +9,18 @@
 
 #include "Generic.hpp"
 
-using namespace std;
-using namespace cv;
+namespace tt = thymio_tracker;
 
 enum CameraType {NexusCam,
 		  EmbeddedCam,
 		  UndefinedCam
 };
 
-class videoSource
+class VideoSource
 {
- public:
+public:
 	//constructor with calibration
-	videoSource(CameraType _camType=UndefinedCam);
+	VideoSource(CameraType _camType=UndefinedCam);
 	
 	//acquire a new frame
 	virtual void grabNewFrame()=0;
@@ -31,18 +30,19 @@ class videoSource
     cv::Mat* GetFramePointer(){return resized?&imgResized:&img;};
 
     //if want image to be resized, cause the image to be resized and intrinsic calibration to be changed accordingly
-    void resizeSource(Size _newSize);
+    void resizeSource(cv::Size _newSize);
     //same but using ratio
     void resizeSource(float _r);
 
  //attributes:
     //camera intrinsic calibration
-    IntrinsicCalibration mCalibration;
+    tt::IntrinsicCalibration mCalibration;
     
     //current image
-    Mat img;
+    cv::Mat img;
+    
     //resized img if resized
-    Mat imgResized;
+    cv::Mat imgResized;
     //output img size
     //Size imgSize; //now in camera intrinsic calibration
     
@@ -50,30 +50,33 @@ class videoSource
     bool resized;
 };
 
-class videoSourceSeq : public videoSource
+class VideoSourceSeq : public VideoSource
 {
 public:
     //constructor with calibration
-    videoSourceSeq(const char *_printfPath,CameraType _camType,int id0=0);
+    VideoSourceSeq(const char *_printfPath, CameraType _camType, int id0=0);
     
     void grabNewFrame();
+    
 private:
     //where to read image sequence
-    const char *printfPath;
+    const std::string printfPath;
     //current index read
     int frameId;
     //have we reached the end
     bool end_sequence;
 };
 
-class videoSourceLive : public videoSource
+class VideoSourceLive : public VideoSource
 {
 public:
     //constructor with calibration
-    videoSourceLive(CameraType _camType);
+    VideoSourceLive(CameraType _camType);
     
     void grabNewFrame();
+    
 private:
-    VideoCapture captureDevice;
+    
+    cv::VideoCapture captureDevice;
 };
 

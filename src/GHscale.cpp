@@ -9,6 +9,9 @@
 using namespace cv;
 using namespace std;
 
+namespace thymio_tracker
+{
+
 GHscale::GHscale(IntrinsicCalibration _camCalib)
 {
     cameraCalibration=_camCalib;
@@ -706,3 +709,4 @@ void GHscale::convertToWorldFrame(vector<KeyPoint> &keypoint,Mat &cameraMatrix, 
 }
 */
 
+}

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <iostream>
-#include <Vector>
+#include <vector>
 #include <string>
 
 #include <opencv2/core/core.hpp>
@@ -14,9 +14,7 @@
 #include "Generic.hpp"
 #include "Models.hpp"
 
-using namespace std;
-using namespace cv;
-
+namespace tt = thymio_tracker;
 
 class Visualization3D
 {
@@ -25,22 +23,22 @@ public:
     Visualization3D();
     ~Visualization3D();
     
-    void addObject(Object3D &_obj);
+    void addObject(tt::Object3D &_obj);
     void draw();
     
     //3D objects
-    vector<Object3D> mObjects;
+    std::vector<tt::Object3D> mObjects;
     
     //name window
-    string windowName;
+    std::string windowName;
     //background
-    Mat imBackground;
-    Mat imCurrent;
+    cv::Mat imBackground;
+    cv::Mat imCurrent;
     //camera calibration of viewer
-    Mat cameraMatrix;
-    Mat distCoeffs;
+    cv::Mat cameraMatrix;
+    cv::Mat distCoeffs;
     //current position of camera
-    Affine3d cameraPose;
+    cv::Affine3d cameraPose;
 
     
 };

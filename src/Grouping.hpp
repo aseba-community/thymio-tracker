@@ -16,6 +16,9 @@
 #include "Generic.hpp"
 #include "BlobInertia.hpp"
 
+namespace thymio_tracker
+{
+
 struct BlobPair {
     int ids[2];//id of blobs in list of blobs
     BlobPair(int _id1,int _id2){ids[0]=_id1;ids[1]=_id2;};
@@ -61,3 +64,5 @@ private:
     void getClosestNeigbors(int p, const std::vector<cv::KeyPoint>& mVerticesDes, std::vector<int>& idNeigbors) const;
 
 };
+
+}

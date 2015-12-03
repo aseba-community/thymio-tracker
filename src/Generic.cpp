@@ -4,6 +4,9 @@
 using namespace cv;
 using namespace std;
 
+namespace thymio_tracker
+{
+
 void readCalibrationFromFileStorage(cv::FileStorage &fs, IntrinsicCalibration &calibration)
 {
     fs["camera_matrix"] >> calibration.cameraMatrix;
@@ -81,4 +84,6 @@ bool testDirectionBasis(Point2f basis1,Point2f basis2)
 {
     float crossProd=basis1.x*basis2.y-basis1.y*basis2.x;
     return crossProd>0;
+}
+
 }

@@ -13,7 +13,7 @@ using namespace cv;
 
 //opencv display
 //Mat inputImage;
-char window_name[] = "InputWindow";
+const char window_name[] = "InputWindow";
 
 //3D model, first simple version with just top
 #include "VideoSource.hpp"
@@ -22,9 +22,9 @@ char window_name[] = "InputWindow";
 #include "Visualization3D.hpp"
 #include "Grouping.hpp"
 
+namespace tt = thymio_tracker;
 
-
-void drawPointsAndIds(Mat &inputImage,vector<DetectionGH> &_matches)
+void drawPointsAndIds(Mat &inputImage,vector<tt::DetectionGH> &_matches)
 {
     //draw Id
     for(int i=0;i<_matches.size();i++)
@@ -39,12 +39,12 @@ void drawPointsAndIds(Mat &inputImage,vector<DetectionGH> &_matches)
 void doGHmatching()
 {
     //load camera and intrinsic parameters
-    //videoSourceSeq mVideoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    videoSourceLive mVideoSource(EmbeddedCam);
+    //videoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
+    VideoSourceLive videoSource(EmbeddedCam);
     
     //resize input
-    //mVideoSource.resizeSource(0.33);
-    mVideoSource.resizeSource(0.5);
+    //videoSource.resizeSource(0.33);
+    videoSource.resizeSource(0.5);
     
     /// create display window
     namedWindow( window_name, WINDOW_AUTOSIZE );
@@ -52,10 +52,10 @@ void doGHmatching()
 #define USE_SCALE
 
 #ifndef USE_SCALE
-    GH mGH(mVideoSource.mCalibration);
+    tt::GH mGH(videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
 #else
-    GHscale mGH(mVideoSource.mCalibration);
+    tt::GHscale mGH(videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
     //load perspective training GH
@@ -67,23 +67,23 @@ void doGHmatching()
     while(1)
     {
         //get new image
-        mVideoSource.grabNewFrame();
-        Mat &inputImage=*mVideoSource.GetFramePointer();
+        videoSource.grabNewFrame();
+        Mat &inputImage=*videoSource.GetFramePointer();
 
         clock_t startTime = clock();
         
         //extract blobs and identify which one fit model, return set of positions and Id
-        vector<DetectionGH> mMatches;
+        vector<tt::DetectionGH> mMatches;
         mGH.getModelPointsFromImage(inputImage,mMatches);
         
         //compute robots pose
-        ThymioBlobModel mRobot;
-        found = mRobot.getPose(mVideoSource.mCalibration,mMatches,robotPose,!found);
+        tt::ThymioBlobModel mRobot;
+        found = mRobot.getPose(videoSource.mCalibration,mMatches,robotPose,!found);
         
         cout << double( 1000.*(clock() - startTime) ) / (double)CLOCKS_PER_SEC<< " ms." << endl;
         
         if(found)//draw model from found pose
-            mRobot.draw(inputImage,mVideoSource.mCalibration, robotPose);
+            mRobot.draw(inputImage,videoSource.mCalibration, robotPose);
         else
             putText(inputImage, "Lost", Point2i(10,10),FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,0,250), 1, CV_AA);
         
@@ -103,34 +103,34 @@ void doGHmatching()
 void searchGoodPairs()
 {
     //load camera and intrinsic parameters
-    //videoSourceSeq mVideoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    videoSourceLive mVideoSource(EmbeddedCam);
+    //videoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
+    VideoSourceLive videoSource(EmbeddedCam);
     
     //resize input
-    //mVideoSource.resizeSource(0.33);
-    mVideoSource.resizeSource(0.5);
+    //videoSource.resizeSource(0.33);
+    videoSource.resizeSource(0.5);
     
     /// create display window
     namedWindow( window_name, WINDOW_AUTOSIZE );
     
     //craete grouping object
-    Grouping mGrouping;
+    tt::Grouping mGrouping;
     while(1)
     {
         //get new image
-        mVideoSource.grabNewFrame();
-        Mat &inputImage=*mVideoSource.GetFramePointer();
+        videoSource.grabNewFrame();
+        Mat &inputImage=*videoSource.GetFramePointer();
         
         //get the pairs which are likely to belong to group of blobs from model
         vector<KeyPoint> blobs;
-        vector<BlobPair> blobPairs;
+        vector<tt::BlobPair> blobPairs;
         mGrouping.getBlobsAndPairs(inputImage,blobs,blobPairs);
         
         //get triplet by checking homography and inertia
-        vector<BlobTriplet> blobTriplets;
+        vector<tt::BlobTriplet> blobTriplets;
         mGrouping.getTripletsFromPairs(blobs,blobPairs,blobTriplets);
         
-        vector<BlobQuadruplets> blobQuadriplets;
+        vector<tt::BlobQuadruplets> blobQuadriplets;
         mGrouping.getQuadripletsFromTriplets(blobTriplets,blobQuadriplets);
         
         
@@ -153,26 +153,26 @@ void searchGoodPairs()
 void GoodPairsAndGH()
 {
     //load camera and intrinsic parameters
-    //videoSourceSeq mVideoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    videoSourceLive mVideoSource(EmbeddedCam);
+    //videoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
+    VideoSourceLive videoSource(EmbeddedCam);
     
     //resize input
-    //mVideoSource.resizeSource(0.33);
-    mVideoSource.resizeSource(0.5);
+    //videoSource.resizeSource(0.33);
+    videoSource.resizeSource(0.5);
     
     /// create display window
     namedWindow( window_name, WINDOW_AUTOSIZE );
     
     //craete grouping object
-    Grouping mGrouping;
+    tt::Grouping mGrouping;
     
 #define USE_SCALE
     
 #ifndef USE_SCALE
-    GH mGH(mVideoSource.mCalibration);
+    tt::GH mGH(videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
 #else
-    GHscale mGH(mVideoSource.mCalibration);
+    tt::GHscale mGH(videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
     //load perspective training GH
@@ -184,33 +184,33 @@ void GoodPairsAndGH()
     while(1)
     {
         //get new image
-        mVideoSource.grabNewFrame();
-        Mat &inputImage=*mVideoSource.GetFramePointer();
+        videoSource.grabNewFrame();
+        Mat &inputImage=*videoSource.GetFramePointer();
         
         //get the pairs which are likely to belong to group of blobs from model
         vector<KeyPoint> blobs;
-        vector<BlobPair> blobPairs;
+        vector<tt::BlobPair> blobPairs;
         mGrouping.getBlobsAndPairs(inputImage,blobs,blobPairs);
         
         //get triplet by checking homography and inertia
-        vector<BlobTriplet> blobTriplets;
+        vector<tt::BlobTriplet> blobTriplets;
         mGrouping.getTripletsFromPairs(blobs,blobPairs,blobTriplets);
         
         //get only blobs found in triplets
         vector<KeyPoint> blobsinTriplets;
-        getBlobsInTriplets(blobs,blobTriplets,blobsinTriplets);
+        tt::getBlobsInTriplets(blobs,blobTriplets,blobsinTriplets);
         
         //extract blobs and identify which one fit model, return set of positions and Id
-        vector<DetectionGH> mMatches;
+        vector<tt::DetectionGH> mMatches;
         mGH.getModelPointsFromImage(blobsinTriplets,mMatches);
         //mGH.getModelPointsFromImage(inputImage,mMatches);
         
         //compute robots pose
-        ThymioBlobModel mRobot;
-        found = mRobot.getPose(mVideoSource.mCalibration,mMatches,robotPose,!found);
+        tt::ThymioBlobModel mRobot;
+        found = mRobot.getPose(videoSource.mCalibration,mMatches,robotPose,!found);
         
         if(found)//draw model from found pose
-            mRobot.draw(inputImage,mVideoSource.mCalibration, robotPose);
+            mRobot.draw(inputImage,videoSource.mCalibration, robotPose);
         else
             putText(inputImage, "Lost", Point2i(10,10),FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,0,250), 1, CV_AA);
         
@@ -307,8 +307,8 @@ void keyPointMatching()
     //imshow(window_name,inputImage);
     //waitKey();
     
-    videoSourceLive mVideoSource(EmbeddedCam);
-    mVideoSource.resizeSource(0.5);
+    VideoSourceLive videoSource(EmbeddedCam);
+    videoSource.resizeSource(0.5);
     
     /// create display window
     namedWindow( window_name, WINDOW_AUTOSIZE );
@@ -316,8 +316,8 @@ void keyPointMatching()
     while(1)
     {
         //get new image
-        mVideoSource.grabNewFrame();
-        Mat &inputImageCol=*mVideoSource.GetFramePointer();
+        videoSource.grabNewFrame();
+        Mat &inputImageCol=*videoSource.GetFramePointer();
         
         cv::Mat inputImage;
         cv::cvtColor(inputImageCol, inputImage, CV_BGR2GRAY);

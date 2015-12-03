@@ -4,7 +4,10 @@
 
 #include <unistd.h>
 
-videoSource::videoSource(CameraType _camType)
+using namespace std;
+using namespace cv;
+
+VideoSource::VideoSource(CameraType _camType)
 {
     resized=false;
     
@@ -36,60 +39,60 @@ videoSource::videoSource(CameraType _camType)
     fs.release();
 }
 
-void videoSource::resizeSource(Size _newSize)
+void VideoSource::resizeSource(Size _newSize)
 {
     resized=true;
     
     //have to change camera calibration
-    resizeCameraMatrix(mCalibration.cameraMatrix,mCalibration.imageSize,_newSize);
+    tt::resizeCameraMatrix(mCalibration.cameraMatrix, mCalibration.imageSize, _newSize);
     
     //change output image size
     mCalibration.imageSize=_newSize;
 }
-void videoSource::resizeSource(float _r)
+void VideoSource::resizeSource(float _r)
 {
     resized=true;
     
     //change output iamge size
     Size sourceSize=mCalibration.imageSize;
-    mCalibration.imageSize.width=_r*sourceSize.width;mCalibration.imageSize.height=_r*sourceSize.height;
+    mCalibration.imageSize.width=_r*sourceSize.width;
+    mCalibration.imageSize.height=_r*sourceSize.height;
 
     //have to change camera calibration
-    resizeCameraMatrix(mCalibration.cameraMatrix,sourceSize,mCalibration.imageSize);
+    tt::resizeCameraMatrix(mCalibration.cameraMatrix,sourceSize,mCalibration.imageSize);
 }
 
-void videoSource::resizeImage()
+void VideoSource::resizeImage()
 {
     resize(img, imgResized, mCalibration.imageSize, 0, 0);
 }
 
-videoSourceLive::videoSourceLive(CameraType _camType):videoSource(_camType)
+VideoSourceLive::VideoSourceLive(CameraType _camType):VideoSource(_camType)
 {
     captureDevice.open(0);
 }
 
-void videoSourceLive::grabNewFrame()
+void VideoSourceLive::grabNewFrame()
 {
     captureDevice>>img;
     if(resized)resizeImage();
 }
 
-
-videoSourceSeq::videoSourceSeq(const char *_printfPath,CameraType _camType,int id0):videoSource(_camType)
+VideoSourceSeq::VideoSourceSeq(const char *_printfPath, CameraType _camType, int id0)
+    : VideoSource(_camType)
+    , printfPath(_printfPath)
 {
     frameId=id0;
-    printfPath=_printfPath;
     end_sequence=false;
 }
 
-
-void videoSourceSeq::grabNewFrame()
+void VideoSourceSeq::grabNewFrame()
 {
     if(!end_sequence)
     {
         frameId++;
         char fileName[200];
-        sprintf(fileName, printfPath, frameId);
+        sprintf(fileName, printfPath.c_str(), frameId);
         
         std::ifstream fout;
         fout.open(fileName);
@@ -104,6 +107,7 @@ void videoSourceSeq::grabNewFrame()
             img=imread(fileName);
             if(resized)resizeImage();
         }
+        
         fout.close();
     }
 }

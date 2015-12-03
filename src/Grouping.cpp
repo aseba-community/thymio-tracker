@@ -9,6 +9,9 @@
 using namespace cv;
 using namespace std;
 
+namespace thymio_tracker
+{
+
 Grouping::Grouping()
 {
     nbNeigboursMax=5;
@@ -308,3 +311,4 @@ void getBlobsInTriplets(const vector<KeyPoint> &blobs,const vector<BlobTriplet> 
     //blobsinTriplets=blobs;
 }
 
+}

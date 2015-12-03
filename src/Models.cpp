@@ -3,6 +3,9 @@
 using namespace cv;
 using namespace std;
 
+namespace thymio_tracker
+{
+
 Object3D::Object3D()
 {}
 
@@ -323,4 +326,6 @@ ThymioBlobModel::ThymioBlobModel()
     for(int v=0;v<mVerticesVertical.size()/2;v++)
         mEdges.push_back(ModelEdge(mVerticesVertical[2*v],mVerticesVertical[2*v+1]));
     
+}
+
 }
