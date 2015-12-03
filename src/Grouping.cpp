@@ -255,8 +255,7 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
     
 }
 
-
-void drawBlobPairs(Mat &img,vector<KeyPoint> &blobs, vector<BlobPair> &blobPairs)
+void drawBlobPairs(Mat &img, const vector<KeyPoint> &blobs, const vector<BlobPair> &blobPairs)
 {
     //draw Blobs
     for(int p=0;p<blobs.size();p++)
@@ -266,7 +265,7 @@ void drawBlobPairs(Mat &img,vector<KeyPoint> &blobs, vector<BlobPair> &blobPairs
         line(img, blobs[blobPairs[i].ids[0]].pt, blobs[blobPairs[i].ids[1]].pt, Scalar(0,0,255), 5);
 }
 
-void drawBlobTriplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobTriplet> &blobTriplets)
+void drawBlobTriplets(Mat &img, const vector<KeyPoint> &blobs, const vector<BlobTriplet> &blobTriplets)
 {
     //draw Triplets
     for(int i=0;i<blobTriplets.size();i++)
@@ -277,7 +276,7 @@ void drawBlobTriplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobTriplet> &blo
     }
 }
 
-void drawBlobQuadruplets(Mat &img,vector<KeyPoint> &blobs, vector<BlobQuadruplets> &blobQuadriplets)
+void drawBlobQuadruplets(Mat &img, const vector<KeyPoint> &blobs, const vector<BlobQuadruplets> &blobQuadriplets)
 {
     //draw Triplets
     for(int i=0;i<blobQuadriplets.size();i++)

@@ -34,7 +34,7 @@ public:
     //draw object given camera intrinsic and extrinsic
     void draw(cv::Mat &img, const cv::Mat& cameraMatrix, const cv::Mat& distCoeffs, const cv::Affine3d& poseCam) const;
     
-    inline void draw(cv::Mat &img, const IntrinsicCalibration &_mCalib, cv::Affine3d &poseCam) const
+    inline void draw(cv::Mat &img, const IntrinsicCalibration &_mCalib, const cv::Affine3d &poseCam) const
     {
         draw(img, _mCalib.cameraMatrix, _mCalib.distCoeffs, poseCam);
     }

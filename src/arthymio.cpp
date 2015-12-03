@@ -1,24 +1,15 @@
 
 #include "arthymio.h"
 
-#include "GHscale.hpp"
-#include "Models.hpp"
-
 #include <vector>
 #include <stdexcept>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "Grouping.hpp"
 
-static bool initialized = false;
-static bool mFound = false;
-static GHscale mGH;
-static ArthymioBlobModel mRobot;
-static IntrinsicCalibration calibration;
-static float mScale = 0.33;
-static Grouping mGrouping;
+namespace thymio_tracker
+{
 
 void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& matches)
 {
@@ -50,9 +41,7 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
 }
 
 void loadCalibration(const std::string& filename,
-                     IntrinsicCalibration* calibration,
-                     const cv::Size* imgSize,
-                     double scale = 1.0)
+                     IntrinsicCalibration* calibration)
 {
     cv::FileStorage fs;
     fs.open(filename, cv::FileStorage::READ);
@@ -63,80 +52,86 @@ void loadCalibration(const std::string& filename,
     }
     
     readCalibrationFromFileStorage(fs, *calibration);
-    
-    cv::Size targetSize = *imgSize;
-    targetSize.width *= scale;
-    targetSize.height *= scale;
-    rescaleCalibration(*calibration, targetSize);
-    
     fs.release();
 }
 
-void init(const cv::Size &imgSize)
+ThymioTracker::ThymioTracker(const std::string& calibrationFile,
+                             const std::string& geomHashingFile)
+    : mCalibrationFile(calibrationFile)
+    , mGeomHashingFile(geomHashingFile)
+    , mScale(0.33)
 {
-<<<<<<< HEAD
-     static const std::string ghfilename = "../data/GHscale_Arth_Perspective.dat";
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
-=======
-    // static const std::string ghfilename = "../data/GH_Arth_Perspective.dat";
-    static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
->>>>>>> d40f77109c18dea3f54fbdd459801ce16aefa2b2
-    mGH.loadFromFile(ghfilename);
+    mGH.loadFromFile(mGeomHashingFile);
     
     // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
     // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize);
-    loadCalibration("/sdcard/nexus_camera_calib.xml", &calibration, &imgSize, mScale);
-    mGH.setCalibration(calibration);
-    
-    initialized = true;
+    loadCalibration(mCalibrationFile, &mCalibration);
+    mGH.setCalibration(mCalibration);
 }
 
-int process(const cv::Mat& input, cv::Mat& output,
-            const cv::Mat* deviceOrientation)
+void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 {
-    // input.copyTo(output);
-    cv::resize(input, output, cv::Size(0, 0), mScale, mScale);
+    // loadCalibration(mCalibrationFile, imgSize, &mCalibration);
+    rescaleCalibration(mCalibration, imgSize);
+    mGH.setCalibration(mCalibration);
+}
 
-    if(!initialized)
-        init(output.size());
+void ThymioTracker::update(const cv::Mat& input,
+                           const cv::Mat* deviceOrientation)
+{
+    // input.copyTo(mImage);
+    cv::resize(input, mDetectionInfo.image, cv::Size(0, 0), mScale, mScale);
     
-    cv::Affine3d robotPose;
-    std::vector<DetectionGH> matches;
+    if(mDetectionInfo.image.size() != mCalibration.imageSize)
+        resizeCalibration(mDetectionInfo.image.size());
     
     //get the pairs which are likely to belong to group of blobs from model
-    std::vector<cv::KeyPoint> blobs;
-    std::vector<BlobPair> blobPairs;
-    mGrouping.getBlobsAndPairs(output,blobs,blobPairs);
-
+    mGrouping.getBlobsAndPairs(mDetectionInfo.image,
+                               mDetectionInfo.blobs,
+                               mDetectionInfo.blobPairs);
+    
     //get triplet by checking homography and inertia
-    std::vector<BlobTriplet> blobTriplets;
-    mGrouping.getTripletsFromPairs(blobs,blobPairs,blobTriplets);
+    mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
+                                   mDetectionInfo.blobPairs,
+                                   mDetectionInfo.blobTriplets);
     
     //get only blobs found in triplets
-    std::vector<cv::KeyPoint> blobsinTriplets;
-    getBlobsInTriplets(blobs,blobTriplets,blobsinTriplets);
+    getBlobsInTriplets(mDetectionInfo.blobs,
+                       mDetectionInfo.blobTriplets,
+                       mDetectionInfo.blobsinTriplets);
     
-    std::vector<BlobQuadruplets> blobQuadriplets;
-    mGrouping.getQuadripletsFromTriplets(blobTriplets,blobQuadriplets);
-
+    mGrouping.getQuadripletsFromTriplets(mDetectionInfo.blobTriplets,
+                                         mDetectionInfo.blobQuadriplets);
+    
     //extract blobs and identify which one fit model, return set of positions and Id
-    std::vector<DetectionGH> mMatches;
-    mGH.getModelPointsFromImage(blobsinTriplets,mMatches);
+    mGH.getModelPointsFromImage(mDetectionInfo.blobsinTriplets, mDetectionInfo.matches);
     
-    mFound = mRobot.getPose(calibration, matches, robotPose, !mFound);
-    if(mFound)
-        mRobot.draw(output, calibration, robotPose);
+    mDetectionInfo.robotFound = mRobot.getPose(mCalibration,
+                                               mDetectionInfo.matches,
+                                               mDetectionInfo.robotPose,
+                                               mDetectionInfo.robotFound);
+}
+
+void ThymioTracker::drawLastDetection(cv::Mat* output) const
+{
+    mDetectionInfo.image.copyTo(*output);
+    
+    if(mDetectionInfo.robotFound)
+        mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
     else
-        putText(output, "Lost", cv::Point2i(10,10),cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,0,250), 1, CV_AA);
+        putText(*output, "Lost",
+                cv::Point2i(10,10),
+                cv::FONT_HERSHEY_COMPLEX_SMALL,
+                0.8, cvScalar(0,0,250), 1, CV_AA);
     
-    //flush
-    drawBlobPairs(output,blobs,blobPairs);
-    drawBlobTriplets(output,blobs,blobTriplets);
-    drawBlobQuadruplets(output,blobs,blobQuadriplets);
-    //drawPointsAndIds(output, matches);
+    drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
+    drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
+    drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
+    // drawPointsAndIds(output, mDetectionInfo.matches);
     
-    if(deviceOrientation)
-        drawAxes(output, *deviceOrientation);
-    
-    return 0;
+    // if(deviceOrientation)
+    //     drawAxes(*output, *deviceOrientation);
+}
+
 }

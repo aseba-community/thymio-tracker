@@ -27,10 +27,9 @@ void resizeCameraMatrix(Mat& _cameraMatrix, const Size& sFrom, const Size& sTo)
 
 void rescaleCalibration(IntrinsicCalibration &calibration, const cv::Size& sTo)
 {
-    resizeCameraMatrix(calibration.cameraMatrix,calibration.imageSize,sTo);
+    resizeCameraMatrix(calibration.cameraMatrix, calibration.imageSize, sTo);
     calibration.imageSize=sTo;
 }
-
 
 Point2f toPixels(const Mat& _cameraMatrix, const Point2f& _m)
 {

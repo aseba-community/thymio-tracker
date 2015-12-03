@@ -31,10 +31,10 @@ struct BlobQuadruplets {
     BlobQuadruplets(int _id1,int _id2,int _id3,int _id4){ids[0]=_id1;ids[1]=_id2;ids[2]=_id3;;ids[3]=_id4;};
 } ;
 
-void drawBlobPairs(cv::Mat &img,std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
-void drawBlobTriplets(cv::Mat &img,std::vector<cv::KeyPoint> &blobs, std::vector<BlobTriplet> &blobTriplets);
-void drawBlobQuadruplets(cv::Mat &img,std::vector<cv::KeyPoint> &blobs, std::vector<BlobQuadruplets> &blobQuadriplets);
-void getBlobsInTriplets(const std::vector<cv::KeyPoint> &blobs,const std::vector<BlobTriplet> &blobTriplets,std::vector<cv::KeyPoint> &blobsinTriplets);
+void drawBlobPairs(cv::Mat &img, const std::vector<cv::KeyPoint> &blobs, const std::vector<BlobPair> &blobPairs);
+void drawBlobTriplets(cv::Mat &img, const std::vector<cv::KeyPoint> &blobs, const std::vector<BlobTriplet> &blobTriplets);
+void drawBlobQuadruplets(cv::Mat &img, const std::vector<cv::KeyPoint> &blobs, const std::vector<BlobQuadruplets> &blobQuadriplets);
+void getBlobsInTriplets(const std::vector<cv::KeyPoint> &blobs, const std::vector<BlobTriplet> &blobTriplets,std::vector<cv::KeyPoint> &blobsinTriplets);
 
 
 class Grouping

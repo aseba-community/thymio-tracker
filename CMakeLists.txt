@@ -1,12 +1,12 @@
 # Usage:
 #
 #    $ mkdir build && cd build
-#    $ cmake ..  -DCMAKE_TOOLCHAIN_FILE=../android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DOpenCV_DIR=../../../deps/OpenCV-android-sdk/sdk/native/jni/
+#    $ cmake ..  -DANDROID_WRAPPER=ON -DCMAKE_TOOLCHAIN_FILE=../android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DOpenCV_DIR=../../../deps/OpenCV-android-sdk/sdk/native/jni/
 
 cmake_minimum_required(VERSION 2.8)
 project(ARThymio)
 
-set(ANDROID_WRAPPER ON CACHE BOOL "Compile for Android with Java wrapper")
+set(ANDROID_WRAPPER OFF CACHE BOOL "Compile for Android with Java wrapper")
 
 set(ARThymio_SOURCES
     src/arthymio.cpp

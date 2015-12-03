@@ -5,8 +5,13 @@
 
 static const char window_name[] = "Tracker";
 
+namespace tt = thymio_tracker;
+
 int main(int argc, char** argv)
 {
+    tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
+                              "../data/GHscale_Arth_Perspective.dat");
+    
     videoSourceLive mVideoSource(EmbeddedCam);
     mVideoSource.resizeSource(0.5);
     
@@ -19,7 +24,8 @@ int main(int argc, char** argv)
         mVideoSource.grabNewFrame();
         cv::Mat& inputImage = *mVideoSource.GetFramePointer();
         
-        process(inputImage, outputImage);
+        tracker.update(inputImage);
+        tracker.drawLastDetection(&outputImage);
         
         imshow(window_name, outputImage);
         
