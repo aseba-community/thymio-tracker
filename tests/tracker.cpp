@@ -68,7 +68,7 @@ void doGHmatching()
     {
         //get new image
         videoSource.grabNewFrame();
-        Mat &inputImage=*videoSource.GetFramePointer();
+        Mat inputImage = videoSource.getFramePointer();
 
         clock_t startTime = clock();
         
@@ -119,7 +119,7 @@ void searchGoodPairs()
     {
         //get new image
         videoSource.grabNewFrame();
-        Mat &inputImage=*videoSource.GetFramePointer();
+        Mat inputImage = videoSource.getFramePointer();
         
         //get the pairs which are likely to belong to group of blobs from model
         vector<KeyPoint> blobs;
@@ -185,7 +185,7 @@ void GoodPairsAndGH()
     {
         //get new image
         videoSource.grabNewFrame();
-        Mat &inputImage=*videoSource.GetFramePointer();
+        Mat inputImage = videoSource.getFramePointer();
         
         //get the pairs which are likely to belong to group of blobs from model
         vector<KeyPoint> blobs;
@@ -317,7 +317,7 @@ void keyPointMatching()
     {
         //get new image
         videoSource.grabNewFrame();
-        Mat &inputImageCol=*videoSource.GetFramePointer();
+        Mat inputImageCol = videoSource.getFramePointer();
         
         cv::Mat inputImage;
         cv::cvtColor(inputImageCol, inputImage, CV_BGR2GRAY);

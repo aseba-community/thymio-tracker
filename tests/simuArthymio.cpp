@@ -22,7 +22,7 @@ int main(int argc, char** argv)
     while(1)
     {
         videoSource.grabNewFrame();
-        cv::Mat& inputImage = *videoSource.GetFramePointer();
+        const cv::Mat& inputImage = videoSource.getFramePointer();
         
         tracker.update(inputImage);
         tracker.drawLastDetection(&outputImage);

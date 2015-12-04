@@ -27,7 +27,7 @@ public:
     void resizeImage();
 	
 	//get pointer to the frame previously acquired (no copy)
-    cv::Mat* GetFramePointer(){return resized?&imgResized:&img;};
+    const cv::Mat& getFramePointer() const {return resized ? imgResized : img;};
 
     //if want image to be resized, cause the image to be resized and intrinsic calibration to be changed accordingly
     void resizeSource(cv::Size _newSize);
