@@ -56,10 +56,11 @@ void loadCalibration(const std::string& filename,
 }
 
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
-                             const std::string& geomHashingFile)
+                             const std::string& geomHashingFile,
+                             double scale)
     : mCalibrationFile(calibrationFile)
     , mGeomHashingFile(geomHashingFile)
-    , mScale(0.33)
+    , mScale(scale)
 {
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     mGH.loadFromFile(mGeomHashingFile);

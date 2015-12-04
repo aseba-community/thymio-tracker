@@ -33,13 +33,17 @@ class ThymioTracker
 {
 public:
     ThymioTracker(const std::string& calibrationFile,
-                  const std::string& geomHashingFile);
+                  const std::string& geomHashingFile,
+                  double scale=1.0);
     ~ThymioTracker(){}
     
     void update(const cv::Mat& input,
                 const cv::Mat* deviceOrientation=0);
     
     void drawLastDetection(cv::Mat* output) const;
+    
+    inline void setScale(double scale) {mScale = scale;}
+    inline double getScale() const {return mScale;}
     
     inline const DetectionInfo& getDetectionInfo() const {return mDetectionInfo;}
 

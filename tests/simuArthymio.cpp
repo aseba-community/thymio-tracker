@@ -10,7 +10,8 @@ namespace tt = thymio_tracker;
 int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
-                              "../data/GHscale_Arth_Perspective.dat");
+                              "../data/GHscale_Arth_Perspective.dat",
+                              0.5);
     
     VideoSourceLive videoSource(EmbeddedCam);
     videoSource.resizeSource(0.5);
