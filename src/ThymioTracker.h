@@ -27,6 +27,8 @@ struct DetectionInfo
     std::vector<BlobQuadruplets> blobQuadriplets;
     std::vector<cv::KeyPoint> blobsinTriplets;
     std::vector<DetectionGH> matches;
+
+    void clearBlobs();
 };
 
 class ThymioTracker
