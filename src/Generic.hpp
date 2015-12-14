@@ -2,7 +2,7 @@
 //edges are directed: when moves from pt1 to pt2 want black on the right
 #pragma once
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 
 #include <iostream>
 #include <vector>

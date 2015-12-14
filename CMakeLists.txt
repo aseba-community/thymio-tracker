@@ -71,7 +71,7 @@ else(ANDROID_WRAPPER)
     find_package(OpenCV REQUIRED)
 endif(ANDROID_WRAPPER)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-long-long -pedantic")
 
 include_directories(${PROJECT_SOURCE_DIR}/src ${OpenCV_INCLUDE_DIRS})
 

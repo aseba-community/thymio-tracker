@@ -2,7 +2,7 @@
 #ifndef _THYMIOTRACKER_H
 #define _THYMIOTRACKER_H
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 
 #include "GHscale.hpp"
 #include "Models.hpp"

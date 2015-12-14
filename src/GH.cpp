@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-#include <opencv2/calib3d/calib3d.hpp> //solvePnP
+#include <opencv2/calib3d.hpp> //solvePnP
 #include <opencv2/imgproc.hpp>
 
 using namespace cv;
