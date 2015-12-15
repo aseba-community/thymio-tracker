@@ -40,7 +40,7 @@ if(ANDROID_WRAPPER)
 
     # JAR
     set(ThymioTracker_JAVA_SOURCES
-        android/java/ch/epfl/cvlab/arthymio/ARThymio.java)
+        android/java/ch/epfl/cvlab/thymiotracker/ThymioTracker.java)
     set(CMAKE_JAVA_INCLUDE_PATH
         ${CMAKE_JAVA_INCLUDE_PATH}
         "${OpenCV_ANDROID_SDK}/java/src")
@@ -51,12 +51,12 @@ if(ANDROID_WRAPPER)
     # JNI header
     set(_stubDir ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_command(
-        OUTPUT ch_epfl_cvlab_arthymio_ARThymio.h
+        OUTPUT ch_epfl_cvlab_thymiotracker_ThymioTracker.h
         DEPENDS ${_jarFile}
         COMMAND ${Java_JAVAH_EXECUTABLE} -verbose
             -classpath ${_classDir}:${CMAKE_JAVA_INCLUDE_PATH}
             -d ${_stubDir}
-            ch.epfl.cvlab.arthymio.ARThymio)
+            ch.epfl.cvlab.thymiotracker.ThymioTracker)
 
     include_directories(
         ${JAVA_INCLUDE_PATH}
@@ -64,8 +64,8 @@ if(ANDROID_WRAPPER)
 
     set(ThymioTracker_SOURCES
         ${ThymioTracker_SOURCES}
-        ch_epfl_cvlab_arthymio_ARThymio.h
-        android/jni/ch_epfl_cvlab_arthymio_ARThymio.cpp)
+        ch_epfl_cvlab_thymiotracker_ThymioTracker.h
+        android/jni/ch_epfl_cvlab_thymiotracker_ThymioTracker.cpp)
 
 else(ANDROID_WRAPPER)
     find_package(OpenCV REQUIRED)

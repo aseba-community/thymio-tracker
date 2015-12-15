@@ -22,7 +22,8 @@ set(exec_SOURCES
         trainGH.cpp
         tracker.cpp
         simuArthymio.cpp
-        blobStat.cpp)
+        blobStat.cpp
+        landmarks.cpp)
 
 foreach(source ${exec_SOURCES})
   # Compute the name of the binary to create
