@@ -90,6 +90,18 @@ JNIEXPORT void JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_n_1drawLas
     ttracker->drawLastDetection(output);
 }
 
+/*
+ * Class:     ch_epfl_cvlab_thymiotracker_ThymioTracker
+ * Method:    n_setScale
+ * Signature: (JD)V
+ */
+JNIEXPORT void JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_n_1setScale
+  (JNIEnv *, jobject, jlong ptr_ttracker, jdouble scale)
+{
+    ThymioTracker* ttracker = reinterpret_cast<ThymioTracker*>(ptr_ttracker);
+    ttracker->setScale(scale);
+}
+
 #ifdef __cplusplus
 }
 #endif
