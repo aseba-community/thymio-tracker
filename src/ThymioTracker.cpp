@@ -11,6 +11,16 @@
 namespace thymio_tracker
 {
 
+void DetectionInfo::clearBlobs()
+{
+    blobs.clear();
+    blobPairs.clear();
+    blobTriplets.clear();
+    blobQuadriplets.clear();
+    blobsinTriplets.clear();
+    matches.clear();
+}
+
 void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& matches)
 {
     //draw Id
@@ -81,18 +91,20 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 void ThymioTracker::update(const cv::Mat& input,
                            const cv::Mat* deviceOrientation)
 {
-    // input.copyTo(mImage);
+    // input.copyTo(mDetectionInfo.image);
     cv::resize(input, mDetectionInfo.image, cv::Size(0, 0), mScale, mScale);
     
     if(mDetectionInfo.image.size() != mCalibration.imageSize)
         resizeCalibration(mDetectionInfo.image.size());
     
+    mDetectionInfo.clearBlobs();
+
     //get the pairs which are likely to belong to group of blobs from model
     mGrouping.getBlobsAndPairs(mDetectionInfo.image,
                                mDetectionInfo.blobs,
                                mDetectionInfo.blobPairs);
     
-    //get triplet by checking homography and inertia
+    // get triplet by checking homography and inertia
     mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
                                    mDetectionInfo.blobPairs,
                                    mDetectionInfo.blobTriplets);
