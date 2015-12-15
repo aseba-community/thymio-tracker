@@ -10,8 +10,7 @@ namespace tt = thymio_tracker;
 int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
-                              "../data/GHscale_Arth_Perspective.dat",
-                              0.5);
+                              "../data/GHscale_Arth_Perspective.dat");
     
     VideoSourceLive videoSource(EmbeddedCam);
     videoSource.resizeSource(0.5);
@@ -23,12 +22,12 @@ int main(int argc, char** argv)
     while(1)
     {
         videoSource.grabNewFrame();
-        const cv::Mat& inputImage = videoSource.getFramePointer();
+        cv::Mat inputImage = videoSource.getFramePointer();
         
         tracker.update(inputImage);
-        tracker.drawLastDetection(&outputImage);
+        tracker.drawLastDetection(&inputImage);
         
-        imshow(window_name, outputImage);
+        imshow(window_name, inputImage);
         
         if(cv::waitKey(5) == 27)
             break;

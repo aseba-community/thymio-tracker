@@ -82,7 +82,7 @@ void Grouping::getClosestNeigbors(int p, const vector<KeyPoint>& mVerticesDes, v
     
 }
 
-void Grouping::getBlobsAndPairs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
+void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
 {
     //get blobs
     extractBlobs(img, blobs);

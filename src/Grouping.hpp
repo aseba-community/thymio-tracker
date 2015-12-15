@@ -47,7 +47,7 @@ public:
     Grouping();
     
     //extract blobs and get good pairs
-    void getBlobsAndPairs(cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
+    void getBlobsAndPairs(const cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
     //get triplets from pairs checking homography and inertia
     void getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets);
     //get quadriplets from triplets by checking overlap

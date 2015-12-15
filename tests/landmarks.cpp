@@ -26,8 +26,8 @@ int main(int argc, char** argv)
     cv::Mat detectedDescriptors;
     cv::Mat templateDescriptors;
     
-    // cv::Mat templateImage = cv::imread("../data/landmarks/oack_10_gray.png");
-    cv::Mat templateImage = cv::imread("../data/landmarks/hut_30_gray.png");
+    cv::Mat templateImage = cv::imread("../data/landmarks/oack_10_gray.png");
+    // cv::Mat templateImage = cv::imread("../data/landmarks/hut_30_gray.png");
     train_orb->detectAndCompute(templateImage, cv::noArray(), templateKeypoints, templateDescriptors);
     
     cv::BFMatcher matcher(cv::NORM_HAMMING);

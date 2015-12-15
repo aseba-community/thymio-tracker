@@ -66,11 +66,9 @@ void loadCalibration(const std::string& filename,
 }
 
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
-                             const std::string& geomHashingFile,
-                             double scale)
+                             const std::string& geomHashingFile)
     : mCalibrationFile(calibrationFile)
     , mGeomHashingFile(geomHashingFile)
-    , mScale(scale)
 {
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     mGH.loadFromFile(mGeomHashingFile);
@@ -90,17 +88,14 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 
 void ThymioTracker::update(const cv::Mat& input,
                            const cv::Mat* deviceOrientation)
-{
-    // input.copyTo(mDetectionInfo.image);
-    cv::resize(input, mDetectionInfo.image, cv::Size(0, 0), mScale, mScale);
-    
-    if(mDetectionInfo.image.size() != mCalibration.imageSize)
-        resizeCalibration(mDetectionInfo.image.size());
+{    
+    if(input.size() != mCalibration.imageSize)
+        resizeCalibration(input.size());
     
     mDetectionInfo.clearBlobs();
 
     //get the pairs which are likely to belong to group of blobs from model
-    mGrouping.getBlobsAndPairs(mDetectionInfo.image,
+    mGrouping.getBlobsAndPairs(input,
                                mDetectionInfo.blobs,
                                mDetectionInfo.blobPairs);
     
@@ -128,7 +123,7 @@ void ThymioTracker::update(const cv::Mat& input,
 
 void ThymioTracker::drawLastDetection(cv::Mat* output) const
 {
-    mDetectionInfo.image.copyTo(*output);
+    // mDetectionInfo.image.copyTo(*output);
     
     if(mDetectionInfo.robotFound)
         mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
@@ -141,10 +136,10 @@ void ThymioTracker::drawLastDetection(cv::Mat* output) const
     drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
     drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
     drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
-    // drawPointsAndIds(output, mDetectionInfo.matches);
+    // // drawPointsAndIds(output, mDetectionInfo.matches);
     
-    // if(deviceOrientation)
-    //     drawAxes(*output, *deviceOrientation);
+    // // if(deviceOrientation)
+    // //     drawAxes(*output, *deviceOrientation);
 }
 
 }
