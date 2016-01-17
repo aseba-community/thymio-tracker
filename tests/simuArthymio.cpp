@@ -10,7 +10,8 @@ namespace tt = thymio_tracker;
 int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
-                              "../data/GHscale_Arth_Perspective.dat");
+                              "../data/GHscale_Arth_Perspective.dat",
+                              {"../data/oack.xml", "../data/hut.xml"});
     
     VideoSourceLive videoSource(EmbeddedCam);
     videoSource.resizeSource(0.5);
@@ -29,7 +30,8 @@ int main(int argc, char** argv)
         
         imshow(window_name, inputImage);
         
-        if(cv::waitKey(5) == 27)
+        auto key = cv::waitKey(5);
+        if(key == 27 || key == 'q')
             break;
     }
     

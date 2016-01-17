@@ -57,6 +57,13 @@ def opencvmat_element(root, name, array):
     
     return element
 
+def size_element(root, name, size):
+    
+    element = et.SubElement(root, name)
+    element.text = " ".join(map(str, size))
+    
+    return element
+
 def transform_points(points, roll, pitch, t_z=0):
     
     roll_transform = np.array([
@@ -113,7 +120,7 @@ def get_homography(pitch, roll,
     real_points = np.hstack([real_size, 0]) * template
     
     if t_z is None:
-        t_z = 3 * np.max(real_size)
+        t_z = 5 * np.max(real_size)
     
     points = transform_points(real_points, roll, pitch, t_z)
     
@@ -185,11 +192,13 @@ def process_landmark(image,
         keypoints.extend(back_keypoints)
         descriptors.extend(cur_descriptors)
     
-    return keypoints, np.vstack(descriptors)
+    return keypoints, np.vstack(descriptors), image_size, real_size
 
-def save(out_filename, keypoints, descriptors):
+def save(out_filename, keypoints, descriptors, image_size, real_size):
     
     root = et.Element("opencv_storage")
+    size_element(root, "image_size", image_size)
+    size_element(root, "real_size", real_size)
     keypoints_element(root, "keypoints", keypoints)
     opencvmat_element(root, "descriptors", descriptors)
     
@@ -222,12 +231,12 @@ def main():
     
     fextractor = cv2.ORB_create(100)
     orientations = get_orientations(8)
-    keypoints, descriptors = process_landmark(image,
+    keypoints, descriptors, image_size, real_size = process_landmark(image,
                                               pixels_per_unit=args.ppu,
                                               feature_extractor=fextractor,
                                               orientations=orientations,
                                               debug=args.debug)
-    save(args.output, keypoints, descriptors)
+    save(args.output, keypoints, descriptors, image_size, real_size)
 
 if __name__ == "__main__":
     main()

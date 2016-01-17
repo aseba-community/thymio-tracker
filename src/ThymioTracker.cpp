@@ -7,11 +7,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 namespace thymio_tracker
 {
 
-void DetectionInfo::clearBlobs()
+void DetectionInfo::clear()
 {
     blobs.clear();
     blobPairs.clear();
@@ -24,7 +25,7 @@ void DetectionInfo::clearBlobs()
 void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& matches)
 {
     //draw Id
-    for(int i=0;i<matches.size();i++)
+    for(unsigned int i=0; i<matches.size(); i++)
     {
         char pointIdStr[100];
         sprintf(pointIdStr, "%d", matches[i].id);
@@ -66,17 +67,20 @@ void loadCalibration(const std::string& filename,
 }
 
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
-                             const std::string& geomHashingFile)
+                             const std::string& geomHashingFile,
+                             const std::vector<std::string>& landmarkFiles)
     : mCalibrationFile(calibrationFile)
     , mGeomHashingFile(geomHashingFile)
+    , mDetectionInfo(landmarkFiles.size())
+    , mFeatureExtractor(cv::ORB::create(1000))
 {
-    //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     mGH.loadFromFile(mGeomHashingFile);
-    
-    // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
-    // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize);
     loadCalibration(mCalibrationFile, &mCalibration);
     mGH.setCalibration(mCalibration);
+    
+    // Load landmarks
+    for(auto landmarkFile : landmarkFiles)
+        mLandmarks.push_back(Landmark(landmarkFile));
 }
 
 void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
@@ -92,54 +96,93 @@ void ThymioTracker::update(const cv::Mat& input,
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
     
-    mDetectionInfo.clearBlobs();
+    // mDetectionInfo.clear();
 
-    //get the pairs which are likely to belong to group of blobs from model
-    mGrouping.getBlobsAndPairs(input,
-                               mDetectionInfo.blobs,
-                               mDetectionInfo.blobPairs);
+    // //get the pairs which are likely to belong to group of blobs from model
+    // mGrouping.getBlobsAndPairs(input,
+    //                            mDetectionInfo.blobs,
+    //                            mDetectionInfo.blobPairs);
     
-    // get triplet by checking homography and inertia
-    mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
-                                   mDetectionInfo.blobPairs,
-                                   mDetectionInfo.blobTriplets);
+    // // get triplet by checking homography and inertia
+    // mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
+    //                                mDetectionInfo.blobPairs,
+    //                                mDetectionInfo.blobTriplets);
     
-    //get only blobs found in triplets
-    getBlobsInTriplets(mDetectionInfo.blobs,
-                       mDetectionInfo.blobTriplets,
-                       mDetectionInfo.blobsinTriplets);
+    // //get only blobs found in triplets
+    // getBlobsInTriplets(mDetectionInfo.blobs,
+    //                    mDetectionInfo.blobTriplets,
+    //                    mDetectionInfo.blobsinTriplets);
     
-    mGrouping.getQuadripletsFromTriplets(mDetectionInfo.blobTriplets,
-                                         mDetectionInfo.blobQuadriplets);
+    // mGrouping.getQuadripletsFromTriplets(mDetectionInfo.blobTriplets,
+    //                                      mDetectionInfo.blobQuadriplets);
     
-    //extract blobs and identify which one fit model, return set of positions and Id
-    mGH.getModelPointsFromImage(mDetectionInfo.blobsinTriplets, mDetectionInfo.matches);
+    // //extract blobs and identify which one fit model, return set of positions and Id
+    // mGH.getModelPointsFromImage(mDetectionInfo.blobsinTriplets, mDetectionInfo.matches);
     
-    mDetectionInfo.robotFound = mRobot.getPose(mCalibration,
-                                               mDetectionInfo.matches,
-                                               mDetectionInfo.robotPose,
-                                               mDetectionInfo.robotFound);
+    // mDetectionInfo.robotFound = mRobot.getPose(mCalibration,
+    //                                            mDetectionInfo.matches,
+    //                                            mDetectionInfo.robotPose,
+    //                                            mDetectionInfo.robotFound);
+    
+    // Landmark tracking
+    std::vector<cv::KeyPoint> detectedKeypoints;
+    cv::Mat detectedDescriptors;
+    mFeatureExtractor->detectAndCompute(input, cv::noArray(),
+                                        detectedKeypoints, detectedDescriptors);
+    
+    auto landmarksIt = mLandmarks.cbegin();
+    auto homographiesIt = mDetectionInfo.homographies.begin();
+    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++homographiesIt)
+        *homographiesIt = landmarksIt->findHomography(detectedKeypoints, detectedDescriptors);
 }
 
 void ThymioTracker::drawLastDetection(cv::Mat* output) const
 {
     // mDetectionInfo.image.copyTo(*output);
     
-    if(mDetectionInfo.robotFound)
-        mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
-    else
-        putText(*output, "Lost",
-                cv::Point2i(10,10),
-                cv::FONT_HERSHEY_COMPLEX_SMALL,
-                0.8, cvScalar(0,0,250), 1, CV_AA);
+    // cv::drawMatches(*output, mDetectedKeypoints,
+    //                     mLandmark.image, mLandmark.keypoints,
+    //                     mMatches, *output,
+    //                     cv::Scalar(0, 0, 255),
+    //                     cv::Scalar(255, 0, 0),
+    //                     std::vector<std::vector<char> >(),
+    //                     cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
     
-    drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
-    drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
-    drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
+    // if(mDetectionInfo.robotFound)
+    //     mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
+    // else
+    //     putText(*output, "Lost",
+    //             cv::Point2i(10,10),
+    //             cv::FONT_HERSHEY_COMPLEX_SMALL,
+    //             0.8, cvScalar(0,0,250), 1, CV_AA);
+    
+    // drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
+    // drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
+    // drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
     // // drawPointsAndIds(output, mDetectionInfo.matches);
     
     // // if(deviceOrientation)
     // //     drawAxes(*output, *deviceOrientation);
+    
+    // Draw landmark detections
+    std::vector<cv::Point2f> corners(4);
+    
+    auto homographiesIt = mDetectionInfo.homographies.cbegin();
+    auto landmarksIt = mLandmarks.cbegin();
+    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++homographiesIt)
+    {
+        const Landmark& landmark = *landmarksIt;
+        const cv::Mat& h = *homographiesIt;
+        
+        if(h.empty())
+            continue;
+        
+        cv::perspectiveTransform(landmark.getCorners(), corners, h);
+        cv::line(*output, corners[0], corners[1], cv::Scalar(0, 255, 0), 2);
+        cv::line(*output, corners[1], corners[2], cv::Scalar(0, 255, 0), 2);
+        cv::line(*output, corners[2], corners[3], cv::Scalar(0, 255, 0), 2);
+        cv::line(*output, corners[3], corners[0], cv::Scalar(0, 255, 0), 2);
+    }
 }
 
 }

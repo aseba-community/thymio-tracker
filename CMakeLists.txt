@@ -16,6 +16,7 @@ set(ThymioTracker_SOURCES
     src/Generic.cpp
     src/Grouping.cpp
     src/BlobInertia.cpp
+    src/Landmark.cpp
     src/ThymioTracker.h
     src/Generic.hpp
     src/GH.hpp
@@ -23,6 +24,7 @@ set(ThymioTracker_SOURCES
     src/Models.hpp
     src/Grouping.hpp
     src/BlobInertia.hpp
+    src/Landmark.hpp
     )
 
 if(ANDROID_WRAPPER)
