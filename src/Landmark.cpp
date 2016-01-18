@@ -1,6 +1,8 @@
 
 #include "Landmark.hpp"
 
+#include <stdexcept>
+
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 
@@ -9,11 +11,16 @@ namespace thymio_tracker
 
 Landmark::Landmark(const std::string& filename)
     : mMatcher(cv::NORM_HAMMING)
+    // : mMatcher(cv::NORM_L2)
 {
     std::vector<int> imageSize;
     std::vector<float> realSize;
     
     cv::FileStorage fs(filename, cv::FileStorage::READ);
+    
+    if(!fs.isOpened())
+        throw std::runtime_error("Marker file not found!");
+    
     cv::read(fs["keypoints"], mKeypoints);
     cv::read(fs["descriptors"], mDescriptors);
     cv::read(fs["image_size"], imageSize);

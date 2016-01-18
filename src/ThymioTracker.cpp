@@ -12,6 +12,15 @@
 namespace thymio_tracker
 {
 
+static const std::vector<cv::Scalar> colorPalette = {
+    cv::Scalar(76, 114, 176),
+    cv::Scalar(85, 168, 104),
+    cv::Scalar(196, 78, 82),
+    cv::Scalar(129, 114, 178),
+    cv::Scalar(204, 185, 116),
+    cv::Scalar(100, 181, 205)
+};
+
 void DetectionInfo::clear()
 {
     blobs.clear();
@@ -29,7 +38,7 @@ void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& match
     {
         char pointIdStr[100];
         sprintf(pointIdStr, "%d", matches[i].id);
-        circle(inputImage, matches[i].position, 4, cvScalar(0,250,250), -1, 8, 0);
+        circle(inputImage, matches[i].position, 4, cvScalar(0, 250, 250), -1, 8, 0);
         putText(inputImage, pointIdStr, matches[i].position, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(250,250,250), 1, CV_AA);
     }
 }
@@ -72,7 +81,11 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
     : mCalibrationFile(calibrationFile)
     , mGeomHashingFile(geomHashingFile)
     , mDetectionInfo(landmarkFiles.size())
-    , mFeatureExtractor(cv::ORB::create(1000))
+    // , mFeatureExtractor(cv::ORB::create(1000))
+    , mFeatureExtractor(cv::BRISK::create())
+    // , mFeatureExtractor(cv::xfeatures2d::SIFT::create())
+    // , mFeatureExtractor(cv::xfeatures2d::SURF::create())
+    // , mFeatureExtractor(cv::xfeatures2d::DAISY::create())
 {
     mGH.loadFromFile(mGeomHashingFile);
     loadCalibration(mCalibrationFile, &mCalibration);
@@ -169,19 +182,24 @@ void ThymioTracker::drawLastDetection(cv::Mat* output) const
     
     auto homographiesIt = mDetectionInfo.homographies.cbegin();
     auto landmarksIt = mLandmarks.cbegin();
-    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++homographiesIt)
+    auto colorIt = colorPalette.cbegin();
+    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++homographiesIt, ++colorIt)
     {
         const Landmark& landmark = *landmarksIt;
         const cv::Mat& h = *homographiesIt;
+        
+        // Reset the color iterator if needed
+        if(colorIt == colorPalette.cend())
+            colorIt = colorPalette.cbegin();
         
         if(h.empty())
             continue;
         
         cv::perspectiveTransform(landmark.getCorners(), corners, h);
-        cv::line(*output, corners[0], corners[1], cv::Scalar(0, 255, 0), 2);
-        cv::line(*output, corners[1], corners[2], cv::Scalar(0, 255, 0), 2);
-        cv::line(*output, corners[2], corners[3], cv::Scalar(0, 255, 0), 2);
-        cv::line(*output, corners[3], corners[0], cv::Scalar(0, 255, 0), 2);
+        cv::line(*output, corners[0], corners[1], *colorIt, 2);
+        cv::line(*output, corners[1], corners[2], *colorIt, 2);
+        cv::line(*output, corners[2], corners[3], *colorIt, 2);
+        cv::line(*output, corners[3], corners[0], *colorIt, 2);
     }
 }
 

@@ -3,6 +3,8 @@
 #define _THYMIOTRACKER_H
 
 #include <opencv2/core.hpp>
+#include <opencv2/features2d.hpp>
+// #include <opencv2/xfeatures2d.hpp>
 
 #include "GHscale.hpp"
 #include "Models.hpp"
@@ -67,7 +69,8 @@ private:
     DetectionInfo mDetectionInfo;
     
     std::vector<Landmark> mLandmarks;
-    cv::Ptr<cv::ORB> mFeatureExtractor;
+    cv::Ptr<cv::Feature2D> mFeatureExtractor;
+    // cv::Ptr<cv::xfeatures2d::DAISY> mFeatureExtractor;
 };
 
 }

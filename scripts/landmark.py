@@ -49,7 +49,12 @@ def opencvmat_element(root, name, array):
     cols.text = str(array.shape[1])
     
     dt = et.SubElement(element, "dt")
-    dt.text = "u" # TODO: Change this
+    if array.dtype == np.uint8:
+        dt.text = "u"
+    elif array.dtype == np.float32:
+        dt.text = "f"
+    else:
+        raise ValueError("unsupported array dtype")
     
     data = et.SubElement(element, "data")
     data.text = "\n".join([" ".join(map(repr, row)) for row in array])
@@ -120,7 +125,7 @@ def get_homography(pitch, roll,
     real_points = np.hstack([real_size, 0]) * template
     
     if t_z is None:
-        t_z = 5 * np.max(real_size)
+        t_z = 10 * np.max(real_size)
     
     points = transform_points(real_points, roll, pitch, t_z)
     
@@ -208,9 +213,10 @@ def save(out_filename, keypoints, descriptors, image_size, real_size):
 def get_orientations(num_orientations):
     
     orientations = [(0.0, 0.0)]
+    # orientations = []
     
     rolls = [2 * np.pi * i / num_orientations for i in xrange(num_orientations)]
-    pitchs = [np.pi / 3]
+    pitchs = [4 * np.pi / 12]
     
     aux = [(pitch, roll) for pitch, roll in product(pitchs, rolls)]
     orientations.extend(aux)
@@ -223,14 +229,18 @@ def main():
     parser.add_argument("image", type=str, help="frontal view of the landmark")
     parser.add_argument("output", type=str, help="output xml file name")
     parser.add_argument("--debug", action="store_true", help="debug mode")
-    parser.add_argument("--ppu", type=float, default=20.0, help="pixels per (real world) unit")
+    parser.add_argument("--ppu", type=float, default=30.0, help="pixels per (real world) unit")
     
     args = parser.parse_args()
     
     image = imread(args.image)[..., :3]
     
-    fextractor = cv2.ORB_create(100)
-    orientations = get_orientations(8)
+    # fextractor = cv2.ORB_create(500)
+    fextractor = cv2.BRISK_create()
+    # fextractor = cv2.xfeatures2d.SIFT_create()
+    # fextractor = cv2.xfeatures2d.SURF_create()
+    # fextractor = cv2.xfeatures2d.DAISY_create() # Not working
+    orientations = get_orientations(0)
     keypoints, descriptors, image_size, real_size = process_landmark(image,
                                               pixels_per_unit=args.ppu,
                                               feature_extractor=fextractor,

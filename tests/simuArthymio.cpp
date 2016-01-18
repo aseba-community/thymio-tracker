@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
                               "../data/GHscale_Arth_Perspective.dat",
-                              {"../data/oack.xml", "../data/hut.xml"});
+                              {"../data/marker.xml"/*, "../data/oack_all.xml"*/});
     
     VideoSourceLive videoSource(EmbeddedCam);
     videoSource.resizeSource(0.5);

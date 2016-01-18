@@ -11,6 +11,11 @@ public class ThymioTracker
         this.internalPtr = createNativeInstance(calibrationFile, geomHashingFile);
     }
     
+    public ThymioTracker(String calibrationFile, String geomHashingFile, String[] markerFiles)
+    {
+        this.internalPtr = createNativeInstance(calibrationFile, geomHashingFile, markerFiles);
+    }
+    
     public void finalize()
     {
         destroyNativeInstance(this.internalPtr);
@@ -32,6 +37,7 @@ public class ThymioTracker
     }
     
     private native long createNativeInstance(String calibrationFile, String geomHashingFile);
+    private native long createNativeInstance(String calibrationFile, String geomHashingFile, String[] markerFiles);
     private native void destroyNativeInstance(long internalPtr);
     private native void n_update(long internalPtr, long input);
     private native void n_update(long internalPtr, long input, long deviceOrientation);
