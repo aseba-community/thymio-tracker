@@ -60,12 +60,12 @@ struct sort_wrt_second {
     }
 };
 
-void Grouping::getClosestNeigbors(int p, const vector<KeyPoint>& mVerticesDes, vector<int>& idNeigbors) const
+void Grouping::getClosestNeigbors(unsigned int p, const vector<KeyPoint>& mVerticesDes, vector<unsigned int>& idNeigbors) const
 {
     //create pairs of point indexes and corresponding distance and sort with respect to deistance
     vector< pair<int,float> > pairIdDist;
     //only use keypoints after p to not have duplicated pairs
-    for(int i=p+1;i<mVerticesDes.size();i++)
+    for(unsigned int i=p+1;i<mVerticesDes.size();i++)
     {
         pair<int,float> newPair;
         newPair.first=i;
@@ -77,7 +77,7 @@ void Grouping::getClosestNeigbors(int p, const vector<KeyPoint>& mVerticesDes, v
     std::sort(pairIdDist.begin(), pairIdDist.end(), sort_wrt_second());
     
     //return first elements
-    for(int i=0;i<pairIdDist.size() && i<nbNeigboursMax;i++)
+    for(unsigned int i=0;i<pairIdDist.size() && i<nbNeigboursMax;i++)
         idNeigbors.push_back(pairIdDist[i].first);
     
 }
@@ -87,15 +87,15 @@ void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &b
     //get blobs
     extractBlobs(img, blobs);
     
-    for(int p=0;p<blobs.size();p++)
+    for(unsigned int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
-        vector<int> idNeigbors;
+        vector<unsigned int> idNeigbors;
         //only get neigbours indexed after p
         getClosestNeigbors(p, blobs, idNeigbors);
         
         //check resulting pairs
-        for(int i=0;i<idNeigbors.size();i++)
+        for(unsigned int i=0;i<idNeigbors.size();i++)
         {
             float d_on_ss=norm(blobs[p].pt-blobs[idNeigbors[i]].pt)/sqrt(blobs[p].size*blobs[idNeigbors[i]].size);
             float scale_dist=sqrt((blobs[p].size-blobs[idNeigbors[i]].size)*(blobs[p].size-blobs[idNeigbors[i]].size));
@@ -110,11 +110,11 @@ void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &b
 
 void Grouping::getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets)
 {
-    for(int p=0;p<blobPairs.size();p++)
+    for(unsigned int p=0;p<blobPairs.size();p++)
     {
         //get the pairs which overlap
         //note that in pair we always have id1 < id2
-        for(int p2=p+1;p2<blobPairs.size();p2++)
+        for(unsigned int p2=p+1;p2<blobPairs.size();p2++)
         {
             BlobTriplet newTriplet;
         
@@ -170,7 +170,7 @@ void Grouping::getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vecto
                 if(inertia_des<0)inertia_des=-inertia_des;
                 
                 float inertia_error=0;
-                for(int i=0;i<blobPoints.size();i++)
+                for(unsigned int i=0;i<blobPoints.size();i++)
                 {
                     inertia_error+=sqrt((blobPoints[i].response-inertia_des)*(blobPoints[i].response-inertia_des));
                     //cout<<"blobPoints["<<i<<"].response = "<<blobPoints[i].response<<"  inertia des = "<<inertia_des<<endl;
@@ -199,7 +199,7 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
     while(blobTripletsCopy.size()>0)
     {
         bool found=false;
-        for(int t=1;t<blobTripletsCopy.size();t++)
+        for(unsigned int t=1;t<blobTripletsCopy.size();t++)
         {
             //count how many points first triplet has in common with triplet[t]
             int pt_in_common=0;
@@ -261,17 +261,17 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
 void drawBlobPairs(Mat &img, const vector<KeyPoint> &blobs, const vector<BlobPair> &blobPairs)
 {
     //draw Blobs
-    for(int p=0;p<blobs.size();p++)
+    for(unsigned int p=0;p<blobs.size();p++)
         cv::circle(img, blobs[p].pt, (blobs[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), -1);
     //draw Pairs
-    for(int i=0;i<blobPairs.size();i++)
+    for(unsigned int i=0;i<blobPairs.size();i++)
         line(img, blobs[blobPairs[i].ids[0]].pt, blobs[blobPairs[i].ids[1]].pt, Scalar(0,0,255), 5);
 }
 
 void drawBlobTriplets(Mat &img, const vector<KeyPoint> &blobs, const vector<BlobTriplet> &blobTriplets)
 {
     //draw Triplets
-    for(int i=0;i<blobTriplets.size();i++)
+    for(unsigned int i=0;i<blobTriplets.size();i++)
     {
         line(img, blobs[blobTriplets[i].ids[0]].pt, blobs[blobTriplets[i].ids[1]].pt, Scalar(155,0,155), 3);
         line(img, blobs[blobTriplets[i].ids[1]].pt, blobs[blobTriplets[i].ids[2]].pt, Scalar(155,0,155), 3);
@@ -282,7 +282,7 @@ void drawBlobTriplets(Mat &img, const vector<KeyPoint> &blobs, const vector<Blob
 void drawBlobQuadruplets(Mat &img, const vector<KeyPoint> &blobs, const vector<BlobQuadruplets> &blobQuadriplets)
 {
     //draw Triplets
-    for(int i=0;i<blobQuadriplets.size();i++)
+    for(unsigned int i=0;i<blobQuadriplets.size();i++)
     {
         line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[1]].pt, Scalar(0,255,255), 2);
         line(img, blobs[blobQuadriplets[i].ids[0]].pt, blobs[blobQuadriplets[i].ids[2]].pt, Scalar(0,255,255), 2);
@@ -296,7 +296,7 @@ void getBlobsInTriplets(const vector<KeyPoint> &blobs,const vector<BlobTriplet> 
 {
     //get all the ids of the blobs in the triplets, taking care of duplicates
     vector<int> idBlobsInTripelts;
-    for(int i=0;i<blobTriplets.size();i++)
+    for(unsigned int i=0;i<blobTriplets.size();i++)
     {
         for(int t=0;t<3;t++)
         {
@@ -306,7 +306,7 @@ void getBlobsInTriplets(const vector<KeyPoint> &blobs,const vector<BlobTriplet> 
         }
     }
     //create the new blob vector
-    for(int i=0;i<idBlobsInTripelts.size();i++)
+    for(unsigned int i=0;i<idBlobsInTripelts.size();i++)
         blobsinTriplets.push_back(blobs[idBlobsInTripelts[i]]);
     //blobsinTriplets=blobs;
 }
