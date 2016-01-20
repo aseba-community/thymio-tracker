@@ -24,7 +24,7 @@ void DetectionInfo::clearBlobs()
 void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& matches)
 {
     //draw Id
-    for(int i=0;i<matches.size();i++)
+    for(unsigned int i=0;i<matches.size();i++)
     {
         char pointIdStr[100];
         sprintf(pointIdStr, "%d", matches[i].id);

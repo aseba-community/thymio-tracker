@@ -56,12 +56,12 @@ public:
 
 private:
     //maximum of neigbours considered to build pair
-    int nbNeigboursMax;
+    unsigned int nbNeigboursMax;
     
     //blob extractor
     cv::Ptr<cv::SimpleBlobDetectorInertia> sbd;
     void extractBlobs(const cv::Mat& input, std::vector<cv::KeyPoint> &blobs) const;
-    void getClosestNeigbors(int p, const std::vector<cv::KeyPoint>& mVerticesDes, std::vector<int>& idNeigbors) const;
+    void getClosestNeigbors(unsigned int p, const std::vector<cv::KeyPoint>& mVerticesDes, std::vector<unsigned int>& idNeigbors) const;
 
 };
 

@@ -47,7 +47,7 @@ private:
     //unproject blobs from image space to "world space"
     //void convertToWorldFrame(vector<KeyPoint> &blobs,Mat &cameraMatrix, Mat &distCoeffs,vector<Point3f> &points3d);
     //get the nbPtBasis closest points to p
-    void getClosestNeigbors(int p, const std::vector<cv::Point2f>& mVerticesDes, std::vector<int>& idNeigbors) const;
+    void getClosestNeigbors(unsigned int p, const std::vector<cv::Point2f>& mVerticesDes, std::vector<unsigned int>& idNeigbors) const;
     //made to do some testing: compute hashTable corresponding to a special base and save data to display
     //void getSignatureBasis(vector<Point3f> &mVerticesDes, vector<int> &basisId, char *filename);
     //smoothes votes in HastTable: indeed current base will differ from model base due to measurement erros => if many bins might read votes in one bin that is just neigboring the one we actually want to read. Can also allow for perspective distortion if depth blobs are omitted
@@ -65,7 +65,7 @@ private:
     cv::Point2i toCell(const cv::Point2f& relativePos) const;
     
     //number of neigbors considered for each point to define bases
-    int nbPtBasis;
+    unsigned int nbPtBasis;
 };
 
 }
