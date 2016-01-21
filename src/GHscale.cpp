@@ -546,57 +546,40 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
     }
 }
 
-void GHscale::saveToFile(const std::string& filename) const
+void GHscale::saveToStream(std::ostream& os) const
 {
-    ofstream of(filename, ios::out | ios::binary);
+    os.write((char *)&nbIds, sizeof(int));
+    os.write((char *)&nbBinPerDim.x, sizeof(int));
+    os.write((char *)&nbBinPerDim.y, sizeof(int));
+    os.write((char *)&nbBinPerDim.z, sizeof(int));
+    os.write((char *)&poseRelMin.x, sizeof(float)); os.write((char *)&poseRelMin.y, sizeof(float));
+    os.write((char *)&poseRelMax.x, sizeof(float)); os.write((char *)&poseRelMax.y, sizeof(float));
+    os.write((char *)&poseRelMin.z, sizeof(float)); os.write((char *)&poseRelMax.z, sizeof(float));
     
-    if (of.is_open())
-    {
-        of.write((char *)&nbIds, sizeof(int));
-        of.write((char *)&nbBinPerDim.x, sizeof(int));
-        of.write((char *)&nbBinPerDim.y, sizeof(int));
-        of.write((char *)&nbBinPerDim.z, sizeof(int));
-        of.write((char *)&poseRelMin.x, sizeof(float)); of.write((char *)&poseRelMin.y, sizeof(float));
-        of.write((char *)&poseRelMax.x, sizeof(float)); of.write((char *)&poseRelMax.y, sizeof(float));
-        of.write((char *)&poseRelMin.z, sizeof(float)); of.write((char *)&poseRelMax.z, sizeof(float));
-        
-        for(int id=0;id<nbIds;id++)
-            for(int i=0;i<nbBinPerDim.x;i++)
-                for(int j=0;j<nbBinPerDim.y;j++)
-                    for(int k=0;k<nbBinPerDim.z;k++)
-                    of.write((char *)&HashTable[i*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + j*nbBinPerDim.z*nbIds + k*nbIds + id], sizeof(float));
-    }
-    of.close();
+    for(int id=0;id<nbIds;id++)
+        for(int i=0;i<nbBinPerDim.x;i++)
+            for(int j=0;j<nbBinPerDim.y;j++)
+                for(int k=0;k<nbBinPerDim.z;k++)
+                os.write((char *)&HashTable[i*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + j*nbBinPerDim.z*nbIds + k*nbIds + id], sizeof(float));
 }
-void GHscale::loadFromFile(const std::string& filename)
+void GHscale::loadFromStream(std::istream& is)
 {
-    ifstream of(filename, ios::in | ios::binary);
+    is.read((char *)&nbIds, sizeof(int));
+    is.read((char *)&nbBinPerDim.x, sizeof(int));
+    is.read((char *)&nbBinPerDim.y, sizeof(int));
+    is.read((char *)&nbBinPerDim.z, sizeof(int));
+    is.read((char *)&poseRelMin.x, sizeof(float)); is.read((char *)&poseRelMin.y, sizeof(float));
+    is.read((char *)&poseRelMax.x, sizeof(float)); is.read((char *)&poseRelMax.y, sizeof(float));
+    is.read((char *)&poseRelMin.z, sizeof(float)); is.read((char *)&poseRelMax.z, sizeof(float));
     
-    if (of.is_open())
-    {
-        of.read((char *)&nbIds, sizeof(int));
-        of.read((char *)&nbBinPerDim.x, sizeof(int));
-        of.read((char *)&nbBinPerDim.y, sizeof(int));
-        of.read((char *)&nbBinPerDim.z, sizeof(int));
-        of.read((char *)&poseRelMin.x, sizeof(float)); of.read((char *)&poseRelMin.y, sizeof(float));
-        of.read((char *)&poseRelMax.x, sizeof(float)); of.read((char *)&poseRelMax.y, sizeof(float));
-        of.read((char *)&poseRelMin.z, sizeof(float)); of.read((char *)&poseRelMax.z, sizeof(float));
-        
-        // TODO: What happens if HashTable already exists
-        HashTable= new float[nbBinPerDim.x*nbBinPerDim.y*nbBinPerDim.z*nbIds];
-        
-        for(int id=0;id<nbIds;id++)
-            for(int i=0;i<nbBinPerDim.x;i++)
-                for(int j=0;j<nbBinPerDim.y;j++)
-                    for(int k=0;k<nbBinPerDim.z;k++)
-                   of.read((char *)&HashTable[i*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + j*nbBinPerDim.z*nbIds + k*nbIds + id], sizeof(float));
-    }
-    else
-    {
-        std::cerr << "Could not open " << filename << std::endl;
-        throw std::runtime_error("GHscale::loadFromFile > File not found!");
-    }
-    of.close();
+    // TODO: What happens if HashTable already exists
+    HashTable= new float[nbBinPerDim.x*nbBinPerDim.y*nbBinPerDim.z*nbIds];
+    
+    for(int id=0;id<nbIds;id++)
+        for(int i=0;i<nbBinPerDim.x;i++)
+            for(int j=0;j<nbBinPerDim.y;j++)
+                for(int k=0;k<nbBinPerDim.z;k++)
+                is.read((char *)&HashTable[i*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + j*nbBinPerDim.z*nbIds + k*nbIds + id], sizeof(float));
 }
 
 void GHscale::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const

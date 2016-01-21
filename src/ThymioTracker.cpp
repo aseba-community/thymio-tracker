@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <stdexcept>
+#include <fstream>
 
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
@@ -50,32 +51,40 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
     }
 }
 
-void loadCalibration(const std::string& filename,
-                     IntrinsicCalibration* calibration)
-{
-    cv::FileStorage fs;
-    fs.open(filename, cv::FileStorage::READ);
-    if(!fs.isOpened())
-    {
-        std::cerr << "Could not open " << filename << std::endl;
-        throw std::runtime_error("Calibration file not found!");
-    }
-    
-    readCalibrationFromFileStorage(fs, *calibration);
-    fs.release();
-}
-
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
                              const std::string& geomHashingFile)
-    : mCalibrationFile(calibrationFile)
-    , mGeomHashingFile(geomHashingFile)
 {
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
-    mGH.loadFromFile(mGeomHashingFile);
+    std::ifstream geomHashingStream(geomHashingFile, std::ios::in | std::ios::binary);
+    if (!geomHashingStream.is_open())
+    {
+        std::cerr << "Could not open " << geomHashingFile << std::endl;
+        throw std::runtime_error("GHscale::loadFromFile > File not found!");
+    }
     
     // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
     // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize);
-    loadCalibration(mCalibrationFile, &mCalibration);
+    cv::FileStorage calibrationStorage(calibrationFile, cv::FileStorage::READ);
+    if(!calibrationStorage.isOpened())
+    {
+        std::cerr << "Could not open " << calibrationFile << std::endl;
+        throw std::runtime_error("Calibration file not found!");
+    }
+    
+    init(calibrationStorage, geomHashingStream);
+}
+
+ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
+                             std::istream& geomHashingStream)
+{
+    init(calibrationStorage, geomHashingStream);
+}
+
+void ThymioTracker::init(cv::FileStorage& calibrationStorage,
+                         std::istream& geomHashingStream)
+{
+    mGH.loadFromStream(geomHashingStream);
+    readCalibrationFromFileStorage(calibrationStorage, mCalibration);
     mGH.setCalibration(mCalibration);
 }
 

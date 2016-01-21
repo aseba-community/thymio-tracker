@@ -35,6 +35,8 @@ class ThymioTracker
 public:
     ThymioTracker(const std::string& calibrationFile,
                   const std::string& geomHashingFile);
+    ThymioTracker(cv::FileStorage& calibration,
+                  std::istream& geomHashing);
     ~ThymioTracker(){}
     
     void update(const cv::Mat& input,
@@ -45,11 +47,12 @@ public:
     inline const DetectionInfo& getDetectionInfo() const {return mDetectionInfo;}
 
 private:
+    void init(cv::FileStorage& calibration,
+              std::istream& geomHashing);
+
     /// Resize the calibration for a new given image size.
     void resizeCalibration(const cv::Size& imgSize);
     
-    const std::string mCalibrationFile;
-    const std::string mGeomHashingFile;
     GHscale mGH;
     ThymioBlobModel mRobot;
     IntrinsicCalibration mCalibration;
