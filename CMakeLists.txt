@@ -85,6 +85,7 @@ else(ANDROID_WRAPPER)
     
     add_library(thymiotracker SHARED ${ThymioTracker_SOURCES})
     add_subdirectory(tests)
+    add_subdirectory(tools)
 
 endif(ANDROID_WRAPPER)
 
