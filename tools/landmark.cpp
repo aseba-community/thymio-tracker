@@ -11,7 +11,7 @@
 
 static constexpr float pi = 3.141592654;
 
-// #define DEBUG 1
+#define DEBUG 1
 
 namespace detail
 {
@@ -108,7 +108,7 @@ cv::Mat getHomography(const Orientation& orientation,
     // Transform the template for the given orientation
     
     // Get the transformation matrix
-    float t_z = 10.f * std::max(realSize.width, realSize.height);
+    float t_z = 5.f * std::max(realSize.width, realSize.height);
     const cv::Mat m = transform_matrix(orientation, t_z);
     
     // Transform and project the points
@@ -164,7 +164,8 @@ public:
     void process(const cv::Mat& image,
                  const std::vector<Orientation>& orientations,
                  std::vector<cv::KeyPoint>& keypoints,
-                 cv::Mat& descriptors) const;
+                 cv::Mat& descriptors,
+                 cv::Size2f& realSize) const;
     
     inline const cv::Mat& getCalibrationMatrix() const {return mCalibrationMatrix;}
 
@@ -177,10 +178,11 @@ private:
 void LandmarkProcessor::process(const cv::Mat& image,
                                 const std::vector<Orientation>& orientations,
                                 std::vector<cv::KeyPoint>& keypoints,
-                                cv::Mat& descriptors) const
+                                cv::Mat& descriptors,
+                                cv::Size2f& realSize) const
 {
     cv::Size imageSize = image.size();
-    cv::Size2f realSize(imageSize.width * mPixelsPerUnit, imageSize.height * mPixelsPerUnit);
+    realSize = cv::Size(imageSize.width / mPixelsPerUnit, imageSize.height / mPixelsPerUnit);
     
     std::vector<cv::Mat> descriptorsVector;
     keypoints.clear();
@@ -199,11 +201,11 @@ void LandmarkProcessor::process(const cv::Mat& image,
         
 #if DEBUG
         cv::Mat image3 = image2;
-        // cv::drawKeypoints(image2, cur_keypoints, image3);
+        cv::drawKeypoints(image2, cur_keypoints, image3);
         cv::imwrite("debug.png", image3);
 #endif
         
-        projectKeypoints(h, cur_keypoints);
+        projectKeypoints(h.inv(), cur_keypoints);
         
         keypoints.insert(keypoints.end(), cur_keypoints.begin(), cur_keypoints.end());
         descriptorsVector.push_back(cur_descriptors);
@@ -233,25 +235,38 @@ int main(int argc, char* argv[])
         pixelsPerUnit = std::stof(argv[3]);
     
     cv::Ptr<cv::Feature2D> fextractor = cv::BRISK::create();
+    // cv::Ptr<cv::Feature2D> fextractor = new brisk::BriskFeature(10.0, 4);
     LandmarkProcessor landmarkProcessor(pixelsPerUnit, fextractor);
     
+    // Load image
     cv::Mat image = cv::imread(imageFilename);
+    if(image.empty())
+    {
+        std::cerr << "Could not open " << imageFilename << ". " << std::endl;
+        return 1;
+    }
+    // cv::cvtColor(image, image, CV_RGB2GRAY);
     
-    // std::cout << landmarkProcessor.getCalibrationMatrix() << std::endl;
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
-    
+    cv::Size2f realSize;
     static const std::vector<Orientation> orientations =
         {
             {0, 0},
             // {4 * pi / 12, 0}
         };
-    landmarkProcessor.process(image, orientations, keypoints, descriptors);
+    landmarkProcessor.process(image,
+                              orientations,
+                              keypoints,
+                              descriptors,
+                              realSize);
     
     // Save
     cv::FileStorage fs(outputFilename, cv::FileStorage::WRITE);
     cv::write(fs, "keypoints", keypoints);
     cv::write(fs, "descriptors", descriptors);
+    cv::write(fs, "image_size", image.size());
+    cv::write(fs, "real_size", realSize);
     fs.release();
     
     return 0;

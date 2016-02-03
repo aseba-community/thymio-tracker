@@ -82,7 +82,8 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
     , mGeomHashingFile(geomHashingFile)
     , mDetectionInfo(landmarkFiles.size())
     // , mFeatureExtractor(cv::ORB::create(1000))
-    , mFeatureExtractor(cv::BRISK::create())
+     , mFeatureExtractor(cv::BRISK::create())
+    // , mFeatureExtractor(new brisk::BriskFeature(5.0, 4))
     // , mFeatureExtractor(cv::xfeatures2d::SIFT::create())
     // , mFeatureExtractor(cv::xfeatures2d::SURF::create())
     // , mFeatureExtractor(cv::xfeatures2d::DAISY::create())
@@ -140,7 +141,9 @@ void ThymioTracker::update(const cv::Mat& input,
     // Landmark tracking
     std::vector<cv::KeyPoint> detectedKeypoints;
     cv::Mat detectedDescriptors;
-    mFeatureExtractor->detectAndCompute(input, cv::noArray(),
+    cv::Mat gray_input;
+    cv::cvtColor(input, gray_input, CV_RGB2GRAY);
+    mFeatureExtractor->detectAndCompute(gray_input, cv::noArray(),
                                         detectedKeypoints, detectedDescriptors);
     
     auto landmarksIt = mLandmarks.cbegin();
