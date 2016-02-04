@@ -47,11 +47,8 @@ Grouping::Grouping()
 
 void Grouping::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const
 {
-    Mat gray;
-    cv::cvtColor(input, gray, CV_RGB2GRAY);
-    
     // blob detector
-    sbd->detect(gray, blobs);
+    sbd->detect(input, blobs);
 }
 
 struct sort_wrt_second {
