@@ -267,6 +267,7 @@ int main(int argc, char* argv[])
     cv::write(fs, "descriptors", descriptors);
     cv::write(fs, "image_size", image.size());
     cv::write(fs, "real_size", realSize);
+    cv::write(fs, "image", image);
     fs.release();
     
     return 0;

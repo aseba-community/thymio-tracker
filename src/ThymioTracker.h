@@ -18,7 +18,7 @@ struct DetectionInfo
 {
     DetectionInfo(int numberOfLandmarks)
         : robotFound(false)
-        , homographies(numberOfLandmarks)
+        , landmarkDetections(numberOfLandmarks)
     {}
     
     // Robot pose
@@ -26,7 +26,7 @@ struct DetectionInfo
     cv::Affine3d robotPose;
     
     // Landmark homographies
-    std::vector<cv::Mat> homographies;
+    std::vector<LandmarkDetection> landmarkDetections;
     // std::vector<std::pair<const Landmark*, cv::Mat> > landmarkPoses;
     
     // Debug info
@@ -38,6 +38,22 @@ struct DetectionInfo
     std::vector<DetectionGH> matches;
 
     void clear();
+};
+
+class Timer
+{
+public:
+    static constexpr int N = 10;
+    
+    Timer();
+    void tic();
+    
+    inline double getFps() const {return mFps;}
+    
+private:
+    std::clock_t mTicks[N];
+    int mIndex;
+    double mFps;
 };
 
 class ThymioTracker
@@ -54,6 +70,9 @@ public:
     void drawLastDetection(cv::Mat* output) const;
     
     inline const DetectionInfo& getDetectionInfo() const {return mDetectionInfo;}
+    inline const std::vector<Landmark>& getLandmarks() const {return mLandmarks;}
+    
+    inline const Timer& getTimer() const {return mTimer;}
 
 private:
     /// Resize the calibration for a new given image size.
@@ -70,6 +89,8 @@ private:
     
     std::vector<Landmark> mLandmarks;
     cv::Ptr<cv::Feature2D> mFeatureExtractor;
+    
+    Timer mTimer;
     // cv::Ptr<cv::xfeatures2d::DAISY> mFeatureExtractor;
 };
 

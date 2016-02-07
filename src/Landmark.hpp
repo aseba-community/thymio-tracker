@@ -7,21 +7,22 @@
 namespace thymio_tracker
 {
 
+class LandmarkDetection;
+
 class Landmark
 {
 public:
-    Landmark(const std::vector<cv::KeyPoint>& keypoints,
-             const cv::Mat& descriptors,
-             const cv::Size2i& imageSize,
-             const cv::Size2f& realSize)
-        : mKeypoints(keypoints)
-        , mDescriptors(descriptors)
-        , mImageSize(imageSize)
-        , mRealSize(realSize)
-        , mMatcher(cv::NORM_HAMMING)
-    {}
+    static Landmark fromFile(const std::string& filename);
     
-    Landmark(const std::string& filename);
+    Landmark(const cv::Mat& image,
+             const std::vector<cv::KeyPoint>& keypoints,
+             const cv::Mat& descriptors,
+             const cv::Size2f& realSize);
+    
+    void find(const cv::Mat& image,
+              const std::vector<cv::KeyPoint>& keypoints,
+              const cv::Mat& descriptors,
+              LandmarkDetection& detection) const;
     
     cv::Mat findHomography(const std::vector<cv::KeyPoint>& keypoints,
                             const cv::Mat& descriptors) const;
@@ -29,13 +30,31 @@ public:
     // Get corners in template space
     std::vector<cv::Point2f> getCorners() const;
     
+    inline const cv::Mat& getImage() const {return mImage;}
+    
 private:
+    cv::Mat mImage;
+    std::vector<cv::Mat> mPyramid;
+    
     std::vector<cv::KeyPoint> mKeypoints;
+    std::vector<cv::Point2f> mKeypointPos;
     cv::Mat mDescriptors;
-    cv::Size2i mImageSize;
     cv::Size2f mRealSize;
     
     cv::BFMatcher mMatcher;
+};
+
+class LandmarkDetection
+{
+    friend class Landmark;
+    
+public:
+    LandmarkDetection(){}
+    
+    const cv::Mat& getHomography() const {return mHomography;}
+    
+private:
+    cv::Mat mHomography;
 };
 
 }

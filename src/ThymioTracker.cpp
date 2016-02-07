@@ -21,6 +21,25 @@ static const std::vector<cv::Scalar> colorPalette = {
     cv::Scalar(100, 181, 205)
 };
 
+Timer::Timer()
+    : mTicks{0}
+    , mIndex(0)
+    , mFps(-1.0)
+{}
+
+void Timer::tic()
+{
+    std::clock_t current = std::clock();
+    std::clock_t prev = mTicks[mIndex];
+    mTicks[mIndex] = current;
+    ++mIndex;
+    if(mIndex >= N)
+        mIndex = 0;
+    
+    if(prev != 0)
+        mFps = CLOCKS_PER_SEC * N / static_cast<double>(current - prev);
+}
+
 void DetectionInfo::clear()
 {
     blobs.clear();
@@ -82,7 +101,7 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
     , mGeomHashingFile(geomHashingFile)
     , mDetectionInfo(landmarkFiles.size())
     // , mFeatureExtractor(cv::ORB::create(1000))
-     , mFeatureExtractor(cv::BRISK::create())
+    , mFeatureExtractor(cv::BRISK::create())
     // , mFeatureExtractor(new brisk::BriskFeature(5.0, 4))
     // , mFeatureExtractor(cv::xfeatures2d::SIFT::create())
     // , mFeatureExtractor(cv::xfeatures2d::SURF::create())
@@ -94,7 +113,7 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
     
     // Load landmarks
     for(auto landmarkFile : landmarkFiles)
-        mLandmarks.push_back(Landmark(landmarkFile));
+        mLandmarks.push_back(Landmark::fromFile(landmarkFile));
 }
 
 void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
@@ -138,18 +157,29 @@ void ThymioTracker::update(const cv::Mat& input,
     //                                            mDetectionInfo.robotPose,
     //                                            mDetectionInfo.robotFound);
     
+    static int counter = 0;
+    
+    ++counter;
+    
     // Landmark tracking
     std::vector<cv::KeyPoint> detectedKeypoints;
     cv::Mat detectedDescriptors;
-    cv::Mat gray_input;
-    cv::cvtColor(input, gray_input, CV_RGB2GRAY);
-    mFeatureExtractor->detectAndCompute(gray_input, cv::noArray(),
-                                        detectedKeypoints, detectedDescriptors);
+    // Extract features only once every 100 frames
+    if(counter >= 10)
+    {
+        cv::Mat gray_input;
+        cv::cvtColor(input, gray_input, CV_RGB2GRAY);
+        mFeatureExtractor->detectAndCompute(gray_input, cv::noArray(),
+                                            detectedKeypoints, detectedDescriptors);
+        counter = 0;
+    }
     
     auto landmarksIt = mLandmarks.cbegin();
-    auto homographiesIt = mDetectionInfo.homographies.begin();
-    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++homographiesIt)
-        *homographiesIt = landmarksIt->findHomography(detectedKeypoints, detectedDescriptors);
+    auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
+    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
+        landmarksIt->find(input, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
+    
+    mTimer.tic();
 }
 
 void ThymioTracker::drawLastDetection(cv::Mat* output) const
@@ -183,13 +213,13 @@ void ThymioTracker::drawLastDetection(cv::Mat* output) const
     // Draw landmark detections
     std::vector<cv::Point2f> corners(4);
     
-    auto homographiesIt = mDetectionInfo.homographies.cbegin();
+    auto lmDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
     auto landmarksIt = mLandmarks.cbegin();
     auto colorIt = colorPalette.cbegin();
-    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++homographiesIt, ++colorIt)
+    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt, ++colorIt)
     {
         const Landmark& landmark = *landmarksIt;
-        const cv::Mat& h = *homographiesIt;
+        const cv::Mat& h = lmDetectionsIt->getHomography();
         
         // Reset the color iterator if needed
         if(colorIt == colorPalette.cend())
