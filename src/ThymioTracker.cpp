@@ -165,7 +165,7 @@ void ThymioTracker::update(const cv::Mat& input,
     std::vector<cv::KeyPoint> detectedKeypoints;
     cv::Mat detectedDescriptors;
     // Extract features only once every 100 frames
-    if(counter >= 10)
+    if(counter >= 5)
     {
         cv::Mat gray_input;
         cv::cvtColor(input, gray_input, CV_RGB2GRAY);
@@ -177,7 +177,9 @@ void ThymioTracker::update(const cv::Mat& input,
     auto landmarksIt = mLandmarks.cbegin();
     auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
     for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
-        landmarksIt->find(input, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
+        landmarksIt->find(input, mDetectionInfo.prevImage, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
+    
+    input.copyTo(mDetectionInfo.prevImage);
     
     mTimer.tic();
 }

@@ -4,6 +4,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
 
+#include <map>
+
 namespace thymio_tracker
 {
 
@@ -20,9 +22,21 @@ public:
              const cv::Size2f& realSize);
     
     void find(const cv::Mat& image,
+              const cv::Mat& prevImage,
               const std::vector<cv::KeyPoint>& keypoints,
               const cv::Mat& descriptors,
               LandmarkDetection& detection) const;
+    
+    void findCorrespondencesWithKeypoints(const std::vector<cv::KeyPoint>& keypoints,
+                                const cv::Mat& descriptors,
+                                std::vector<cv::Point2f>& scene_points,
+                                std::vector<int>& correspondences) const;
+    
+    void findCorrespondencesWithTracking(const cv::Mat& image,
+                                const cv::Mat& prevImage,
+                                const LandmarkDetection& prevDetection,
+                                std::vector<cv::Point2f>& scene_points,
+                                std::vector<int>& correspondences) const;
     
     cv::Mat findHomography(const std::vector<cv::KeyPoint>& keypoints,
                             const cv::Mat& descriptors) const;
@@ -55,6 +69,9 @@ public:
     
 private:
     cv::Mat mHomography;
+    
+    std::map<int, cv::Point2f> mCorrespondences;
+    // std::vector<cv::Point2f> mInliers;
 };
 
 }

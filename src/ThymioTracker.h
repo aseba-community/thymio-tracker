@@ -36,6 +36,9 @@ struct DetectionInfo
     std::vector<BlobQuadruplets> blobQuadriplets;
     std::vector<cv::KeyPoint> blobsinTriplets;
     std::vector<DetectionGH> matches;
+    
+    // Previous image
+    cv::Mat prevImage;
 
     void clear();
 };
