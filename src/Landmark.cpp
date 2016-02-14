@@ -142,12 +142,16 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
     
     // Optical flow
     std::vector<cv::Mat> pyramid1, pyramid2;
-    buildOpticalFlowPyramid(image, pyramid1, cv::Size(21, 21), 2);
-    buildOpticalFlowPyramid(prevImage, pyramid2, cv::Size(21, 21), 2);
+    int maxLevel = 2;
+    const cv::Size winSize = cv::Size(21, 21);
+    maxLevel = buildOpticalFlowPyramid(image, pyramid1, winSize, maxLevel);
+    maxLevel = buildOpticalFlowPyramid(prevImage, pyramid2, winSize, maxLevel);
     std::vector<cv::Point2f> nextPoints;
     std::vector<unsigned char> status;
-    // cv::calcOpticalFlowPyrLK(prevImage, image, prevPoints, nextPoints, status, cv::noArray(), cv::Size(8, 8));
-    cv::calcOpticalFlowPyrLK(pyramid2, pyramid1, prevPoints, nextPoints, status, cv::noArray(), cv::Size(8, 8));
+    // cv::calcOpticalFlowPyrLK(prevImage, image, prevPoints, nextPoints, status,
+    //                         cv::noArray(), winSize, maxLevel);
+    cv::calcOpticalFlowPyrLK(pyramid2, pyramid1, prevPoints, nextPoints, status,
+                            cv::noArray(), winSize, maxLevel);
     
     // Keep only found keypoints
     auto statusIt = status.cbegin();
