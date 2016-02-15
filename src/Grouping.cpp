@@ -82,6 +82,34 @@ void Grouping::getClosestNeigbors(int p, const vector<KeyPoint>& mVerticesDes, v
     
 }
 
+void Grouping::getBlobs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs)
+{
+    //get blobs
+    extractBlobs(img, blobs);
+}
+void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
+{
+    for(int p=0;p<blobs.size();p++)
+    {
+        //for each point have to find the nbPtBasis closest points
+        vector<int> idNeigbors;
+        //only get neigbours indexed after p
+        getClosestNeigbors(p, blobs, idNeigbors);
+        
+        //check resulting pairs
+        for(int i=0;i<idNeigbors.size();i++)
+        {
+            float d_on_ss=norm(blobs[p].pt-blobs[idNeigbors[i]].pt)/sqrt(blobs[p].size*blobs[idNeigbors[i]].size);
+            float scale_dist=sqrt((blobs[p].size-blobs[idNeigbors[i]].size)*(blobs[p].size-blobs[idNeigbors[i]].size));
+            //check with respect to stat we got in blobStat
+            //if(d_on_ss>1.4 && d_on_ss<2.1)//ratio distance/scale is good, then add pair
+            if(d_on_ss>1. && d_on_ss<3.)//ratio distance/scale is good, then add pair
+                if(scale_dist<2)//pairs of blobs are close so scale diff should not be too big
+                    blobPairs.push_back(BlobPair(p,idNeigbors[i]));
+        }
+    }
+}
+
 void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
 {
     //get blobs
@@ -108,7 +136,7 @@ void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &b
     }
 }
 
-void Grouping::getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets)
+void Grouping::getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets)
 {
     for(int p=0;p<blobPairs.size();p++)
     {
@@ -166,6 +194,7 @@ void Grouping::getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vecto
                 
                 //inetria of blobs should be related to area formed by v1 and v2
                 //get the area with determinant
+                //Keypoint resulting from blob has been modified to output its inertia in the response attribute
                 float inertia_des = v1.x*v2.y-v1.y*v2.x;
                 if(inertia_des<0)inertia_des=-inertia_des;
                 
@@ -190,11 +219,18 @@ void Grouping::getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vecto
     }
 }
 
-void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets)
+void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads)
 {
     //many ways to do, for now go through list of triplets and check if shares 2 points with other triangles,
     //if doesn't remove it from list, if does create quadruplets and remove all other triangle contained in quadruplets
     std::vector<BlobTriplet> blobTripletsCopy=blobTriplets;
+
+    //to keep track of the id of the triplets in the original triplets list
+    std::vector<int> idAllTripletsInCopy;
+    for(int i=0;i<blobTripletsCopy.size();i++)idAllTripletsInCopy.push_back(i);
+
+    //to store the id of the triplets in quads
+    std::vector<int> idTripletsInQuads;
     
     while(blobTripletsCopy.size()>0)
     {
@@ -229,9 +265,17 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
                 //add quadruplet
                 blobQuadriplets.push_back(newQuadruplets);
                 
+                //store id of found triplets
+                idTripletsInQuads.push_back(idAllTripletsInCopy[0]);
+                idTripletsInQuads.push_back(idAllTripletsInCopy[t]);
+
+
                 //remove triplets 0 and t
                 blobTripletsCopy.erase(blobTripletsCopy.begin()+t);
                 blobTripletsCopy.erase(blobTripletsCopy.begin());
+
+                idAllTripletsInCopy.erase(idAllTripletsInCopy.begin()+t);
+                idAllTripletsInCopy.erase(idAllTripletsInCopy.begin());
                 
                 //search for all the other triplets included in quadruplet
                 for(int t2=blobTripletsCopy.size()-1;t2>=0;t2--)
@@ -244,7 +288,11 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
                                 pt_in_common2++;
                     
                     if(pt_in_common2==3)
+                    {
+                        idTripletsInQuads.push_back(idAllTripletsInCopy[t2]);
                         blobTripletsCopy.erase(blobTripletsCopy.begin()+t2);
+                        idAllTripletsInCopy.erase(idAllTripletsInCopy.begin()+t2);
+                    }
                  }
                 
                 break;
@@ -253,7 +301,70 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
         
         //if first triplet was not found then remove it
         if(!found)
+        {
             blobTripletsCopy.erase(blobTripletsCopy.begin());
+            idAllTripletsInCopy.erase(idAllTripletsInCopy.begin());
+        }
+    }
+
+    //if want to suppress the triplets in the quads then do so
+    if(removeTripletsInQuads)
+    {
+        std::sort(idTripletsInQuads.begin(), idTripletsInQuads.end());
+        for(int i=idTripletsInQuads.size()-1;i>=0;i--)
+            blobTriplets.erase(blobTriplets.begin()+idTripletsInQuads[i]);
+    }
+}
+
+void setClockwiseDirectionToTriplets(const std::vector<cv::KeyPoint> &blobs,vector<BlobTriplet> &blobTriplets)
+{
+    for(int i=0;i<blobTriplets.size();i++)
+    {
+        BlobTriplet &tp = blobTriplets[i];
+        Point2f basis1 = blobs[tp.ids[1]].pt-blobs[tp.ids[0]].pt;
+        Point2f basis2 = blobs[tp.ids[2]].pt-blobs[tp.ids[0]].pt;
+        if(!testDirectionBasis(basis1,basis2))
+        {
+            int buff = tp.ids[2];
+            tp.ids[2]=tp.ids[1];
+            tp.ids[1]=buff;
+        }
+            
+    }
+    
+}
+    
+void setClockwiseDirectionToQuadruplets(const std::vector<cv::KeyPoint> &blobs,vector<BlobQuadruplets> &blobQuadruplets)
+{
+    //want quadruplet ordered clockwise, triplet from first indexes should already be set accordingly
+    //=> now want to know if we have to move last index to second or third position
+    
+    for(int i=0;i<blobQuadruplets.size();i++)
+    {
+        BlobQuadruplets &tp = blobQuadruplets[i];
+        int unsortedIndex = tp.ids[3];
+        Point2f basis4 = blobs[tp.ids[3]].pt-blobs[tp.ids[0]].pt;
+        
+        Point2f basis2 = blobs[tp.ids[1]].pt-blobs[tp.ids[0]].pt;
+        Point2f basis3 = blobs[tp.ids[2]].pt-blobs[tp.ids[0]].pt;
+        
+        bool b2Right = testDirectionBasis(basis2,basis4);
+        if(!b2Right)
+        {
+            tp.ids[3]=tp.ids[2];
+            tp.ids[2]=tp.ids[1];
+            tp.ids[1]=unsortedIndex;
+        }
+        else
+        {
+            bool b3Right = testDirectionBasis(basis3,basis4);
+            if(!b3Right)
+            {
+                tp.ids[3]=tp.ids[2];
+                tp.ids[2]=unsortedIndex;
+            }
+        }
+        
     }
     
 }
