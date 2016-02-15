@@ -23,10 +23,10 @@ Object3D::~Object3D()
 
 void Object3D::draw(Mat& img, const Mat& cameraMatrix, const Mat& distCoeffs, const Affine3d& poseCam) const
 {
-    for(int e=0;e<mEdges.size();e++)
+    for(unsigned int e=0;e<mEdges.size();e++)
         drawEdge(mEdges[e], img, cameraMatrix, distCoeffs, poseCam);
     
-    for(int v=0;v<mVertices.size();v++)
+    for(unsigned int v=0;v<mVertices.size();v++)
         drawVertice(mVertices[v], img, cameraMatrix, distCoeffs, poseCam);
     
     //draw object frame (axis XYZ)
@@ -112,7 +112,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
     
     //create list of 3d points corresponding to detected projections
     vector<Point3f> detectedVertices;
-    for(int i=0;i<mMatches.size();i++)detectedVertices.push_back(mVertices[mMatches[i].id]);
+    for(unsigned int i=0;i<mMatches.size();i++)detectedVertices.push_back(mVertices[mMatches[i].id]);
     
     //use opencv function
     //get previous position if there is any
@@ -126,7 +126,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
     //do a kind of ransac: try different subset to compute pose util find that more than majority agrees
     //if not consider tracker lost
     int nbBasePnp=4;//take four points out of set
-    int pointers[nbBasePnp];
+    unsigned int pointers[nbBasePnp];
     for(int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list
     
     while(1)
@@ -156,10 +156,10 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
             
             //check how many points agree
             float threshold_proj=5.;//set error max to 5 pixels
-            int nbPointAgree=0;
+            unsigned int nbPointAgree=0;
             vector<Point2f> vProjPoints;//project all points
             projectPoints(detectedVertices, rvec, tvec, _mCalib.cameraMatrix, _mCalib.distCoeffs, vProjPoints);
-            for(int i=0;i<mMatches.size();i++)
+            for(unsigned int i=0;i<mMatches.size();i++)
                 if(norm(vProjPoints[i]-mMatches[i].position)<threshold_proj)
                     nbPointAgree++;
             
@@ -171,7 +171,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
             {
                 vector<Point3f> newSubsetVertices;
                 vector<Point2f> newSubsetProjections;
-                for(int i=0;i<mMatches.size();i++)
+                for(unsigned int i=0;i<mMatches.size();i++)
                     if(norm(vProjPoints[i]-mMatches[i].position)<threshold_proj)
                     {
                         newSubsetVertices.push_back(detectedVertices[i]);
@@ -665,11 +665,11 @@ ThymioBlobModel::ThymioBlobModel()
     mVerticesTop.push_back(Point3f(2.5,9.4,3.2));
     
     //set them in meter and center them
-    for(int v=0;v<mVerticesTop.size();v++)
-        mVerticesTop[v]=(mVerticesTop[v]-Point3f(4.4,2.,0))/10.;
+    for(unsigned int v=0;v<mVerticesTop.size();v++)
+        mVerticesTop[v]=(mVerticesTop[v]-Point3f(4.4,2.8,0))/100.;
     
     //from center to image plane
-    for(int v=0;v<mVerticesTop.size();v++)
+    for(unsigned int v=0;v<mVerticesTop.size();v++)
         mEdges.push_back(ModelEdge(mVerticesTop[v],mVerticesTop[(v+1)%mVerticesTop.size()]));
     
     //if want to display edges of bottom part
@@ -684,11 +684,11 @@ ThymioBlobModel::ThymioBlobModel()
     mVerticesBottom.push_back(Point3f(2.5,9.4,-1.2));
     
     //set them in meter and center them
-    for(int v=0;v<mVerticesBottom.size();v++)
-        mVerticesBottom[v]=(mVerticesBottom[v]-Point3f(4.4,2.,0))/10.;
+    for(unsigned int v=0;v<mVerticesBottom.size();v++)
+        mVerticesBottom[v]=(mVerticesBottom[v]-Point3f(4.4,2.8,0))/100.;
     
     //from center to image plane
-    for(int v=0;v<mVerticesBottom.size();v++)
+    for(unsigned int v=0;v<mVerticesBottom.size();v++)
         mEdges.push_back(ModelEdge(mVerticesBottom[v],mVerticesBottom[(v+1)%mVerticesBottom.size()]));
     
     //vertical edges
@@ -703,11 +703,11 @@ ThymioBlobModel::ThymioBlobModel()
     mVerticesVertical.push_back(Point3f(9.5,7.75,3.2));
     mVerticesVertical.push_back(Point3f(9.5,7.75,-1.2));
     //set them in meter and center them
-    for(int v=0;v<mVerticesVertical.size();v++)
-        mVerticesVertical[v]=(mVerticesVertical[v]-Point3f(4.4,2.,0))/10.;
+    for(unsigned int v=0;v<mVerticesVertical.size();v++)
+        mVerticesVertical[v]=(mVerticesVertical[v]-Point3f(4.4,2.8,0))/100.;
     
     //from center to image plane
-    for(int v=0;v<mVerticesVertical.size()/2;v++)
+    for(unsigned int v=0;v<mVerticesVertical.size()/2;v++)
         mEdges.push_back(ModelEdge(mVerticesVertical[2*v],mVerticesVertical[2*v+1]));
     
 }

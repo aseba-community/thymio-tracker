@@ -17,6 +17,7 @@ set(ThymioTracker_SOURCES
     src/Grouping.cpp
     src/BlobInertia.cpp
     src/P3P.cpp
+    src/Landmark.cpp
     src/ThymioTracker.h
     src/Generic.hpp
     src/GH.hpp
@@ -25,6 +26,7 @@ set(ThymioTracker_SOURCES
     src/Grouping.hpp
     src/BlobInertia.hpp
     src/P3P.hpp
+    src/Landmark.hpp
     )
 
 if(ANDROID_WRAPPER)
@@ -78,7 +80,12 @@ endif(ANDROID_WRAPPER)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-long-long -pedantic")
 
-include_directories(${PROJECT_SOURCE_DIR}/src ${OpenCV_INCLUDE_DIRS})
+# add_subdirectory(brisk)
+
+include_directories(${PROJECT_SOURCE_DIR}/src
+                    # ${PROJECT_SOURCE_DIR}/brisk/include
+                    # ${PROJECT_SOURCE_DIR}/brisk/agast/include
+                    ${OpenCV_INCLUDE_DIRS})
 
 if(ANDROID_WRAPPER)
     
@@ -88,6 +95,7 @@ else(ANDROID_WRAPPER)
     
     add_library(thymiotracker SHARED ${ThymioTracker_SOURCES})
     add_subdirectory(tests)
+    add_subdirectory(tools)
 
 endif(ANDROID_WRAPPER)
 

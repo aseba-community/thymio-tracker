@@ -103,11 +103,11 @@ struct sort_wrt_second {
 };
 
 
-void GHscale::getClosestNeigbors(int p, const vector<Point3f>& mVerticesDes, vector<int>& idNeigbors) const
+void GHscale::getClosestNeigbors(unsigned int p, const vector<Point3f>& mVerticesDes, vector<unsigned int>& idNeigbors) const
 {
     //create pairs of point indexes and corresponding distance and sort with respect to deistance
     vector< pair<int,float> > pairIdDist;
-    for(int i=0;i<mVerticesDes.size();i++)
+    for(unsigned int i=0;i<mVerticesDes.size();i++)
         if(i!=p)
     {
         pair<int,float> newPair;
@@ -120,7 +120,7 @@ void GHscale::getClosestNeigbors(int p, const vector<Point3f>& mVerticesDes, vec
     std::sort(pairIdDist.begin(), pairIdDist.end(), sort_wrt_second());
     
     //return first elements
-    for(int i=0;i<pairIdDist.size() && i<nbPtBasis;i++)
+    for(unsigned int i=0;i<pairIdDist.size() && i<nbPtBasis;i++)
         idNeigbors.push_back(pairIdDist[i].first);
     
 }
@@ -192,26 +192,26 @@ void GHscale::setModel(vector<Point3f> *projPoints, int nbPoses)
     {
         vector<Point3f> &mProjs=projPoints[idpose];
         //loop through all points
-        for(int p=0;p<mProjs.size();p++)
+        for(unsigned int p=0;p<mProjs.size();p++)
         {
             //for each point have to find the nbPtBasis closest points
-            vector<int> idNeigbors;
+            vector<unsigned int> idNeigbors;
             getClosestNeigbors(p,mProjs,idNeigbors);
             
             
             //for each positively oriented possible triangle in closest neigbors
             //define basis and project all points on it to fill HT
-            for(int tp2=0;tp2<idNeigbors.size();tp2++)
+            for(unsigned int tp2=0;tp2<idNeigbors.size();tp2++)
             {
                 //get index of point 2 in mVerticesDes
-                int p2=idNeigbors[tp2];
+                unsigned int p2=idNeigbors[tp2];
                 //define first basis vector
                 Point2f basis1= Pointxy(mProjs[p2]-mProjs[p]);
                 
-                for(int tp3=0;tp3<idNeigbors.size();tp3++)
+                for(unsigned int tp3=0;tp3<idNeigbors.size();tp3++)
                     if(p2!=idNeigbors[tp3])
                     {
-                        int p3=idNeigbors[tp3];
+                        unsigned int p3=idNeigbors[tp3];
                         //define second basis
                         Point2f basis2= Pointxy(mProjs[p3]-mProjs[p]);
                         
@@ -223,7 +223,7 @@ void GHscale::setModel(vector<Point3f> *projPoints, int nbPoses)
                             Matx22f tBasisInv=tBasis.inv();
                             
                             //good basis => project all points and fill HT
-                            for(int i=0;i<mProjs.size();i++)
+                            for(unsigned int i=0;i<mProjs.size();i++)
                                 if(i!=p && i!=p2 && i!=p3)
                                 {
                                     //project in current basis
@@ -263,26 +263,26 @@ void GHscale::setModel(vector<Point3f> *projPoints, int nbPoses)
         vector<Point3f> &mProjs = projPoints[idpose];
     
         //loop through all points to fill HT
-        for(int p=0;p<mProjs.size();p++)
+        for(unsigned int p=0;p<mProjs.size();p++)
         {
             //for each point have to find the nbPtBasis closest points
-            vector<int> idNeigbors;
+            vector<unsigned int> idNeigbors;
             getClosestNeigbors(p,mProjs,idNeigbors);
             
             
             //for each positively oriented possible triangle in closest neigbors
             //define basis and project all points on it to fill HT
-            for(int tp2=0;tp2<idNeigbors.size();tp2++)
+            for(unsigned int tp2=0;tp2<idNeigbors.size();tp2++)
             {
                 //get index of point 2 in mVerticesDes
-                int p2=idNeigbors[tp2];
+                unsigned int p2=idNeigbors[tp2];
                 //define first basis vector
                 Point2f basis1= Pointxy(mProjs[p2]-mProjs[p]);
                 
-                for(int tp3=0;tp3<idNeigbors.size();tp3++)
+                for(unsigned int tp3=0;tp3<idNeigbors.size();tp3++)
                     if(p2!=idNeigbors[tp3])
                     {
-                        int p3=idNeigbors[tp3];
+                        unsigned int p3=idNeigbors[tp3];
                         //define second basis
                         Point2f basis2= Pointxy(mProjs[p3]-mProjs[p]);
                         
@@ -294,7 +294,7 @@ void GHscale::setModel(vector<Point3f> *projPoints, int nbPoses)
                             Matx22f tBasisInv=tBasis.inv();
                             
                             //good basis => project all points and fill HT
-                            for(int i=0;i<mProjs.size();i++)
+                            for(unsigned int i=0;i<mProjs.size();i++)
                                 if(i!=p && i!=p2 && i!=p3)
                                 {
                                     //project in current basis
@@ -421,7 +421,7 @@ void GHscale::getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionG
     extractBlobs(img, blobs);
     
     //plot them
-    for(int p=0;p<blobs.size();p++)
+    for(unsigned int p=0;p<blobs.size();p++)
         cv::circle(img, blobs[p].pt, (blobs[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), -1);
     
     getModelPointsFromImage(blobs,matches);
@@ -431,7 +431,7 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
 {
     //get list of points from blob (will have to be removed later as just a copy of blobs)
     vector<Point3f> mPoints;
-    for(int p=0;p<blobs.size();p++)
+    for(unsigned int p=0;p<blobs.size();p++)
     {
         Point2f m = toMeters(cameraCalibration.cameraMatrix,blobs[p].pt);
         mPoints.push_back(Point3f(m.x,m.y,blobs[p].size));
@@ -441,7 +441,7 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
     matches.clear();
     
     //loop through all points
-    for(int p=0;p<mPoints.size();p++)
+    for(unsigned int p=0;p<mPoints.size();p++)
     {
         //for each point need to accumulate votes from HT
         float votesId[nbIds];
@@ -450,23 +450,23 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
             votesId[id]=0;
         
         //for each point have to find the nbPtBasis closest points
-        vector<int> idNeigbors;
+        vector<unsigned int> idNeigbors;
         getClosestNeigbors(p, mPoints, idNeigbors);
         
         //for each positively oriented possible triangle in closest neigbors
         //define basis and project all points on it to fill HT
-        for(int tp2=0;tp2<idNeigbors.size();tp2++)
+        for(unsigned int tp2=0;tp2<idNeigbors.size();tp2++)
         {
             //get index of point 2 in mVerticesDes
-            int p2=idNeigbors[tp2];
+            unsigned int p2=idNeigbors[tp2];
             
             //define first basis vector
             Point2f basis1= Pointxy(mPoints[p2]-mPoints[p]);
             
-            for(int tp3=0;tp3<idNeigbors.size();tp3++)
+            for(unsigned int tp3=0;tp3<idNeigbors.size();tp3++)
                 if(p2!=idNeigbors[tp3])
                 {
-                    int p3=idNeigbors[tp3];
+                    unsigned int p3=idNeigbors[tp3];
                     //define second basis
                     Point2f basis2= Pointxy(mPoints[p3]-mPoints[p]);
                     
@@ -478,7 +478,7 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
                         Matx22f tBasisInv=tBasis.inv();
                         
                         //good basis => project all points and fill HT
-                        for(int i=0;i<mPoints.size();i++)
+                        for(unsigned int i=0;i<mPoints.size();i++)
                             if(i!=p && i!=p2 && i!=p3)
                             {
                                 //project in current basis
@@ -510,6 +510,7 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
         
         //find second best id to compute discriminative power
         int idPointSecondBest=-1;
+        (void)idPointSecondBest;
         float nbVotesForSecondBest=0;
         for(int id=0;id<nbIds;id++)
             if(id!=idPointEstim && votesId[id]>nbVotesForSecondBest)
