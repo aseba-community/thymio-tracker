@@ -13,8 +13,8 @@ int main(int argc, char** argv)
         "../data/GHscale_Arth_Perspective.dat",
         {
             "../data/marker.xml.gz",
-            "../data/marker2.xml.gz",
-            "../data/ziggu.xml.gz"
+            // "../data/marker2.xml.gz",
+            // "../data/ziggu.xml.gz"
         }
         );
     

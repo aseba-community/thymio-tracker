@@ -84,7 +84,7 @@ void Landmark::find(const cv::Mat& image,
     cv::Mat homography;
     std::vector<unsigned char> mask;
     if(!scenePoints.empty())
-        homography = cv::findHomography(objectPoints, scenePoints, CV_RANSAC, 3, mask);
+        homography = cv::findHomography(objectPoints, scenePoints, CV_RANSAC, 10, mask);
     
     // Save homography and inliers
     detection.mHomography = homography;
@@ -142,16 +142,15 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
     
     // Optical flow
     std::vector<cv::Mat> pyramid1, pyramid2;
-    int maxLevel = 2;
+    int maxLevel = 3;
     const cv::Size winSize = cv::Size(21, 21);
-    maxLevel = buildOpticalFlowPyramid(image, pyramid1, winSize, maxLevel);
-    maxLevel = buildOpticalFlowPyramid(prevImage, pyramid2, winSize, maxLevel);
     std::vector<cv::Point2f> nextPoints;
     std::vector<unsigned char> status;
-    // cv::calcOpticalFlowPyrLK(prevImage, image, prevPoints, nextPoints, status,
-    //                         cv::noArray(), winSize, maxLevel);
-    cv::calcOpticalFlowPyrLK(pyramid2, pyramid1, prevPoints, nextPoints, status,
-                            cv::noArray(), winSize, maxLevel);
+    cv::calcOpticalFlowPyrLK(prevImage, image, prevPoints, nextPoints, status,
+                            cv::noArray(), winSize, maxLevel,
+                            cv::TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 20, 0.1),
+                            0,
+                            0.001);
     
     // Keep only found keypoints
     auto statusIt = status.cbegin();

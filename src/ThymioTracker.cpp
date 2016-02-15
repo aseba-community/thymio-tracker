@@ -165,7 +165,7 @@ void ThymioTracker::update(const cv::Mat& input,
     std::vector<cv::KeyPoint> detectedKeypoints;
     cv::Mat detectedDescriptors;
     // Extract features only once every 100 frames
-    if(counter >= 5)
+    if(counter >= 10)
     {
         cv::Mat gray_input;
         cv::cvtColor(input, gray_input, CV_RGB2GRAY);
@@ -235,6 +235,12 @@ void ThymioTracker::drawLastDetection(cv::Mat* output) const
         cv::line(*output, corners[1], corners[2], *colorIt, 2);
         cv::line(*output, corners[2], corners[3], *colorIt, 2);
         cv::line(*output, corners[3], corners[0], *colorIt, 2);
+        
+        for(auto c : lmDetectionsIt->getCorrespondences())
+        {
+            cv::Point2f p = c.second;
+            cv::circle(*output, p, 2, cv::Scalar(0, 255, 255));
+        }
     }
 }
 

@@ -66,6 +66,7 @@ public:
     LandmarkDetection(){}
     
     const cv::Mat& getHomography() const {return mHomography;}
+    const std::map<int, cv::Point2f>& getCorrespondences() const {return mCorrespondences;}
     
 private:
     cv::Mat mHomography;
