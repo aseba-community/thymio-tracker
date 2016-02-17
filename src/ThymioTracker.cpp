@@ -129,33 +129,33 @@ void ThymioTracker::update(const cv::Mat& input,
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
     
-    // mDetectionInfo.clear();
+    mDetectionInfo.clear();
 
-    // //get the pairs which are likely to belong to group of blobs from model
-    // mGrouping.getBlobsAndPairs(input,
-    //                            mDetectionInfo.blobs,
-    //                            mDetectionInfo.blobPairs);
+    //get the pairs which are likely to belong to group of blobs from model
+    mGrouping.getBlobsAndPairs(input,
+                               mDetectionInfo.blobs,
+                               mDetectionInfo.blobPairs);
     
-    // // get triplet by checking homography and inertia
-    // mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
-    //                                mDetectionInfo.blobPairs,
-    //                                mDetectionInfo.blobTriplets);
+    // get triplet by checking homography and inertia
+    mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
+                                   mDetectionInfo.blobPairs,
+                                   mDetectionInfo.blobTriplets);
     
-    // //get only blobs found in triplets
-    // getBlobsInTriplets(mDetectionInfo.blobs,
-    //                    mDetectionInfo.blobTriplets,
-    //                    mDetectionInfo.blobsinTriplets);
+    //get only blobs found in triplets
+    getBlobsInTriplets(mDetectionInfo.blobs,
+                       mDetectionInfo.blobTriplets,
+                       mDetectionInfo.blobsinTriplets);
     
-    // mGrouping.getQuadripletsFromTriplets(mDetectionInfo.blobTriplets,
-    //                                      mDetectionInfo.blobQuadriplets);
+    mGrouping.getQuadripletsFromTriplets(mDetectionInfo.blobTriplets,
+                                         mDetectionInfo.blobQuadriplets);
     
-    // //extract blobs and identify which one fit model, return set of positions and Id
-    // mGH.getModelPointsFromImage(mDetectionInfo.blobsinTriplets, mDetectionInfo.matches);
+    //extract blobs and identify which one fit model, return set of positions and Id
+    mGH.getModelPointsFromImage(mDetectionInfo.blobsinTriplets, mDetectionInfo.matches);
     
-    // mDetectionInfo.robotFound = mRobot.getPose(mCalibration,
-    //                                            mDetectionInfo.matches,
-    //                                            mDetectionInfo.robotPose,
-    //                                            mDetectionInfo.robotFound);
+    mDetectionInfo.robotFound = mRobot.getPose(mCalibration,
+                                               mDetectionInfo.matches,
+                                               mDetectionInfo.robotPose,
+                                               mDetectionInfo.robotFound);
     
     static int counter = 0;
     
@@ -188,29 +188,21 @@ void ThymioTracker::drawLastDetection(cv::Mat* output) const
 {
     // mDetectionInfo.image.copyTo(*output);
     
-    // cv::drawMatches(*output, mDetectedKeypoints,
-    //                     mLandmark.image, mLandmark.keypoints,
-    //                     mMatches, *output,
-    //                     cv::Scalar(0, 0, 255),
-    //                     cv::Scalar(255, 0, 0),
-    //                     std::vector<std::vector<char> >(),
-    //                     cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
+    if(mDetectionInfo.robotFound)
+        mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
+    else
+        putText(*output, "Lost",
+                cv::Point2i(10,10),
+                cv::FONT_HERSHEY_COMPLEX_SMALL,
+                0.8, cvScalar(0,0,250), 1, CV_AA);
     
-    // if(mDetectionInfo.robotFound)
-    //     mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
-    // else
-    //     putText(*output, "Lost",
-    //             cv::Point2i(10,10),
-    //             cv::FONT_HERSHEY_COMPLEX_SMALL,
-    //             0.8, cvScalar(0,0,250), 1, CV_AA);
+    drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
+    drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
+    drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
+    // drawPointsAndIds(output, mDetectionInfo.matches);
     
-    // drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
-    // drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
-    // drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
-    // // drawPointsAndIds(output, mDetectionInfo.matches);
-    
-    // // if(deviceOrientation)
-    // //     drawAxes(*output, *deviceOrientation);
+    // if(deviceOrientation)
+    //     drawAxes(*output, *deviceOrientation);
     
     // Draw landmark detections
     std::vector<cv::Point2f> corners(4);

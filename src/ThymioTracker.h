@@ -2,6 +2,8 @@
 #ifndef _THYMIOTRACKER_H
 #define _THYMIOTRACKER_H
 
+#include <ctime>
+
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
 // #include <opencv2/xfeatures2d.hpp>
