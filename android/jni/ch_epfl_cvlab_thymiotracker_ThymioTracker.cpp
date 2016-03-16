@@ -9,17 +9,16 @@ extern "C" {
 
 using namespace thymio_tracker;
 
-static void GetJStringContent(JNIEnv *AEnv, jstring AStr, std::string &ARes)
+static std::string GetJStringContent(JNIEnv *AEnv, jstring AStr)
 {
     if (!AStr)
-    {
-        ARes.clear();
-        return;
-    }
-
+        return std::string();
+    
     const char *s = AEnv->GetStringUTFChars(AStr,NULL);
-    ARes=s;
+    std::string res(s);
     AEnv->ReleaseStringUTFChars(AStr,s);
+    
+    return res;
 }
 
 /*
@@ -27,16 +26,32 @@ static void GetJStringContent(JNIEnv *AEnv, jstring AStr, std::string &ARes)
  * Method:    createNativeInstance
  * Signature: (Ljava/lang/String;Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNativeInstance
+JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNativeInstance__Ljava_lang_String_2Ljava_lang_String_2
   (JNIEnv * env, jobject, jstring _calibrationFile, jstring _geomHashingFile)
 {
-    std::string calibrationFile;
-    std::string geomHashingFile;
-    
-    GetJStringContent(env, _calibrationFile, calibrationFile);
-    GetJStringContent(env, _geomHashingFile, geomHashingFile);
+    std::string calibrationFile = GetJStringContent(env, _calibrationFile);
+    std::string geomHashingFile = GetJStringContent(env, _geomHashingFile);
     
     return reinterpret_cast<long>(new ThymioTracker(calibrationFile, geomHashingFile));
+}
+
+JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNativeInstance__Ljava_lang_String_2Ljava_lang_String_2_3Ljava_lang_String_2
+  (JNIEnv * env, jobject, jstring _calibrationFile, jstring _geomHashingFile, jobjectArray _markerFiles)
+{
+    std::string calibrationFile = GetJStringContent(env, _calibrationFile);
+    std::string geomHashingFile = GetJStringContent(env, _geomHashingFile);
+    std::vector<std::string> markerFiles;
+    
+    int stringCount = env->GetArrayLength(_markerFiles);
+    for(int i = 0; i < stringCount; ++i)
+    {
+        jstring string = (jstring) env->GetObjectArrayElement(_markerFiles, i);
+        
+        std::string markerFile = GetJStringContent(env, string);
+        markerFiles.push_back(markerFile);
+    }
+    
+    return reinterpret_cast<long>(new ThymioTracker(calibrationFile, geomHashingFile, markerFiles));
 }
 
 /*
