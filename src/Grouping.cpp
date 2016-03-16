@@ -92,7 +92,7 @@ void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::ve
     for(int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
-        vector<int> idNeigbors;
+        vector<unsigned int> idNeigbors;
         //only get neigbours indexed after p
         getClosestNeigbors(p, blobs, idNeigbors);
         

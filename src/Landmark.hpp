@@ -3,8 +3,10 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
+#include <opencv2/calib3d.hpp>
 
 #include <map>
+#include "Generic.hpp"
 
 namespace thymio_tracker
 {
@@ -23,12 +25,18 @@ public:
     
     void find(const cv::Mat& image,
               const cv::Mat& prevImage,
+              const IntrinsicCalibration& mCalibration,
               const std::vector<cv::KeyPoint>& keypoints,
               const cv::Mat& descriptors,
               LandmarkDetection& detection) const;
     
     void findCorrespondencesWithKeypoints(const std::vector<cv::KeyPoint>& keypoints,
                                 const cv::Mat& descriptors,
+                                std::vector<cv::Point2f>& scene_points,
+                                std::vector<int>& correspondences) const;
+    
+    void findCorrespondencesWithActiveSearch(const cv::Mat& image,
+                                const LandmarkDetection& prevDetection,
                                 std::vector<cv::Point2f>& scene_points,
                                 std::vector<int>& correspondences) const;
     
@@ -53,7 +61,7 @@ private:
     std::vector<cv::KeyPoint> mKeypoints;
     std::vector<cv::Point2f> mKeypointPos;
     cv::Mat mDescriptors;
-    cv::Size2f mRealSize;
+    cv::Size2f mRealSize;//in cm
     
     cv::BFMatcher mMatcher;
 };
@@ -66,10 +74,12 @@ public:
     LandmarkDetection(){}
     
     const cv::Mat& getHomography() const {return mHomography;}
+    const cv::Affine3d& getPose() const {return mPose;}
     const std::map<int, cv::Point2f>& getCorrespondences() const {return mCorrespondences;}
     
 private:
     cv::Mat mHomography;
+    cv::Affine3d mPose;
     
     std::map<int, cv::Point2f> mCorrespondences;
     // std::vector<cv::Point2f> mInliers;

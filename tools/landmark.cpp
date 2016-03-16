@@ -198,6 +198,7 @@ void LandmarkProcessor::process(const cv::Mat& image,
         std::vector<cv::KeyPoint> cur_keypoints;
         cv::Mat cur_descriptors;
         mFeatureExtractor->detectAndCompute(image2, cv::noArray(), cur_keypoints, cur_descriptors);
+        std::cout<<"Nb features : "<<cur_keypoints.size()<<std::endl;
         
 #if DEBUG
         cv::Mat image3 = image2;
@@ -234,7 +235,7 @@ int main(int argc, char* argv[])
     if(argc >= 4)
         pixelsPerUnit = std::stof(argv[3]);
     
-    cv::Ptr<cv::Feature2D> fextractor = cv::BRISK::create();
+    cv::Ptr<cv::Feature2D> fextractor = cv::BRISK::create(60);
     // cv::Ptr<cv::Feature2D> fextractor = new brisk::BriskFeature(10.0, 4);
     LandmarkProcessor landmarkProcessor(pixelsPerUnit, fextractor);
     

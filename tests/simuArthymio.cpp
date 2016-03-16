@@ -12,13 +12,15 @@ int main(int argc, char** argv)
     tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
         "../data/GHscale_Arth_Perspective.dat",
         {
-            "../data/marker.xml.gz",
+            //"../data/landmarks/marker.xml.gz",
+            "../data/landmarks/markerTest.xml.gz",
             // "../data/marker2.xml.gz",
             // "../data/ziggu.xml.gz"
         }
         );
     
     VideoSourceLive videoSource(EmbeddedCam);
+    //VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
     videoSource.resizeSource(0.5);
     
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
@@ -49,6 +51,7 @@ int main(int argc, char** argv)
         // }
         
         auto key = cv::waitKey(5);
+        //auto key = cv::waitKey();
         if(key == 27 || key == 'q')
             break;
     }

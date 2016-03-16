@@ -603,14 +603,14 @@ ThymioBlobModel::ThymioBlobModel()
 
     //set them in meter and center them
     for(int v=0;v<14;v++)
-        mVertices[v]=(mVertices[v]-Point3f(4.4,2.,0))/10.;
-        //mVertices[v]=(mVertices[v]-Point3f(4.4,2.8,0))/10.;
+        mVertices[v]=(mVertices[v]-Point3f(4.4,2.,0))/100.;
+
 
     //back of robot again put in centimeters and origin as left down vertice
     //     16           19
     //  15                  18
     //     14           17
-    mVertices.push_back(Point3f(0.,0.,0.));
+    /*mVertices.push_back(Point3f(0.,0.,0.));
     mVertices.push_back(Point3f(-0.7,0.,0.675));
     mVertices.push_back(Point3f(0.,0.,1.35));
     
@@ -644,14 +644,10 @@ ThymioBlobModel::ThymioBlobModel()
     mVertices.push_back(Point3f(0.,0.,0.95));
     for(int v=23;v<26;v++)
         mVertices[v]=(mVertices[v]-Point3f(-5.5,-5.1,0.45))/10.;
-    mGroup3s.push_back(ModelTriplet(23,24,25));
+    mGroup3s.push_back(ModelTriplet(23,24,25));*/
 
 
-  
-
-
-
-    
+ 
     
     //if want to display edges
     vector<Point3f> mVerticesTop;
