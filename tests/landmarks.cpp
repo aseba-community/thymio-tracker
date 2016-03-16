@@ -3,13 +3,68 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
-#include <opencv2/xfeatures2d.hpp>
+//#include <opencv2/xfeatures2d.hpp>
 #include <opencv2/calib3d.hpp>
 
-static const char window_name[] = "Landmarks";
+//static const char window_name[] = "Landmarks";
 
-namespace tt = thymio_tracker;
+//namespace tt = thymio_tracker;
 
+static constexpr float pi = 3.141592654;
+
+namespace detail
+{
+    static constexpr float fov = 50.f * 2 * pi / 360.f;
+    static const float f = 1.f / (2 * std::tanf(fov / 2));
+}
+
+
+int main(int argc, char** argv)
+{
+    float ppu = 30.;
+    cv::Ptr<cv::BRISK> test_orb = cv::BRISK::create(60);//(int thresh=30, int octaves=3, float patternScale=1.0f)
+    
+    std::vector<cv::KeyPoint> templateKeypoints;
+    cv::Mat templateDescriptors;
+    
+    cv::Mat templateImage = cv::imread("../data/landmarks/marker_noborder.png");
+
+    //now resize the template.
+    //let s say that we resize it to the size it would be if it was seen from a distance equal 5x its width
+    //float real_width = templateImage.size().width / ppu;
+    float new_width = 800*detail::f / 5.;
+    float scale = new_width / templateImage.size().width;
+
+    cv::Mat templateImageRescaled;
+    cv::resize(templateImage,templateImageRescaled,cv::Size(scale*templateImage.size().width,scale*templateImage.size().height));
+
+    //add margin
+    int margin = 50;
+    cv::Mat templateImageBorder;
+    copyMakeBorder( templateImageRescaled, templateImageBorder, margin, margin, margin, margin, cv::BORDER_CONSTANT, cv::Scalar(255,255,255) );
+    cv::imwrite("../data/landmarks/marker_noborder_rescaled.png",templateImageBorder);
+    
+    //test_orb->detectAndCompute(templateImage, cv::noArray(), templateKeypoints, templateDescriptors);
+    test_orb->detectAndCompute(templateImageBorder, cv::noArray(), templateKeypoints, templateDescriptors);
+    std::cout<<"Nb features : "<<templateKeypoints.size()<<std::endl;
+
+    //rescale template Keypoint positions
+    for(int i=0;i<templateKeypoints.size();i++)
+        templateKeypoints[i].pt = (templateKeypoints[i].pt-cv::Point2f(margin,margin))/scale;
+
+
+    cv::FileStorage fs("../data/landmarks/markerTest.xml.gz", cv::FileStorage::WRITE);
+    cv::write(fs, "image", templateImage);
+    cv::write(fs, "image_size", templateImage.size());
+    cv::write(fs, "real_size", cv::Size2f(templateImage.size())/ppu);
+    cv::write(fs,"keypoints", templateKeypoints);
+    cv::write(fs,"descriptors", templateDescriptors);
+    fs.release();
+    
+    return 0;
+
+}
+/*
 int main(int argc, char** argv)
 {
     VideoSourceLive videoSource(EmbeddedCam);
@@ -111,3 +166,4 @@ int main(int argc, char** argv)
     
     return 0;
 }
+*/

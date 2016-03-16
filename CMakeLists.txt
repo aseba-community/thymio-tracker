@@ -16,6 +16,7 @@ set(ThymioTracker_SOURCES
     src/Generic.cpp
     src/Grouping.cpp
     src/BlobInertia.cpp
+    src/P3P.cpp
     src/Landmark.cpp
     src/ThymioTracker.h
     src/Generic.hpp
@@ -24,6 +25,7 @@ set(ThymioTracker_SOURCES
     src/Models.hpp
     src/Grouping.hpp
     src/BlobInertia.hpp
+    src/P3P.hpp
     src/Landmark.hpp
     )
 
@@ -71,6 +73,9 @@ if(ANDROID_WRAPPER)
 
 else(ANDROID_WRAPPER)
     find_package(OpenCV REQUIRED)
+
+    INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
+    
 endif(ANDROID_WRAPPER)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-long-long -pedantic")
@@ -78,6 +83,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-long-long -pedanti
 # add_subdirectory(brisk)
 
 include_directories(${PROJECT_SOURCE_DIR}/src
+                    ${PROJECT_SOURCE_DIR}/include
                     # ${PROJECT_SOURCE_DIR}/brisk/include
                     # ${PROJECT_SOURCE_DIR}/brisk/agast/include
                     ${OpenCV_INCLUDE_DIRS})

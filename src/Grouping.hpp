@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -38,6 +39,8 @@ void drawBlobTriplets(cv::Mat &img, const std::vector<cv::KeyPoint> &blobs, cons
 void drawBlobQuadruplets(cv::Mat &img, const std::vector<cv::KeyPoint> &blobs, const std::vector<BlobQuadruplets> &blobQuadriplets);
 void getBlobsInTriplets(const std::vector<cv::KeyPoint> &blobs, const std::vector<BlobTriplet> &blobTriplets,std::vector<cv::KeyPoint> &blobsinTriplets);
 
+void setClockwiseDirectionToTriplets(const std::vector<cv::KeyPoint> &blobs,std::vector<BlobTriplet> &blobTriplets);
+void setClockwiseDirectionToQuadruplets(const std::vector<cv::KeyPoint> &blobs,std::vector<BlobQuadruplets> &blobQuadruplets);
 
 class Grouping
 {
@@ -46,11 +49,13 @@ public:
     Grouping();
     
     //extract blobs and get good pairs
+    void getBlobs(cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs);
+    void getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
     void getBlobsAndPairs(const cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
     //get triplets from pairs checking homography and inertia
-    void getTripletsFromPairs(std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets);
+    void getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets);
     //get quadriplets from triplets by checking overlap
-    void getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets);
+    void getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads=false);
 
 
 private:
