@@ -45,5 +45,6 @@ cv::Point2f Pointxy(const cv::Point3f& _m);
 
 //check direction triangle
 bool testDirectionBasis(cv::Point2f basis1,cv::Point2f basis2);
+bool testDirectionGroup(cv::Point2f v1,cv::Point2f v2,cv::Point2f v3);
 
 }

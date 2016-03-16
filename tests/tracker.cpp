@@ -1,8 +1,8 @@
 //matching by Geometric hashing
 
-#include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -14,6 +14,9 @@ using namespace cv;
 //opencv display
 //Mat inputImage;
 const char window_name[] = "InputWindow";
+const char window_name_patch[] = "Patch";
+const char window_name_res[] = "Result";
+const char window_name_searchin[] = "SearchIn";
 
 //3D model, first simple version with just top
 #include "VideoSource.hpp"
@@ -36,31 +39,236 @@ void drawPointsAndIds(Mat &inputImage,vector<tt::DetectionGH> &_matches)
     }
 }
 
-void doGHmatching()
+
+
+//test for NCC heuristic search
+//objective is to replace brisk
+//so we have a set of keypoints (brisk keypoints on template)
+//we have the homography at the previous frame, and from that 
+//we need to find the position of the keypoints in the current image and update the homography
+/*int main( int argc, char** argv )
 {
     //load camera and intrinsic parameters
-    //videoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
+    VideoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,100);
+    //VideoSourceLive videoSource(EmbeddedCam);
+    
+    //resize input
+    //videoSource.resizeSource(0.33);
+    videoSource.resizeSource(0.5);
+    //videoSource.grabNewFrame();
+    
+    /// create display window
+    namedWindow( window_name, WINDOW_AUTOSIZE );
+    namedWindow( window_name_patch, WINDOW_AUTOSIZE );
+    namedWindow( window_name_res, WINDOW_AUTOSIZE );
+    namedWindow( window_name_searchin, WINDOW_AUTOSIZE );
+    
+    //create feature extractor
+    cv::Ptr<cv::Feature2D> mFeatureExtractor = cv::BRISK::create();
+
+    //define out template which will be a crop of our first image
+    cv::Mat templateImg;
+    std::vector<cv::KeyPoint> detectedKeypoints;
+    cv::Mat detectedDescriptors;
+    std::vector<cv::Point2f>  templatePoints;
+
+    //current homography
+    cv::Mat mHomography;
+
+    //which part of first image we uyse to define template
+    Point2i cornerTopLeft(600,250);
+    Size templateSize(200,200);
+
+    //define size of patch around keypoints for NCC search
+    //int patch_size = 9;
+    //int window_size = 16;
+    int patch_size = 64;
+    int window_size = 32;
+    int half_window_size = window_size/2;
+
+    
+    //process sequence
+    Affine3d robotPose;
+    int count =0;
+    while(1)
+    {
+        //get new image
+        //if(count == 0)
+            videoSource.grabNewFrame();
+        //Mat inputImage = videoSource.getFramePointer();
+        Mat inputImage = videoSource.getFramePointer().clone();
+
+        //convert to grayscale
+        cv::Mat gray_input;
+        cv::cvtColor(inputImage, gray_input, CV_RGB2GRAY);
+
+        if(count ==0)
+        {
+            //extract template from first image
+            cv::Rect myROI(cornerTopLeft.x, cornerTopLeft.y, templateSize.width, templateSize.height);
+            templateImg = gray_input(myROI).clone();
+
+            //extract features
+            mFeatureExtractor->detectAndCompute(templateImg, cv::noArray(),
+                                                detectedKeypoints, detectedDescriptors);
+            //get points from them
+            std::vector<cv::Point2f>  scenePoints;
+            for(int i=0;i<detectedKeypoints.size();i++)
+            {
+                templatePoints.push_back(detectedKeypoints[i].pt);
+                scenePoints.push_back(detectedKeypoints[i].pt + Point2f(cornerTopLeft));
+            }
+
+            //init first homography
+            mHomography = cv::findHomography(templatePoints, scenePoints, 0);
+
+        }
+
+        //lets track
+        //now we have the homography estimated in the previous image
+        //and a set of keypoints in the template => project the keypoints in the current image
+        //project the template in the current image to fill patches around keypoints
+        //and do NCC search for all keypoints
+
+        //warp points 
+        std::vector<cv::Point2f>  scenePoints_tm1;
+        perspectiveTransform(templatePoints,scenePoints_tm1,mHomography);
+
+        //warp points around keypoints to estimate affine transformation of each patch
+        std::vector<cv::Point2f>  templatePoints_xp1;
+        for(int i=0;i<templatePoints.size();i++)
+            templatePoints_xp1.push_back(Point2f(templatePoints[i].x+1.,templatePoints[i].y));
+        std::vector<cv::Point2f>  scenePoints_xp1; 
+        perspectiveTransform(templatePoints_xp1,scenePoints_xp1,mHomography);
+        
+        std::vector<cv::Point2f>  templatePoints_yp1;
+        for(int i=0;i<templatePoints.size();i++)
+            templatePoints_yp1.push_back(Point2f(templatePoints[i].x,templatePoints[i].y+1.));
+        std::vector<cv::Point2f>  scenePoints_yp1; 
+        perspectiveTransform(templatePoints_yp1,scenePoints_yp1,mHomography);
+
+
+        //now for all keypoints fill patch using homography and serach for it in current image
+        std::vector<cv::Point2f>  scenePoints_t;
+        Point2f center_patch((patch_size-1)/2,(patch_size-1)/2);
+
+        //allocate patch and result matrix
+        Mat patchCurr = Mat::zeros( patch_size, patch_size, templateImg.type() );
+        Mat resultNCC = Mat::zeros( window_size, window_size, CV_32FC1 );
+        cv::Rect myROILast;
+
+        for(int i=0;i<scenePoints_tm1.size();i++)
+        {
+            //compute the homography which would fill the patch of the keypoint
+            //for now homography goes from template keypoint to keypoint in scene at tm1
+            //instead want now homography to bring current keypoint center in scene 
+            //to position patch_size/2,patch_size ie center of patch
+
+            //get the affine transform from the current image to the patch
+            //get the 3 points from current image:
+            std::vector<cv::Point2f>  templatePointsAffine;
+            templatePointsAffine.push_back(templatePoints[i]);
+            templatePointsAffine.push_back(templatePoints_xp1[i]);
+            templatePointsAffine.push_back(templatePoints_yp1[i]);
+
+            //get the 3 points in the patch ie points in current image transalted by position center - center_patch
+            Point2f translationToPatch=(center_patch-scenePoints_tm1[i]);
+            std::vector<cv::Point2f>  patchPointsAffine;
+            //patchPointsAffine.push_back(center_patch);
+            //patchPointsAffine.push_back(scenePoints_xp1[i]+translationToPatch);
+            //patchPointsAffine.push_back(scenePoints_yp1[i]+translationToPatch);
+            patchPointsAffine.push_back(scenePoints_tm1[i]);
+            patchPointsAffine.push_back(scenePoints_xp1[i]);
+            patchPointsAffine.push_back(scenePoints_yp1[i]);
+
+            //get the affine transform
+            //Mat mAffine = cv::getAffineTransform(templatePointsAffine,patchPointsAffine);
+            Mat mAffine = cv::getAffineTransform(templatePointsAffine,patchPointsAffine);
+            mAffine.at<double>(0,2) += translationToPatch.x;
+            mAffine.at<double>(1,2) += translationToPatch.y;
+
+
+            //fill patch using template info
+            warpAffine( templateImg, patchCurr, mAffine, patchCurr.size() );
+
+            //search for it in current image
+            cv::Rect myROI(scenePoints_tm1[i].x-center_patch.x-half_window_size,scenePoints_tm1[i].y-center_patch.y-half_window_size,
+                            window_size+patch_size-1,window_size+patch_size-1);//region of interest is around current position of point
+            //matchTemplate( gray_input(myROI), patchCurr, resultNCC, CV_TM_CCORR );
+            matchTemplate( gray_input(myROI), patchCurr, resultNCC, CV_TM_CCORR_NORMED );
+            normalize( resultNCC, resultNCC, 0, 1, NORM_MINMAX, -1, Mat() );
+
+            /// Localizing the best match with minMaxLoc searching for max NCC
+            double minVal; double maxVal; Point minLoc; Point maxLoc;
+            minMaxLoc( resultNCC, &minVal, &maxVal, &minLoc, &maxLoc, Mat() );
+
+            //have location in window=> get corresponding position in image
+            Point2f estPos =  Point2f(maxLoc)+scenePoints_tm1[i]+Point2f(-half_window_size,-half_window_size);
+            //Point2f estPos =  Point2f(minLoc)+scenePoints_tm1[i]+Point2f(-half_window_size,-half_window_size);
+            scenePoints_t.push_back(estPos);
+
+            //for debug
+            myROILast = myROI;
+
+        }
+
+
+        mHomography = cv::findHomography(templatePoints, scenePoints_t, CV_RANSAC, 30.);
+
+        //Mat imgWarpedTemplate;
+        //warpPerspective(templateImg,imgWarpedTemplate,mHomography,);
+
+
+        for(int i=0;i<scenePoints_t.size();i++)
+        //for(int i=scenePoints_t.size()-1;i<scenePoints_t.size();i++)
+            circle(inputImage, scenePoints_t[i], 2, cvScalar(0,255,255), 1);
+
+        for(int i=0;i<scenePoints_t.size();i++)
+        //for(int i=scenePoints_t.size()-1;i<scenePoints_t.size();i++)
+            line(inputImage, scenePoints_tm1[i], scenePoints_t[i], cvScalar(0,255,0), 1);
+        
+ 
+        //for(int i=0;i<detectedKeypoints.size();i++)
+        //    circle(inputImage, detectedKeypoints[i].pt, 2, cvScalar(0,255,255), 1);
+        
+        
+        //process(inputImage);
+        imshow(window_name,inputImage);
+        imshow(window_name_patch,patchCurr);
+        imshow(window_name_res,resultNCC);
+        imshow(window_name_searchin,gray_input(myROILast));
+
+
+        
+        //press escape to leave loop
+        if(waitKey() == 27)break;
+        //waitKey();
+        count ++;
+    }
+    
+    return 0;
+    
+}*/
+
+
+int main( int argc, char** argv )
+{
+    //load camera and intrinsic parameters
+    //VideoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,100);
     VideoSourceLive videoSource(EmbeddedCam);
     
     //resize input
     //videoSource.resizeSource(0.33);
     videoSource.resizeSource(0.5);
+    //videoSource.grabNewFrame();
     
     /// create display window
     namedWindow( window_name, WINDOW_AUTOSIZE );
+    
+    //craete grouping object
+    tt::Grouping mGrouping;
 
-#define USE_SCALE
-
-#ifndef USE_SCALE
-    tt::GH mGH(videoSource.mCalibration);
-    char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
-#else
-    tt::GHscale mGH(videoSource.mCalibration);
-    char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
-#endif
-    //load perspective training GH
-    mGH.loadFromFile(GHfilename);
- 
+    
     //process sequence
     Affine3d robotPose;
     bool found=false;
@@ -68,70 +276,34 @@ void doGHmatching()
     {
         //get new image
         videoSource.grabNewFrame();
-        Mat inputImage = videoSource.getFramePointer();
+        //Mat inputImage = videoSource.getFramePointer();
+        Mat inputImage = videoSource.getFramePointer().clone();
 
-        clock_t startTime = clock();
         
-        //extract blobs and identify which one fit model, return set of positions and Id
-        vector<tt::DetectionGH> mMatches;
-        mGH.getModelPointsFromImage(inputImage,mMatches);
-        
-        //compute robots pose
-        tt::ThymioBlobModel mRobot;
-        found = mRobot.getPose(videoSource.mCalibration,mMatches,robotPose,!found);
-        
-        cout << double( 1000.*(clock() - startTime) ) / (double)CLOCKS_PER_SEC<< " ms." << endl;
-        
-        if(found)//draw model from found pose
-            mRobot.draw(inputImage,videoSource.mCalibration, robotPose);
-        else
-            putText(inputImage, "Lost", Point2i(10,10),FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,0,250), 1, CV_AA);
-        
-        //flush
-        drawPointsAndIds(inputImage,mMatches);
-        
-        //process(inputImage);
-        imshow(window_name,inputImage);
-        
-        //press escape to leave loop
-        if(waitKey(5) == 27)break;
-        //waitKey();
-    }
-}
-
-
-void searchGoodPairs()
-{
-    //load camera and intrinsic parameters
-    //videoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    VideoSourceLive videoSource(EmbeddedCam);
-    
-    //resize input
-    //videoSource.resizeSource(0.33);
-    videoSource.resizeSource(0.5);
-    
-    /// create display window
-    namedWindow( window_name, WINDOW_AUTOSIZE );
-    
-    //craete grouping object
-    tt::Grouping mGrouping;
-    while(1)
-    {
-        //get new image
-        videoSource.grabNewFrame();
-        Mat inputImage = videoSource.getFramePointer();
-        
+        //just for visualization (its done again in PnP)
         //get the pairs which are likely to belong to group of blobs from model
-        vector<KeyPoint> blobs;
+        vector<cv::KeyPoint> blobs;
         vector<tt::BlobPair> blobPairs;
-        mGrouping.getBlobsAndPairs(inputImage,blobs,blobPairs);
+        mGrouping.getBlobs(inputImage,blobs);
+        
+        mGrouping.getPairsFromBlobs(blobs,blobPairs);
         
         //get triplet by checking homography and inertia
         vector<tt::BlobTriplet> blobTriplets;
         mGrouping.getTripletsFromPairs(blobs,blobPairs,blobTriplets);
         
         vector<tt::BlobQuadruplets> blobQuadriplets;
-        mGrouping.getQuadripletsFromTriplets(blobTriplets,blobQuadriplets);
+        mGrouping.getQuadripletsFromTriplets(blobTriplets,blobQuadriplets,true);
+        
+        
+        //get robot s pose from image
+        tt::ThymioBlobModel mRobot;
+        found = mRobot.getPoseFromBlobs(blobs,videoSource.mCalibration,robotPose,!found);
+        
+        if(found)//draw model from found pose
+            mRobot.draw(inputImage,videoSource.mCalibration, robotPose);
+        else
+            putText(inputImage, "Lost", Point2i(10,10),FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,0,250), 1, CV_AA);
         
         
         //flush
@@ -148,226 +320,8 @@ void searchGoodPairs()
         //waitKey();
     }
     
-}
-
-void GoodPairsAndGH()
-{
-    //load camera and intrinsic parameters
-    //videoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    VideoSourceLive videoSource(EmbeddedCam);
-    
-    //resize input
-    //videoSource.resizeSource(0.33);
-    videoSource.resizeSource(0.5);
-    
-    /// create display window
-    namedWindow( window_name, WINDOW_AUTOSIZE );
-    
-    //craete grouping object
-    tt::Grouping mGrouping;
-    
-#define USE_SCALE
-    
-#ifndef USE_SCALE
-    tt::GH mGH(videoSource.mCalibration);
-    char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
-#else
-    tt::GHscale mGH(videoSource.mCalibration);
-    char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
-#endif
-    //load perspective training GH
-    mGH.loadFromFile(GHfilename);
-    
-    //process sequence
-    Affine3d robotPose;
-    bool found=false;
-    while(1)
-    {
-        //get new image
-        videoSource.grabNewFrame();
-        Mat inputImage = videoSource.getFramePointer();
-        
-        //get the pairs which are likely to belong to group of blobs from model
-        vector<KeyPoint> blobs;
-        vector<tt::BlobPair> blobPairs;
-        mGrouping.getBlobsAndPairs(inputImage,blobs,blobPairs);
-        
-        //get triplet by checking homography and inertia
-        vector<tt::BlobTriplet> blobTriplets;
-        mGrouping.getTripletsFromPairs(blobs,blobPairs,blobTriplets);
-        
-        //get only blobs found in triplets
-        vector<KeyPoint> blobsinTriplets;
-        tt::getBlobsInTriplets(blobs,blobTriplets,blobsinTriplets);
-        
-        //extract blobs and identify which one fit model, return set of positions and Id
-        vector<tt::DetectionGH> mMatches;
-        mGH.getModelPointsFromImage(blobsinTriplets,mMatches);
-        //mGH.getModelPointsFromImage(inputImage,mMatches);
-        
-        //compute robots pose
-        tt::ThymioBlobModel mRobot;
-        found = mRobot.getPose(videoSource.mCalibration,mMatches,robotPose,!found);
-        
-        if(found)//draw model from found pose
-            mRobot.draw(inputImage,videoSource.mCalibration, robotPose);
-        else
-            putText(inputImage, "Lost", Point2i(10,10),FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(0,0,250), 1, CV_AA);
-        
-        
-        //flush
-        drawBlobPairs(inputImage,blobs,blobPairs);
-        drawBlobTriplets(inputImage,blobs,blobTriplets);
-        drawPointsAndIds(inputImage,mMatches);
-        
-        //check for rectangular blobs
-        //extractAndDrawRectangularBlobs(inputImage);
-        
-        
-        //process(inputImage);
-        imshow(window_name,inputImage);
-        
-        //press escape to leave loop
-        if(waitKey(5) == 27)break;
-        //waitKey();
-    }
-    
-}
-
-#include "opencv2/core/core.hpp"
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/highgui/highgui.hpp"
-
-void keyPointMatching()
-{
-    /// create display window
-    //namedWindow( window_name, WINDOW_AUTOSIZE );
-
-    //std::vector<KeyPoint> keypoints_1,keypoints_2;
-    //SurfFeatureDetector detector1( hessianThreshold, octaves, octaveLayers, upright );
-    
-    Mat imageModel;
-    imageModel = imread("/Users/amaurydame/Libs/ferns_demo-1.1/backCropped.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-    //Mat inputImage;
-    //inputImage = imread("/Users/amaurydame/Libs/ferns_demo-1.1/backRobot.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-    //inputImage = imread("/Users/amaurydame/Libs/ferns_demo-1.1/backRobot2.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-
-    //FAST(imageModel, keypoints_1, 15);
-    //FAST(inputImage, keypoints_2, 15);
-    
-    //Ptr<ORB> mORB;
-    //mORB = ORB::create();
-    //mORB = ORB::create(int nfeatures=500, float scaleFactor=1.2f, int nlevels=8, int edgeThreshold=31, int firstLevel=0, int WTA_K=2, int scoreType=ORB::HARRIS_SCORE, int patchSize=31)
-    //mORB = ORB::create(1000,1.2f,4,31,0,2, ORB::FAST_SCORE,31);
-    //mORB->detect(inputImage,keypoints_2);
-    
-    //Ptr<BRISK> mBRISK;
-    //mBRISK = BRISK::create();
-    //mBRISK->detect(inputImage,keypoints_2);
-    
-    //Ptr<KAZE> mKAZE;
-    //mKAZE = KAZE::create();
-    //mKAZE->detect(inputImage,keypoints_2);
-    
-    /*Mat desc1, desc2;
-    Ptr<AKAZE> akaze = AKAZE::create();
-    akaze->detectAndCompute(imageModel, noArray(), keypoints_1, desc1);
-    akaze->detectAndCompute(inputImage, noArray(), keypoints_2, desc2);
-    
-    BFMatcher matcher(NORM_HAMMING);
-    vector< vector<DMatch> > nn_matches;
-    matcher.knnMatch(desc1, desc2, nn_matches, 2);
-    
-    std::vector<DMatch> match1;
-    std::vector<DMatch> match2;
-    
-    for(int i=0; i<nn_matches.size(); i++)
-    {
-        match1.push_back(nn_matches[i][0]);
-        match2.push_back(nn_matches[i][1]);
-    }
-    
-    //Mat img_matches1, img_matches2;
-    //drawMatches(inputImage, keypoints_1, imageModel, keypoints_2, match1, img_matches1);
-    
-    for(int p=0;p<match1.size();p++)
-        cv::circle(inputImage, keypoints_2[match1[p].trainIdx].pt, (keypoints_2[match1[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-    for(int p=0;p<match2.size();p++)
-        cv::circle(inputImage, keypoints_2[match2[p].trainIdx].pt, (keypoints_2[match2[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-*/
-    //drawMatches(imageModel, keypoints_1, inputImage, keypoints_2, match1, img_matches1);
-    //drawMatches(imageModel, keypoints_1, inputImage, keypoints_2, match2, img_matches2);
-    
-    //detector1.detect( imageModel, keypoints_1 );
-    //detector1.detect( inputImage, keypoints_2 );
-    
-    //for(int p=0;p<keypoints_2.size();p++)
-    //    cv::circle(inputImage, keypoints_2[p].pt, (keypoints_2[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-    
-    //imshow(window_name,inputImage);
-    //waitKey();
-    
-    VideoSourceLive videoSource(EmbeddedCam);
-    videoSource.resizeSource(0.5);
-    
-    /// create display window
-    namedWindow( window_name, WINDOW_AUTOSIZE );
-    
-    while(1)
-    {
-        //get new image
-        videoSource.grabNewFrame();
-        Mat inputImageCol = videoSource.getFramePointer();
-        
-        cv::Mat inputImage;
-        cv::cvtColor(inputImageCol, inputImage, CV_BGR2GRAY);
-        
-        std::vector<KeyPoint> keypoints_1,keypoints_2;
-        Mat desc1, desc2;
-        Ptr<AKAZE> akaze = AKAZE::create();
-        akaze->detectAndCompute(imageModel, noArray(), keypoints_1, desc1);
-        akaze->detectAndCompute(inputImage, noArray(), keypoints_2, desc2);
-        
-        BFMatcher matcher(NORM_HAMMING);
-        vector< vector<DMatch> > nn_matches;
-        matcher.knnMatch(desc1, desc2, nn_matches, 2);
-        
-        std::vector<DMatch> match1;
-        std::vector<DMatch> match2;
-        
-        for(int i=0; i<nn_matches.size(); i++)
-        {
-            match1.push_back(nn_matches[i][0]);
-            match2.push_back(nn_matches[i][1]);
-        }
-        
-        //Mat img_matches1, img_matches2;
-        //drawMatches(inputImage, keypoints_1, imageModel, keypoints_2, match1, img_matches1);
-        
-        for(int p=0;p<match1.size();p++)
-            cv::circle(inputImageCol, keypoints_2[match1[p].trainIdx].pt, (keypoints_2[match1[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-        for(int p=0;p<match2.size();p++)
-            cv::circle(inputImageCol, keypoints_2[match2[p].trainIdx].pt, (keypoints_2[match2[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-        
-        //process(inputImage);
-        imshow(window_name,inputImageCol);
-        
-        //press escape to leave loop
-        if(waitKey(5) == 27)break;
-        //waitKey();
-    }
-
-
-
-}
-
-int main( int argc, char** argv )
-{
-    //doGHmatching();
-    //searchGoodPairs();
-    GoodPairsAndGH();
-    //keyPointMatching();
     return 0;
-
+    
 }
+
 

@@ -20,6 +20,7 @@ target_link_libraries(common ${OpenCV_LIBRARIES} thymiotracker)
 
 set(exec_SOURCES
         trainGH.cpp
+        trackerGH.cpp
         tracker.cpp
         simuArthymio.cpp
         blobStat.cpp

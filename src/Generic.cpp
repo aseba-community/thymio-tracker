@@ -85,5 +85,9 @@ bool testDirectionBasis(Point2f basis1,Point2f basis2)
     float crossProd=basis1.x*basis2.y-basis1.y*basis2.x;
     return crossProd>0;
 }
+bool testDirectionGroup(cv::Point2f v1,cv::Point2f v2,cv::Point2f v3)
+{
+    return testDirectionBasis(v2-v1,v3-v1);
+}
 
 }

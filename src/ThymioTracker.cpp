@@ -157,15 +157,28 @@ void ThymioTracker::update(const cv::Mat& input,
                                                mDetectionInfo.robotPose,
                                                mDetectionInfo.robotFound);
     
-    static int counter = 0;
+    static int counter = 100;
     
     ++counter;
+    cv::Mat prevIm;input.copyTo(prevIm);//just to do some displaying and debugging and print stuff in input
     
     // Landmark tracking
     std::vector<cv::KeyPoint> detectedKeypoints;
     cv::Mat detectedDescriptors;
-    // Extract features only once every 100 frames
-    if(counter >= 10)
+
+    //check if all the landmarks are tracked
+    bool allTracked = true;
+    auto lmcDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
+    for(; lmcDetectionsIt != mDetectionInfo.landmarkDetections.cend(); ++lmcDetectionsIt)
+    {
+        const cv::Mat& h = lmcDetectionsIt->getHomography();
+        if(h.empty()) 
+            allTracked = false;
+    }
+
+
+    // Extract features only once every 100 frames and only if need to do any detection
+    if(!allTracked && counter >= 20)
     {
         cv::Mat gray_input;
         cv::cvtColor(input, gray_input, CV_RGB2GRAY);
@@ -177,9 +190,10 @@ void ThymioTracker::update(const cv::Mat& input,
     auto landmarksIt = mLandmarks.cbegin();
     auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
     for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
-        landmarksIt->find(input, mDetectionInfo.prevImage, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
+        landmarksIt->find(input, mDetectionInfo.prevImage, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
     
-    input.copyTo(mDetectionInfo.prevImage);
+    //input.copyTo(mDetectionInfo.prevImage);
+    prevIm.copyTo(mDetectionInfo.prevImage);
     
     mTimer.tic();
 }
@@ -233,6 +247,23 @@ void ThymioTracker::drawLastDetection(cv::Mat* output) const
             cv::Point2f p = c.second;
             cv::circle(*output, p, 2, cv::Scalar(0, 255, 255));
         }
+
+        //draw pose
+        //draw object frame (axis XYZ)
+        std::vector<cv::Point3f> framePoints;
+        framePoints.push_back(cv::Point3f(0,0,0));
+        framePoints.push_back(cv::Point3f(0.03,0,0));
+        framePoints.push_back(cv::Point3f(0,0.03,0));
+        framePoints.push_back(cv::Point3f(0,0,0.03));
+
+        //cv::Affine3d pose = lmDetectionsIt->getPose().inv();
+        cv::Affine3d pose = lmDetectionsIt->getPose();
+        std::vector<cv::Point2f> vprojVertices;
+        cv::projectPoints(framePoints, pose.rvec(), pose.translation(), mCalibration.cameraMatrix, mCalibration.distCoeffs, vprojVertices);
+        cv::line(*output, vprojVertices[0], vprojVertices[1], cv::Scalar(0,0,255), 2);
+        cv::line(*output, vprojVertices[0], vprojVertices[2], cv::Scalar(0,255,0), 2);
+        cv::line(*output, vprojVertices[0], vprojVertices[3], cv::Scalar(255,0,0), 2);
+
     }
 }
 
