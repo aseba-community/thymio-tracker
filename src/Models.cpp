@@ -257,13 +257,13 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
     vector<cv::Affine3d> poseHypothesis;
     //convert all blob positions to meter coordinates
     vector<cv::Point2f> coordImageSpaceBlobs;
-    for(int i=0;i<blobs.size();i++)
+    for(unsigned int i=0;i<blobs.size();i++)
         coordImageSpaceBlobs.push_back(toMeters(_mCalib.cameraMatrix,blobs[i].pt));
 
     //for all the triplets compute pose hypothesis from Groups of 3 points from model
     //std::cout<<"compute pose hypotheses"<<std::endl;
-    for(int i=0;i<mGroup3s.size();i++)
-        for(int j=0;j<blobTriplets.size();j++)
+    for(unsigned int i=0;i<mGroup3s.size();i++)
+        for(unsigned int j=0;j<blobTriplets.size();j++)
     {
         //std::cout<<"\t triplet "<<j<<std::endl;
         //std::cout<<"\t group "<<i<<std::endl;
@@ -286,7 +286,7 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
             vector<cv::Affine3d> poseHypothesisP3Pinv = computeP3P(projected2DPoints,Model3DPoints);
 
             //put the hypotheses in accumulation
-            for(int h=0;h<poseHypothesisP3Pinv.size();h++)
+            for(unsigned int h=0;h<poseHypothesisP3Pinv.size();h++)
             {
                 //get inverse:
                 cv::Affine3d poseHypothesisP3P=poseHypothesisP3Pinv[h].inv();
@@ -303,8 +303,8 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
 
     //for all the quadruplets compute pose hypothesis from Groups of 4 points from model
     //std::cout<<"compute pose hypotheses"<<std::endl;
-    for(int i=0;i<mGroup4s.size();i++)
-        for(int j=0;j<blobQuadriplets.size();j++)
+    for(unsigned int i=0;i<mGroup4s.size();i++)
+        for(unsigned int j=0;j<blobQuadriplets.size();j++)
     {
         //std::cout<<"\t triplet "<<j<<std::endl;
         //std::cout<<"\t group "<<i<<std::endl;
@@ -327,7 +327,7 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
             vector<cv::Affine3d> poseHypothesisP3Pinv = computeP3P(projected2DPoints,Model3DPoints);
 
             //put the hypotheses in accumulation
-            for(int h=0;h<poseHypothesisP3Pinv.size();h++)
+            for(unsigned int h=0;h<poseHypothesisP3Pinv.size();h++)
             {
                 //get inverse:
                 cv::Affine3d poseHypothesisP3P=poseHypothesisP3Pinv[h].inv();
@@ -357,13 +357,13 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
     float sigma_meas = 5.;
     //for each pose do the update
     std::cout<<poseHypothesis.size()<<" hypotheses"<<std::endl;
-    for(int h=0;h<poseHypothesis.size();h++)
+    for(unsigned int h=0;h<poseHypothesis.size();h++)
     {
         //projected vertices
         vector<Point2f> vprojVertices;
         //projectPoints(mVertices, poseHypothesis[h].rvec(), poseHypothesis[h].translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVertices);
 
-        for(int i=0;i<mGroup3s.size();i++)
+        for(unsigned int i=0;i<mGroup3s.size();i++)
         {
             std::vector<cv::Point3f> mVerticesInGroup;
             for(int j=0;j<3;j++)mVerticesInGroup.push_back(mVertices[mGroup3s[i].ids[j]]);
@@ -377,7 +377,7 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
                 for(int j=0;j<3;j++)vprojVertices.push_back(vprojVerticesInGroup[j]);
         }
         //same for groups of 4
-        for(int i=0;i<mGroup4s.size();i++)
+        for(unsigned int i=0;i<mGroup4s.size();i++)
         {
             std::vector<cv::Point3f> mVerticesInGroup;
             for(int j=0;j<4;j++)mVerticesInGroup.push_back(mVertices[mGroup4s[i].ids[j]]);
@@ -393,7 +393,7 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
 
         //update projectionAccu
         int support_normal = int(3.*sigma_meas);
-        for(int i=0;i<vprojVertices.size();i++)
+        for(unsigned int i=0;i<vprojVertices.size();i++)
         {
             //std::cout<<"vprojVertices ["<<i<<"] = "<< vprojVertices[i] <<std::endl;
             if(vprojVertices[i].x>-support_normal && vprojVertices[i].y>-support_normal && 
@@ -428,14 +428,14 @@ bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const Int
     //PoseHypothesisSet *bestHypothesis=new PoseHypothesisSet[nbHypoPerTime];
     //int idMinScoreSet = 0; //which of the hypos to replace next
 
-    for(int h=0;h<poseHypothesis.size();h++)
+    for(unsigned int h=0;h<poseHypothesis.size();h++)
     {
         //projected vertices
         vector<Point2f> vprojVertices;
         projectPoints(mVertices, poseHypothesis[h].rvec(), poseHypothesis[h].translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVertices);
 
         float nbVotes = 0;
-        for(int i=0;i<vprojVertices.size();i++)
+        for(unsigned int i=0;i<vprojVertices.size();i++)
         {
             int x_read = round(vprojVertices[i].x);
             int y_read = round(vprojVertices[i].y);
