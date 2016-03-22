@@ -15,7 +15,7 @@ static constexpr float pi = 3.141592654;
 namespace detail
 {
     static constexpr float fov = 50.f * 2 * pi / 360.f;
-    static const float f = 1.f / (2 * std::tanf(fov / 2));
+    static const float f = 1.f / (2 * std::tan(fov / 2));
 }
 
 

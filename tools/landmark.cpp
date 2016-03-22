@@ -16,7 +16,7 @@ static constexpr float pi = 3.141592654;
 namespace detail
 {
     static constexpr float fov = 50.f * 2 * pi / 360.f;
-    static const float f = 1.f / (2 * std::tanf(fov / 2));
+    static const float f = 1.f / (2 * std::tan(fov / 2));
 }
 
 static const cv::Mat idealCalibrationMatrix = (cv::Mat_<float>(3, 4) <<
@@ -32,15 +32,15 @@ cv::Mat transform_matrix(const Orientation& orientation, float t_z)
     float roll = orientation.second;
     
     const cv::Mat roll_matrix = (cv::Mat_<float>(4, 4) <<
-        std::cosf(roll), std::sinf(roll), 0, 0,
-        -std::sinf(roll), std::cosf(roll), 0, 0,
+        std::cos(roll), std::sin(roll), 0, 0,
+        -std::sin(roll), std::cos(roll), 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1);
     
     const cv::Mat pitch_matrix = (cv::Mat_<float>(4, 4) <<
         1, 0, 0, 0,
-        0, std::cosf(pitch), std::sinf(pitch), 0,
-        0, -std::sinf(pitch), std::cosf(pitch), 0,
+        0, std::cos(pitch), std::sin(pitch), 0,
+        0, -std::sin(pitch), std::cos(pitch), 0,
         0, 0, 0, 1);
     
     cv::Mat res = pitch_matrix * roll_matrix;

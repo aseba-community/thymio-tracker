@@ -58,8 +58,11 @@ void doGHmatching()
     tt::GHscale mGH(videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
-    //load perspective training GH
-    mGH.loadFromFile(GHfilename);
+    {
+        //load perspective training GH
+        std::ifstream geomHashingStream(GHfilename, std::ios::in | std::ios::binary);
+        mGH.loadFromStream(geomHashingStream);
+    }
  
     //process sequence
     Affine3d robotPose;
@@ -175,8 +178,11 @@ void GoodPairsAndGH()
     tt::GHscale mGH(videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
-    //load perspective training GH
-    mGH.loadFromFile(GHfilename);
+    {
+        //load perspective training GH
+        std::ifstream geomHashingStream(GHfilename, std::ios::in | std::ios::binary);
+        mGH.loadFromStream(geomHashingStream);
+    }
     
     //process sequence
     Affine3d robotPose;

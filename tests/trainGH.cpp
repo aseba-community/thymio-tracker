@@ -129,8 +129,11 @@ int main(int argc, const char * argv[])
     
     mGH.initHashTable(mRobot.mVertices.size());
     mGH.setModel(projPoints,vCams.size());
-    //save GH for later use
-    mGH.saveToFile(GHfilename);
+    {
+        //save GH for later use
+        std::ofstream geomHashingStream(GHfilename, std::ios::out | std::ios::binary);
+        mGH.saveToStream(geomHashingStream);
+    }
     delete[] projPoints;
     
     //loop to switch from one cam to the next
