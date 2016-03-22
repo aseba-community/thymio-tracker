@@ -73,7 +73,7 @@ int main(int argc, const char * argv[])
         latitude=M_PI/2.-l*distCamCam/radiusSphere;
     }
     
-    for(int c=0;c<vCams.size();c++)vizu.addObject(vCams[c]);
+    for(unsigned int c=0;c<vCams.size();c++)vizu.addObject(vCams[c]);
     
     //create another window to show projection in created cameras
     char window_name[100] = "Camera Views";
@@ -95,13 +95,13 @@ int main(int argc, const char * argv[])
 #else
     vector<Point3f> *projPoints=new vector<Point3f>[vCams.size()];//for GHscale, contains inverse depth as well
 #endif
-    for(int p=0;p<vCams.size();p++)
+    for(unsigned int p=0;p<vCams.size();p++)
     {
         Affine3d poseInv=vCams[p].pose.inv();
         //projPoints[p]=mRobot.projectVertices(cameraMatrix, distCoeffs, poseInv);//give coord in px, not good anymore
         
         Affine3d poseComb=poseInv * mRobot.pose;
-        for(int v=0;v<mRobot.mVertices.size();v++)
+        for(unsigned int v=0;v<mRobot.mVertices.size();v++)
         {
             Point3f pointCam=poseComb*mRobot.mVertices[v];
             //for GH:

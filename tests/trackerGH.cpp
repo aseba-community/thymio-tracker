@@ -27,7 +27,7 @@ namespace tt = thymio_tracker;
 void drawPointsAndIds(Mat &inputImage,vector<tt::DetectionGH> &_matches)
 {
     //draw Id
-    for(int i=0;i<_matches.size();i++)
+    for(unsigned int i=0;i<_matches.size();i++)
     {
         char pointIdStr[100];
         sprintf(pointIdStr, "%d", _matches[i].id);
@@ -287,7 +287,7 @@ void keyPointMatching()
     std::vector<DMatch> match1;
     std::vector<DMatch> match2;
     
-    for(int i=0; i<nn_matches.size(); i++)
+    for(unsigned int i=0; i<nn_matches.size(); i++)
     {
         match1.push_back(nn_matches[i][0]);
         match2.push_back(nn_matches[i][1]);
@@ -296,9 +296,9 @@ void keyPointMatching()
     //Mat img_matches1, img_matches2;
     //drawMatches(inputImage, keypoints_1, imageModel, keypoints_2, match1, img_matches1);
     
-    for(int p=0;p<match1.size();p++)
+    for(unsigned int p=0;p<match1.size();p++)
         cv::circle(inputImage, keypoints_2[match1[p].trainIdx].pt, (keypoints_2[match1[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-    for(int p=0;p<match2.size();p++)
+    for(unsigned int p=0;p<match2.size();p++)
         cv::circle(inputImage, keypoints_2[match2[p].trainIdx].pt, (keypoints_2[match2[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
 */
     //drawMatches(imageModel, keypoints_1, inputImage, keypoints_2, match1, img_matches1);
@@ -307,7 +307,7 @@ void keyPointMatching()
     //detector1.detect( imageModel, keypoints_1 );
     //detector1.detect( inputImage, keypoints_2 );
     
-    //for(int p=0;p<keypoints_2.size();p++)
+    //for(unsigned int p=0;p<keypoints_2.size();p++)
     //    cv::circle(inputImage, keypoints_2[p].pt, (keypoints_2[p].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
     
     //imshow(window_name,inputImage);
@@ -341,7 +341,7 @@ void keyPointMatching()
         std::vector<DMatch> match1;
         std::vector<DMatch> match2;
         
-        for(int i=0; i<nn_matches.size(); i++)
+        for(unsigned int i=0; i<nn_matches.size(); i++)
         {
             match1.push_back(nn_matches[i][0]);
             match2.push_back(nn_matches[i][1]);
@@ -350,9 +350,9 @@ void keyPointMatching()
         //Mat img_matches1, img_matches2;
         //drawMatches(inputImage, keypoints_1, imageModel, keypoints_2, match1, img_matches1);
         
-        for(int p=0;p<match1.size();p++)
+        for(unsigned int p=0;p<match1.size();p++)
             cv::circle(inputImageCol, keypoints_2[match1[p].trainIdx].pt, (keypoints_2[match1[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
-        for(int p=0;p<match2.size();p++)
+        for(unsigned int p=0;p<match2.size();p++)
             cv::circle(inputImageCol, keypoints_2[match2[p].trainIdx].pt, (keypoints_2[match2[p].trainIdx].size - 1) / 2 + 1, cv::Scalar(255, 0, 0), 0);
         
         //process(inputImage);
