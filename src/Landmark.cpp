@@ -14,7 +14,7 @@
 namespace thymio_tracker
 {
 
-Landmark Landmark::fromFile(const std::string& filename)
+Landmark Landmark::fromFileStorage(cv::FileStorage& fs)
 {
     cv::Mat image;
     
@@ -25,17 +25,11 @@ Landmark Landmark::fromFile(const std::string& filename)
     
     cv::BFMatcher matcher(cv::NORM_HAMMING);
     
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
-    
-    if(!fs.isOpened())
-        throw std::runtime_error("Marker file not found");
-    
     cv::read(fs["keypoints"], keypoints);
     cv::read(fs["descriptors"], descriptors);
     // cv::read(fs["image_size"], imageSize);
     cv::read(fs["real_size"], realSize);
     cv::read(fs["image"], image);
-    fs.release();
     
     if(image.empty())
         throw std::runtime_error("Could not load image data");

@@ -103,30 +103,39 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
         throw std::runtime_error("Calibration file not found!");
     }
     
-    init(calibrationStorage, geomHashingStream, landmarkFiles);
+    std::vector<cv::FileStorage> landmarkStorages;
+    for(auto& landmarkFile : landmarkFiles)
+    {
+        cv::FileStorage fs(landmarkFile, cv::FileStorage::READ);
+        if(!fs.isOpened())
+            throw std::runtime_error("Marker file not found");
+        landmarkStorages.push_back(fs);
+    }
+    
+    init(calibrationStorage, geomHashingStream, landmarkStorages);
     
 }
 
 ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
                              std::istream& geomHashingStream,
-                             const std::vector<std::string>& landmarkFiles)
-    : mDetectionInfo(landmarkFiles.size())
+                             std::vector<cv::FileStorage>& landmarkStorages)
+    : mDetectionInfo(landmarkStorages.size())
     , mFeatureExtractor(cv::BRISK::create())
 {
-    init(calibrationStorage, geomHashingStream, landmarkFiles);
+    init(calibrationStorage, geomHashingStream, landmarkStorages);
 }
 
 void ThymioTracker::init(cv::FileStorage& calibrationStorage,
                          std::istream& geomHashingStream,
-                         const std::vector<std::string>& landmarkFiles)
+                         std::vector<cv::FileStorage>& landmarkStorages)
 {
     mGH.loadFromStream(geomHashingStream);
     readCalibrationFromFileStorage(calibrationStorage, mCalibration);
     mGH.setCalibration(mCalibration);
     
     // Load landmarks
-    for(auto landmarkFile : landmarkFiles)
-        mLandmarks.push_back(Landmark::fromFile(landmarkFile));
+    for(auto& landmarkStorage : landmarkStorages)
+        mLandmarks.push_back(Landmark::fromFileStorage(landmarkStorage));
 }
 
 void ThymioTracker::resizeCalibration(const cv::Size& imgSize)

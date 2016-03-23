@@ -16,7 +16,7 @@ class LandmarkDetection;
 class Landmark
 {
 public:
-    static Landmark fromFile(const std::string& filename);
+    static Landmark fromFileStorage(cv::FileStorage& fs);
     
     Landmark(const cv::Mat& image,
              const std::vector<cv::KeyPoint>& keypoints,

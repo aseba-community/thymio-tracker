@@ -69,7 +69,7 @@ public:
                   const std::vector<std::string>& landmarkFiles={});
     ThymioTracker(cv::FileStorage& calibration,
                   std::istream& geomHashing,
-                  const std::vector<std::string>& landmarkFiles);
+                  std::vector<cv::FileStorage>& landmarkStorages);
     ~ThymioTracker(){}
     
     void update(const cv::Mat& input,
@@ -85,7 +85,7 @@ public:
 private:
     void init(cv::FileStorage& calibration,
               std::istream& geomHashing,
-              const std::vector<std::string>& landmarkFiles);
+              std::vector<cv::FileStorage>& landmarkStorages);
 
     /// Resize the calibration for a new given image size.
     void resizeCalibration(const cv::Size& imgSize);
