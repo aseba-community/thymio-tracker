@@ -246,7 +246,11 @@ int main(int argc, char* argv[])
         std::cerr << "Could not open " << imageFilename << ". " << std::endl;
         return 1;
     }
-    // cv::cvtColor(image, image, CV_RGB2GRAY);
+    
+    if(image.type() != CV_8UC1)
+    {
+        cv::cvtColor(image, image, CV_RGB2GRAY);
+    }
     
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
