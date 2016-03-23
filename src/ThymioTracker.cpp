@@ -8,7 +8,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 namespace thymio_tracker
 {
@@ -202,9 +201,7 @@ void ThymioTracker::update(const cv::Mat& input,
     // Extract features only once every 100 frames and only if need to do any detection
     if(!allTracked && counter >= 20)
     {
-        cv::Mat gray_input;
-        cv::cvtColor(input, gray_input, CV_RGB2GRAY);
-        mFeatureExtractor->detectAndCompute(gray_input, cv::noArray(),
+        mFeatureExtractor->detectAndCompute(input, cv::noArray(),
                                             detectedKeypoints, detectedDescriptors);
         counter = 0;
     }
