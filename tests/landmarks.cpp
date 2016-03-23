@@ -15,7 +15,7 @@ static constexpr float pi = 3.141592654;
 namespace detail
 {
     static constexpr float fov = 50.f * 2 * pi / 360.f;
-    static const float f = 1.f / (2 * std::tanf(fov / 2));
+    static const float f = 1.f / (2 * std::tan(fov / 2));
 }
 
 
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     std::cout<<"Nb features : "<<templateKeypoints.size()<<std::endl;
 
     //rescale template Keypoint positions
-    for(int i=0;i<templateKeypoints.size();i++)
+    for(unsigned int i=0;i<templateKeypoints.size();i++)
         templateKeypoints[i].pt = (templateKeypoints[i].pt-cv::Point2f(margin,margin))/scale;
 
 

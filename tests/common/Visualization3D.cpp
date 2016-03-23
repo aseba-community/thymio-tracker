@@ -84,7 +84,7 @@ void Visualization3D::draw()
     imCurrent=imBackground.clone();
     
     //draw objects
-    for(int o=0;o<mObjects.size();o++)mObjects[o].draw(imCurrent,cameraMatrix, distCoeffs, cameraPose);
+    for(unsigned int o=0;o<mObjects.size();o++)mObjects[o].draw(imCurrent,cameraMatrix, distCoeffs, cameraPose);
     imshow(windowName,imCurrent);
 
 }

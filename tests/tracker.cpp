@@ -30,7 +30,7 @@ namespace tt = thymio_tracker;
 void drawPointsAndIds(Mat &inputImage,vector<tt::DetectionGH> &_matches)
 {
     //draw Id
-    for(int i=0;i<_matches.size();i++)
+    for(unsigned int i=0;i<_matches.size();i++)
     {
         char pointIdStr[100];
         sprintf(pointIdStr, "%d", _matches[i].id);
