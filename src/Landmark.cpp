@@ -136,6 +136,7 @@ void Landmark::find(const cv::Mat& image,
     {
         //use standard Pnp: define model
         std::vector<cv::Point3f> mModelPoints(4);
+        //divide everything by 2x100 to get half size in meter
         mModelPoints[3] = cv::Point3f(-mRealSize.width/200., -mRealSize.height/200.,0.);
         mModelPoints[2] = cv::Point3f(mRealSize.width/200., -mRealSize.height/200.,0.);
         mModelPoints[1] = cv::Point3f(mRealSize.width/200., mRealSize.height/200.,0.);
@@ -315,7 +316,7 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
 
     //random selection of points
     int nbTracksChecked = 50;
-    float NCCvalid = 0.8;
+    float NCCvalid = 0.9;
     std::vector<int> myIndexes;
     for (int i=0; i<nextPoints.size(); i++) myIndexes.push_back(i);
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );

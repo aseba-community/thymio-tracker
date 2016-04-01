@@ -603,7 +603,7 @@ ThymioBlobModel::ThymioBlobModel()
 
     //set them in meter and center them
     for(int v=0;v<14;v++)
-        mVertices[v]=(mVertices[v]-Point3f(4.4,2.,0))/100.;
+        mVertices[v]=(mVertices[v]-Point3f(4.4,2.8,0))/100.;
 
 
     //back of robot again put in centimeters and origin as left down vertice
@@ -651,7 +651,6 @@ ThymioBlobModel::ThymioBlobModel()
     
     //if want to display edges
     vector<Point3f> mVerticesTop;
-    //create vertices from dimensions
     mVerticesTop.push_back(Point3f(-0.65,7.75,3.2));
     mVerticesTop.push_back(Point3f(-0.65,-0.65,3.2));
     mVerticesTop.push_back(Point3f(9.5,-0.65,3.2));
@@ -668,9 +667,7 @@ ThymioBlobModel::ThymioBlobModel()
     for(unsigned int v=0;v<mVerticesTop.size();v++)
         mEdges.push_back(ModelEdge(mVerticesTop[v],mVerticesTop[(v+1)%mVerticesTop.size()]));
     
-    //if want to display edges of bottom part
     vector<Point3f> mVerticesBottom;
-    //create vertices from dimensions
     mVerticesBottom.push_back(Point3f(-0.65,7.75,-1.2));
     mVerticesBottom.push_back(Point3f(-0.65,-0.65,-1.2));
     mVerticesBottom.push_back(Point3f(9.5,-0.65,-1.2));
@@ -705,6 +702,28 @@ ThymioBlobModel::ThymioBlobModel()
     //from center to image plane
     for(unsigned int v=0;v<mVerticesVertical.size()/2;v++)
         mEdges.push_back(ModelEdge(mVerticesVertical[2*v],mVerticesVertical[2*v+1]));
+
+
+    //define what s going to be used in active search
+    mImage = cv::imread("/Users/amaurydame/Projects/arthymio/data/robot/robotTopCrop.png",CV_LOAD_IMAGE_GRAYSCALE);
+
+    mRobotKeypointPos.push_back(cv::Point2f(100,480));
+    mRobotKeypointPos.push_back(cv::Point2f(102,421));
+    mRobotKeypointPos.push_back(cv::Point2f(112,136));
+    mRobotKeypointPos.push_back(cv::Point2f(114,80));
+
+    mRobotKeypointPos.push_back(cv::Point2f(160,421));
+    mRobotKeypointPos.push_back(cv::Point2f(168,137));
+    mRobotKeypointPos.push_back(cv::Point2f(170,81));
+
+    mRobotKeypointPos.push_back(cv::Point2f(681,427));
+    mRobotKeypointPos.push_back(cv::Point2f(679,141));
+    mRobotKeypointPos.push_back(cv::Point2f(679,83));
+
+    mRobotKeypointPos.push_back(cv::Point2f(742,487));
+    mRobotKeypointPos.push_back(cv::Point2f(740,428));
+    mRobotKeypointPos.push_back(cv::Point2f(736,141));
+    mRobotKeypointPos.push_back(cv::Point2f(736,85));
     
 }
 

@@ -51,8 +51,10 @@ public:
     
     // Get corners in template space
     std::vector<cv::Point2f> getCorners() const;
-    
+
+    inline const cv::Size2f getRealSize() const {return mRealSize;};
     inline const cv::Mat& getImage() const {return mImage;}
+    const std::vector<cv::Point2f>& getKeypointPos() const {return mKeypointPos;}
     
 private:
     cv::Mat mImage;

@@ -82,6 +82,22 @@ VideoSourceSeq::VideoSourceSeq(const char *_printfPath, CameraType _camType, int
     : VideoSource(_camType)
     , printfPath(_printfPath)
 {
+    //if resized version of input has been saved then calibration has to be resized too
+    //load first image 
+    char fileName[200];
+    sprintf(fileName, printfPath.c_str(), id0);
+    
+    std::ifstream fout;
+    fout.open(fileName);
+    
+    if(!fout.is_open())
+        std::cerr<<"VideoSourceSeq : File does not exist"<<std::endl;
+    else
+        img=imread(fileName);
+
+    if(img.size().width != mCalibration.imageSize.width)
+        rescaleCalibration(mCalibration,img.size());
+
     frameId=id0;
     end_sequence=false;
 }
@@ -100,6 +116,7 @@ void VideoSourceSeq::grabNewFrame()
         if(!fout.is_open())
         {
             std::cerr<<"VideoSourceSeq : End sequence"<<std::endl;
+            frameId--;
             end_sequence=true;
         }
         else

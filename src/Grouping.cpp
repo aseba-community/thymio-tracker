@@ -51,6 +51,7 @@ void Grouping::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const
     cv::cvtColor(input, gray, CV_RGB2GRAY);
     
     // blob detector
+    blobs.clear();
     sbd->detect(gray, blobs);
 }
 
@@ -89,6 +90,7 @@ void Grouping::getBlobs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs)
 }
 void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
 {
+    blobPairs.clear();
     for(int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
@@ -115,6 +117,7 @@ void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &b
     //get blobs
     extractBlobs(img, blobs);
     
+    blobPairs.clear();
     for(unsigned int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
@@ -138,6 +141,7 @@ void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &b
 
 void Grouping::getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets)
 {
+    blobTriplets.clear();
     for(unsigned int p=0;p<blobPairs.size();p++)
     {
         //get the pairs which overlap
@@ -221,6 +225,7 @@ void Grouping::getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std:
 
 void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads)
 {
+    blobQuadriplets.clear();
     //many ways to do, for now go through list of triplets and check if shares 2 points with other triangles,
     //if doesn't remove it from list, if does create quadruplets and remove all other triangle contained in quadruplets
     std::vector<BlobTriplet> blobTripletsCopy=blobTriplets;
@@ -417,6 +422,7 @@ void getBlobsInTriplets(const vector<KeyPoint> &blobs,const vector<BlobTriplet> 
         }
     }
     //create the new blob vector
+    blobsinTriplets.clear();
     for(unsigned int i=0;i<idBlobsInTripelts.size();i++)
         blobsinTriplets.push_back(blobs[idBlobsInTripelts[i]]);
     //blobsinTriplets=blobs;

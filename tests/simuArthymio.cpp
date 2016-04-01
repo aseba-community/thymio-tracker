@@ -9,18 +9,20 @@ namespace tt = thymio_tracker;
 
 int main(int argc, char** argv)
 {
-    tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
+    tt::ThymioTracker tracker("../data/calibration/nexus_camera_calib.xml",
         "../data/GHscale_Arth_Perspective.dat",
         {
             //"../data/landmarks/marker.xml.gz",
             "../data/landmarks/markerTest.xml.gz",
+            "../data/landmarks/ziggu.xml.gz",
             // "../data/marker2.xml.gz",
             // "../data/ziggu.xml.gz"
         }
         );
     
-    VideoSourceLive videoSource(EmbeddedCam);
+    //VideoSourceLive videoSource(EmbeddedCam);
     //VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
+    VideoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
     videoSource.resizeSource(0.5);
     
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
@@ -37,7 +39,7 @@ int main(int argc, char** argv)
         
         imshow(window_name, inputImage);
         
-        std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
+        //std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
         
         // const tt::DetectionInfo& di = tracker.getDetectionInfo();
         // const tt::Landmark& landmark = tracker.getLandmarks()[0];
@@ -50,8 +52,8 @@ int main(int argc, char** argv)
         //     imshow(window_name, crop);
         // }
         
-        auto key = cv::waitKey(5);
-        //auto key = cv::waitKey();
+        //auto key = cv::waitKey(5);
+        auto key = cv::waitKey();
         if(key == 27 || key == 'q')
             break;
     }

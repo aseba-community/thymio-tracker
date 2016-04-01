@@ -1,7 +1,12 @@
 //Geometric hashing, first version: 2 dimensions hash table
 //for each point: get nbNeigbor=3 closest points,
+
 //consider all positively oriented triangles in this set of points
-//create a 3D basis from that and project other points in it
+//create a 3D basis from that and project other points in it (3D made out of 2D pos and 1D scale)
+//while filling the hash table, the relative scale is computed using the ration between the 
+//inverse detph of the central point of the basis and the inv depth of the other point
+//while infering, we use the blob size which is proportional to the inverse depth
+
 #pragma once
 
 #include <vector>
@@ -29,6 +34,8 @@ public:
     //set Hashing table, could do that autonomously from model, but as we have one object we code it the hard way
     void initHashTable(int _nbIds, cv::Point3i _nbBinsPerDim=cv::Point3i(40,40,5));
     //train GH with model projected in several positions to be more robust to perspective effects
+    //Input: list of points for each pose, the 3 coordinates in each points correspond to the position of point in image plane in meters
+    //and to inverse depth
     void setModel(std::vector<cv::Point3f> *projPoints, int nbPoses);
     //extract blobs, get there 3D position, check which point they correspond to in HashTable
     void getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionGH> &matches) const;

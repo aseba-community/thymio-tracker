@@ -1,7 +1,9 @@
 //Geometric hashing, first version: 2 dimensions hash table
 //for each point: get nbNeigbor=3 closest points,
-//consider all positively oriented triangles in this set of points
-//create a 3D basis from that and project other points in it
+
+//consider all positively oriented triangles in this set of points as a basis
+//create a 2D basis from that and project other points in it
+
 #pragma once
 
 #include <vector>

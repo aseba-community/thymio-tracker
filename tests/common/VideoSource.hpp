@@ -57,6 +57,7 @@ public:
     VideoSourceSeq(const char *_printfPath, CameraType _camType, int id0=0);
     
     void grabNewFrame();
+    int getFrameId(){return frameId;};
     
 private:
     //where to read image sequence
