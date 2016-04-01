@@ -7,6 +7,7 @@
 #include <ctime>
 
 
+
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/video.hpp>
@@ -88,12 +89,15 @@ public:
     ThymioTracker(const std::string& calibrationFile,
                   const std::string& geomHashingFile,
                   const std::vector<std::string>& landmarkFiles={});
+    ThymioTracker(cv::FileStorage& calibration,
+                  std::istream& geomHashing,
+                  std::vector<cv::FileStorage>& landmarkStorages);
     ~ThymioTracker(){}
     
+    //standard function called by java wrapper
     void update(const cv::Mat& input,
                 const cv::Mat* deviceOrientation=0);
-    void updateOrientation(const cv::Mat& input,
-                const cv::Mat* deviceOrientation=0);
+
     
     //void drawLastDetection(cv::Mat* output) const;
     void drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation=0) const;
@@ -105,11 +109,13 @@ public:
     inline const IntrinsicCalibration& getIntrinsicCalibration() const {return mCalibration;}
 
 private:
+    void init(cv::FileStorage& calibration,
+              std::istream& geomHashing,
+              std::vector<cv::FileStorage>& landmarkStorages);
+
     /// Resize the calibration for a new given image size.
     void resizeCalibration(const cv::Size& imgSize);
     
-    const std::string mCalibrationFile;
-    const std::string mGeomHashingFile;
     GHscale mGH;
     ThymioBlobModel mRobot;
     IntrinsicCalibration mCalibration;

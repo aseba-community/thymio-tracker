@@ -3,11 +3,11 @@
 
 #include <vector>
 #include <stdexcept>
+#include <fstream>
 
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 namespace thymio_tracker
 {
@@ -86,41 +86,62 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
     }
 }
 
-void loadCalibration(const std::string& filename,
-                     IntrinsicCalibration* calibration)
-{
-    cv::FileStorage fs;
-    fs.open(filename, cv::FileStorage::READ);
-    if(!fs.isOpened())
-    {
-        std::cerr << "Could not open " << filename << std::endl;
-        throw std::runtime_error("Calibration file not found!");
-    }
-    
-    readCalibrationFromFileStorage(fs, *calibration);
-    fs.release();
-}
-
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
                              const std::string& geomHashingFile,
                              const std::vector<std::string>& landmarkFiles)
-    : mCalibrationFile(calibrationFile)
-    , mGeomHashingFile(geomHashingFile)
-    , mDetectionInfo(landmarkFiles.size())
-    // , mFeatureExtractor(cv::ORB::create(1000))
+    : mDetectionInfo(landmarkFiles.size())
     , mFeatureExtractor(cv::BRISK::create())
-    // , mFeatureExtractor(new brisk::BriskFeature(5.0, 4))
-    // , mFeatureExtractor(cv::xfeatures2d::SIFT::create())
-    // , mFeatureExtractor(cv::xfeatures2d::SURF::create())
-    // , mFeatureExtractor(cv::xfeatures2d::DAISY::create())
 {
-    mGH.loadFromFile(mGeomHashingFile);
-    loadCalibration(mCalibrationFile, &mCalibration);
+    //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
+    std::ifstream geomHashingStream(geomHashingFile, std::ios::in | std::ios::binary);
+    if (!geomHashingStream.is_open())
+    {
+        std::cerr << "Could not open " << geomHashingFile << std::endl;
+        throw std::runtime_error("GHscale::loadFromFile > File not found!");
+    }
+    
+    // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
+    // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize);
+    cv::FileStorage calibrationStorage(calibrationFile, cv::FileStorage::READ);
+    if(!calibrationStorage.isOpened())
+    {
+        std::cerr << "Could not open " << calibrationFile << std::endl;
+        throw std::runtime_error("Calibration file not found!");
+    }
+    
+    std::vector<cv::FileStorage> landmarkStorages;
+    for(auto& landmarkFile : landmarkFiles)
+    {
+        cv::FileStorage fs(landmarkFile, cv::FileStorage::READ);
+        if(!fs.isOpened())
+            throw std::runtime_error("Marker file not found");
+        landmarkStorages.push_back(fs);
+    }
+    
+    init(calibrationStorage, geomHashingStream, landmarkStorages);
+    
+}
+
+ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
+                             std::istream& geomHashingStream,
+                             std::vector<cv::FileStorage>& landmarkStorages)
+    : mDetectionInfo(landmarkStorages.size())
+    , mFeatureExtractor(cv::BRISK::create())
+{
+    init(calibrationStorage, geomHashingStream, landmarkStorages);
+}
+
+void ThymioTracker::init(cv::FileStorage& calibrationStorage,
+                         std::istream& geomHashingStream,
+                         std::vector<cv::FileStorage>& landmarkStorages)
+{
+    mGH.loadFromStream(geomHashingStream);
+    readCalibrationFromFileStorage(calibrationStorage, mCalibration);
     mGH.setCalibration(mCalibration);
     
     // Load landmarks
-    for(auto landmarkFile : landmarkFiles)
-        mLandmarks.push_back(Landmark::fromFile(landmarkFile));
+    for(auto& landmarkStorage : landmarkStorages)
+        mLandmarks.push_back(Landmark::fromFileStorage(landmarkStorage));
 }
 
 void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
@@ -130,38 +151,7 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
     mGH.setCalibration(mCalibration);
 }
 
-namespace patch
-{
-    template < typename T > std::string to_string( const T& n )
-    {
-        std::ostringstream stm ;
-        stm << n ;
-        return stm.str() ;
-    }
-}
 
-void ThymioTracker::updateOrientation(const cv::Mat& input,
-                           const cv::Mat* deviceOrientation)
-{    
-    if(input.size() != mCalibration.imageSize)
-        resizeCalibration(input.size());
-
-    static int counter = 0;
-
-    std::string path = "/sdcard/ThymioTracker/record/";
-    std::string name1 = path+"img_" + patch::to_string(counter) + ".png";
-    cv::imwrite(name1, input);
-
-    std::string name2 = path+"ori_" + patch::to_string(counter) + ".dat";
-    //cv::FileStorage file(name2, cv::FileStorage::WRITE);
-    //file << *deviceOrientation;
-    cv::FileStorage fs(name2, cv::FileStorage::WRITE);
-    cv::write(fs, "deviceOrientation", *deviceOrientation);
-
-    std::cout<<"save frame "<<counter<<std::endl;
-    counter++;
-
-}
     
 void ThymioTracker::update(const cv::Mat& input,
                            const cv::Mat* deviceOrientation)
@@ -355,9 +345,7 @@ void ThymioTracker::update(const cv::Mat& input,
     // Extract features only once every 20 frames and only if need to do any detection
     if(!allTracked && counter >= 20)
     {
-        cv::Mat gray_input;
-        cv::cvtColor(input, gray_input, CV_RGB2GRAY);
-        mFeatureExtractor->detectAndCompute(gray_input, cv::noArray(),
+        mFeatureExtractor->detectAndCompute(input, cv::noArray(),
                                             detectedKeypoints, detectedDescriptors);
         counter = 0;
     }
@@ -446,10 +434,10 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
                 cv::FONT_HERSHEY_COMPLEX_SMALL,
                 0.8, cvScalar(0,0,250), 1, CV_AA);
     
-    // drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
-    // drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
-    // drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
-    // // drawPointsAndIds(output, mDetectionInfo.matches);
+    drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
+    drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
+    drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
+    // drawPointsAndIds(output, mDetectionInfo.matches);
     
      if(deviceOrientation)
          drawAxes(*output, *deviceOrientation);
@@ -504,3 +492,38 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
 }
 
 }
+
+/*
+namespace patch
+{
+    template < typename T > std::string to_string( const T& n )
+    {
+        std::ostringstream stm ;
+        stm << n ;
+        return stm.str() ;
+    }
+}
+
+//function to be called by java wrapper on tablet to store iamge sequence and corresponding orientation
+void ThymioTracker::update(const cv::Mat& input,
+                           const cv::Mat* deviceOrientation)
+{    
+    if(input.size() != mCalibration.imageSize)
+        resizeCalibration(input.size());
+
+    static int counter = 0;
+
+    std::string path = "/sdcard/ThymioTracker/record/";
+    std::string name1 = path+"img_" + patch::to_string(counter) + ".png";
+    cv::imwrite(name1, input);
+
+    std::string name2 = path+"ori_" + patch::to_string(counter) + ".dat";
+    //cv::FileStorage file(name2, cv::FileStorage::WRITE);
+    //file << *deviceOrientation;
+    cv::FileStorage fs(name2, cv::FileStorage::WRITE);
+    cv::write(fs, "deviceOrientation", *deviceOrientation);
+
+    std::cout<<"save frame "<<counter<<std::endl;
+    counter++;
+
+}*/

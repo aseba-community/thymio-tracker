@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <iostream>
-#include <fstream>
 #include <cmath>
 
 #include <opencv2/core.hpp>
@@ -42,8 +41,8 @@ public:
     void getModelPointsFromImage(const std::vector<cv::KeyPoint> &blobs, std::vector<DetectionGH> &matches) const;
 
     //GH io
-    void saveToFile(const std::string& filename) const;
-    void loadFromFile(const std::string& filename);
+    void saveToStream(std::ostream& stream) const;
+    void loadFromStream(std::istream& stream);
 
 private:
     //camera calibration

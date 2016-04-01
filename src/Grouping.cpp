@@ -47,12 +47,9 @@ Grouping::Grouping()
 
 void Grouping::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const
 {
-    Mat gray;
-    cv::cvtColor(input, gray, CV_RGB2GRAY);
-    
     // blob detector
     blobs.clear();
-    sbd->detect(gray, blobs);
+    sbd->detect(input, blobs);
 }
 
 struct sort_wrt_second {
@@ -91,7 +88,7 @@ void Grouping::getBlobs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs)
 void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
 {
     blobPairs.clear();
-    for(int p=0;p<blobs.size();p++)
+    for(unsigned int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
         vector<unsigned int> idNeigbors;
@@ -99,7 +96,7 @@ void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::ve
         getClosestNeigbors(p, blobs, idNeigbors);
         
         //check resulting pairs
-        for(int i=0;i<idNeigbors.size();i++)
+        for(unsigned int i=0;i<idNeigbors.size();i++)
         {
             float d_on_ss=norm(blobs[p].pt-blobs[idNeigbors[i]].pt)/sqrt(blobs[p].size*blobs[idNeigbors[i]].size);
             float scale_dist=sqrt((blobs[p].size-blobs[idNeigbors[i]].size)*(blobs[p].size-blobs[idNeigbors[i]].size));
@@ -232,7 +229,7 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
 
     //to keep track of the id of the triplets in the original triplets list
     std::vector<int> idAllTripletsInCopy;
-    for(int i=0;i<blobTripletsCopy.size();i++)idAllTripletsInCopy.push_back(i);
+    for(unsigned int i=0;i<blobTripletsCopy.size();i++)idAllTripletsInCopy.push_back(i);
 
     //to store the id of the triplets in quads
     std::vector<int> idTripletsInQuads;
@@ -323,7 +320,7 @@ void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets
 
 void setClockwiseDirectionToTriplets(const std::vector<cv::KeyPoint> &blobs,vector<BlobTriplet> &blobTriplets)
 {
-    for(int i=0;i<blobTriplets.size();i++)
+    for(unsigned int i=0;i<blobTriplets.size();i++)
     {
         BlobTriplet &tp = blobTriplets[i];
         Point2f basis1 = blobs[tp.ids[1]].pt-blobs[tp.ids[0]].pt;
@@ -344,7 +341,7 @@ void setClockwiseDirectionToQuadruplets(const std::vector<cv::KeyPoint> &blobs,v
     //want quadruplet ordered clockwise, triplet from first indexes should already be set accordingly
     //=> now want to know if we have to move last index to second or third position
     
-    for(int i=0;i<blobQuadruplets.size();i++)
+    for(unsigned int i=0;i<blobQuadruplets.size();i++)
     {
         BlobQuadruplets &tp = blobQuadruplets[i];
         int unsortedIndex = tp.ids[3];

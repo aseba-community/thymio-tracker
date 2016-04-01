@@ -14,7 +14,7 @@
 namespace thymio_tracker
 {
 
-Landmark Landmark::fromFile(const std::string& filename)
+Landmark Landmark::fromFileStorage(cv::FileStorage& fs)
 {
     cv::Mat image;
     
@@ -25,17 +25,11 @@ Landmark Landmark::fromFile(const std::string& filename)
     
     cv::BFMatcher matcher(cv::NORM_HAMMING);
     
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
-    
-    if(!fs.isOpened())
-        throw std::runtime_error("Marker file not found");
-    
     cv::read(fs["keypoints"], keypoints);
     cv::read(fs["descriptors"], descriptors);
     // cv::read(fs["image_size"], imageSize);
     cv::read(fs["real_size"], realSize);
     cv::read(fs["image"], image);
-    fs.release();
     
     if(image.empty())
         throw std::runtime_error("Could not load image data");
@@ -83,7 +77,7 @@ void Landmark::find(const cv::Mat& image,
         objectPoints.push_back(mKeypoints[c].pt);
     
     // Compute homography
-    int minCorresp = 10;//minimum number of matches
+    unsigned int minCorresp = 10;//minimum number of matches
     float ransacThreshold = 5.;
     cv::Mat homography;
     std::vector<unsigned char> mask;
@@ -102,7 +96,7 @@ void Landmark::find(const cv::Mat& image,
         std::vector<cv::Point2f> scenePointsValid;
 
         cv::perspectiveTransform(objectPoints, scenePointsRefined, homography);
-        for(int i=0;i<scenePointsRefined.size();i++)
+        for(unsigned int i=0;i<scenePointsRefined.size();i++)
         {
             mask[i]=(unsigned char)(cv::norm(scenePointsRefined[i]-scenePoints[i])<ransacThreshold);
             if(mask[i])
@@ -197,7 +191,7 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
     //will pick a random subset of the keypoint features to do active search
     //so that after a few frames, all features will be covered and shift free
     std::vector<int> myIndexes;
-    for (int i=0; i<mKeypointPos.size(); i++) myIndexes.push_back(i);
+    for (unsigned int i=0; i<mKeypointPos.size(); i++) myIndexes.push_back(i);
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );
 
     int nbKeypointsCoveredPerFrame = 50;
@@ -318,7 +312,7 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
     int nbTracksChecked = 50;
     float NCCvalid = 0.9;
     std::vector<int> myIndexes;
-    for (int i=0; i<nextPoints.size(); i++) myIndexes.push_back(i);
+    for (unsigned int i=0; i<nextPoints.size(); i++) myIndexes.push_back(i);
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );
     auto indexIt = myIndexes.cbegin();
 

@@ -240,7 +240,7 @@ vector<cv::Affine3d> computeP3P(const std::vector<cv::Point2f> &projected2DPoint
 {
     //convert to Eigen vectors
     std::vector<Eigen::Vector3d> points3d;
-    for(int i(0); i < Model3DPoints.size(); ++i)
+    for(unsigned int i(0); i < Model3DPoints.size(); ++i)
     {
         Eigen::Vector3d EigenVec(Model3DPoints[i].x,Model3DPoints[i].y,Model3DPoints[i].z);
         points3d.push_back(EigenVec);
@@ -261,7 +261,7 @@ vector<cv::Affine3d> computeP3P(const std::vector<cv::Point2f> &projected2DPoint
 
     //convert Eigen poses to openCV poses
     vector<cv::Affine3d> poses_cv;
-    for(int i(0); i < poses.size(); ++i)
+    for(unsigned int i(0); i < poses.size(); ++i)
     {
         Eigen::Matrix<double,3,4> &pose_c = poses[i];
         Eigen::AngleAxis<double> axisRot(pose_c.block<3,3>(0,0));

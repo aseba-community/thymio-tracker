@@ -147,7 +147,7 @@ int TrackBlobsFindPoseAndGetStats()
         }
 
         //display blobs
-        for(int v=0;v<mBlobs.size();v++)
+        for(unsigned int v=0;v<mBlobs.size();v++)
             circle(inputImage, mBlobs[v].pt, 4, Scalar(250,100,250), -1, 8, 0);
       
         
@@ -157,14 +157,14 @@ int TrackBlobsFindPoseAndGetStats()
         vector<Point3f> m3DVerticesNoRansac;
         
         //for each projected model point mVertProjDes, search for closest blob
-        for(int v=0;v<mVertProjDes.size();v++)
+        for(unsigned int v=0;v<mVertProjDes.size();v++)
         {
             //init as first blob
             KeyPoint bestMatch=mBlobs[0];
             float distMin=norm(bestMatch.pt-mVertProjDes[v]);
             
             //search best match
-            for(int i=1;i<mBlobs.size();i++)
+            for(unsigned int i=1;i<mBlobs.size();i++)
             {
                 float distCurr=norm(mBlobs[i].pt-mVertProjDes[v]);
                 if(distCurr<distMin)
@@ -192,7 +192,7 @@ int TrackBlobsFindPoseAndGetStats()
             vector<Point2f> mProjectedVerticesFound;
             projectPoints(m3DVerticesNoRansac, rvec, tvec, cameraMatrix, distCoeffs, mProjectedVerticesFound);
             
-            for(int v=0;v<mProjectedVerticesFound.size();v++)
+            for(unsigned int v=0;v<mProjectedVerticesFound.size();v++)
             {
                 float distCurr=norm(mProjectedVerticesFound[v]-mBlobsP2fNoRansac[v]);
                 //remove them if bigger than threshold
@@ -211,17 +211,17 @@ int TrackBlobsFindPoseAndGetStats()
             //project again but all vertices from model so that can search for new position of blob from there at next frame
             vector<Point2f> mProjectedVertices;
             projectPoints(mVerticesDes, rvec, tvec, cameraMatrix, distCoeffs, mProjectedVertices);
-            for(int v=0;v<mVerticesDes.size();v++)
+            for(unsigned int v=0;v<mVerticesDes.size();v++)
                 circle(inputImage, mProjectedVertices[v], 4, Scalar(250,250,100), -1, 8, 0);
             
             //replace desired pix position by projected ones
-            for(int v=0;v<mVerticesDes.size();v++)mVertProjDes[v]=mProjectedVertices[v];
+            for(unsigned int v=0;v<mVerticesDes.size();v++)mVertProjDes[v]=mProjectedVertices[v];
             
             //now can compute our stats
             //relative scale variation:
             Affine3d r_to_c(rvec,tvec);
-            for(int v=0;v<mProjectedVerticesFound.size();v++)
-                for(int v2=0;v2<mProjectedVerticesFound.size();v2++)
+            for(unsigned int v=0;v<mProjectedVerticesFound.size();v++)
+                for(unsigned int v2=0;v2<mProjectedVerticesFound.size();v2++)
                     if(v!=v2)
                 {
                     Point3f point1Cam=r_to_c*m3DVerticesNoRansac[v];
@@ -238,8 +238,8 @@ int TrackBlobsFindPoseAndGetStats()
                 }
             
             //get all pairs of close points from model and compute pair statistics
-            for(int v=0;v<mProjectedVerticesFound.size();v++)
-                for(int v2=0;v2<mProjectedVerticesFound.size();v2++)
+            for(unsigned int v=0;v<mProjectedVerticesFound.size();v++)
+                for(unsigned int v2=0;v2<mProjectedVerticesFound.size();v2++)
                     if(v!=v2)
                     {
                         //check if 3d points are close enough to be in same cluster
