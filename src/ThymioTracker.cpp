@@ -78,6 +78,7 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
 
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
                              const std::string& geomHashingFile,
+                             const std::string& robotModelFile,
                              const std::vector<std::string>& landmarkFiles)
     : mDetectionInfo(landmarkFiles.size())
     , mFeatureExtractor(cv::BRISK::create())
@@ -94,6 +95,13 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
     {
         std::cerr << "Could not open " << geomHashingFile << std::endl;
         throw std::runtime_error("GHscale::loadFromFile > File not found!");
+    }
+    
+    cv::FileStorage robotModelStorage(robotModelFile, cv::FileStorage::READ);
+    if (!robotModelStorage.isOpened())
+    {
+        std::cerr << "Could not open " << robotModelFile << std::endl;
+        throw std::runtime_error("Robot model File not found!");
     }
     
     // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
@@ -114,29 +122,30 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
         landmarkStorages.push_back(fs);
     }
     
-    init(calibrationStorage, geomHashingStorage, landmarkStorages);
+    init(calibrationStorage, geomHashingStorage, robotModelStorage, landmarkStorages);
     //init(calibrationStorage, geomHashingStream, landmarkStorages);
     
 }
 
 ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
                              cv::FileStorage& geomHashingStorage,
+                             cv::FileStorage& robotModelStorage,
                              std::vector<cv::FileStorage>& landmarkStorages)
     : mDetectionInfo(landmarkStorages.size())
     , mFeatureExtractor(cv::BRISK::create())
 {
-    init(calibrationStorage, geomHashingStorage, landmarkStorages);
+    init(calibrationStorage, geomHashingStorage, robotModelStorage, landmarkStorages);
 }
 
 void ThymioTracker::init(cv::FileStorage& calibrationStorage,
                          cv::FileStorage& geomHashingStorage,
-                         //std::istream& geomHashingStream,
+                         cv::FileStorage& robotModelStorage,
                          std::vector<cv::FileStorage>& landmarkStorages)
 {
     readCalibrationFromFileStorage(calibrationStorage, mCalibration);
 
     //mRobot.init(&mCalibration, geomHashingStream);
-    mRobot.init(&mCalibration, geomHashingStorage);
+    mRobot.init(&mCalibration, geomHashingStorage,robotModelStorage);
     //mGH.loadFromStream(geomHashingStream);
     //mGH.setCalibration(mCalibration);
     

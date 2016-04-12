@@ -16,13 +16,15 @@ namespace thymio_tracker
 
 
 void Robot::init(IntrinsicCalibration *_mCalibration_ptr,
-              //std::istream& geomHashingStream)
-              cv::FileStorage& geomHashingStorage)
+              cv::FileStorage& geomHashingStorage,
+              cv::FileStorage& robotModelStorage)
 {
     mCalibration_ptr = _mCalibration_ptr;
     //mGH.loadFromStream(geomHashingStream);
     mGH.loadFromFileStorage(geomHashingStorage);
     mGH.setCalibration(mCalibration_ptr);
+
+    mModel.loadTrackingModel(robotModelStorage);
 }
 
 

@@ -106,6 +106,7 @@ class ThymioBlobModel: public Object3D
 public:
     //constructor
     ThymioBlobModel();
+    void loadTrackingModel(cv::FileStorage& robotModelStorage);
 
     cv::Mat mImage;
     std::vector<cv::Point2f> mRobotKeypointPos;

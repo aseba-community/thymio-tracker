@@ -22,8 +22,8 @@ public:
     Robot(){};
 
     void init(IntrinsicCalibration *_mCalibration_ptr,
-              //std::istream& geomHashingStream);
-              cv::FileStorage& geomHashingStorage);
+              cv::FileStorage& geomHashingStorage,
+              cv::FileStorage& robotModelStorage);
     
     void find(const cv::Mat& image,
               const cv::Mat& prevImage,

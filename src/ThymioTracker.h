@@ -69,10 +69,11 @@ class ThymioTracker
 public:
     ThymioTracker(const std::string& calibrationFile,
                   const std::string& geomHashingFile,
+                  const std::string& robotModelFile,
                   const std::vector<std::string>& landmarkFiles={});
     ThymioTracker(cv::FileStorage& calibration,
                   cv::FileStorage& geomHashing,
-                  //std::istream& geomHashing,
+                  cv::FileStorage& robotModel,
                   std::vector<cv::FileStorage>& landmarkStorages);
     ~ThymioTracker(){}
     
@@ -96,6 +97,7 @@ public:
 private:
     void init(cv::FileStorage& calibration,
               cv::FileStorage& geomHashing,
+              cv::FileStorage& robotModel,
               std::vector<cv::FileStorage>& landmarkStorages);
 
     /// Resize the calibration for a new given image size.

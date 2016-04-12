@@ -400,11 +400,24 @@ ThymioBlobModel::ThymioBlobModel()
     for(unsigned int v=0;v<mVerticesVertical.size()/2;v++)
         mEdges.push_back(ModelEdge(mVerticesVertical[2*v],mVerticesVertical[2*v+1]));
 
+}
 
+void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
+{
     //define what s going to be used in active search
     //template of top view
-    mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_GRAYSCALE);
+    //mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_GRAYSCALE);
     //mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_COLOR);
+
+    //robotModelStorage.release();
+    //cv::FileStorage fsw("../data/robot/robotTrackInfo.xml", cv::FileStorage::WRITE);
+    //cv::write(fsw, "image", mImage);
+    //fsw.release();
+
+    cv::read(robotModelStorage["image"], mImage);
+    robotModelStorage.release();
+
+
 
     if(mImage.empty())
     {
