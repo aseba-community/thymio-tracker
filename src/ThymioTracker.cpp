@@ -165,7 +165,7 @@ void ThymioTracker::update(const cv::Mat& input,
     input.copyTo(cpImg);
     
     // Robot detection and tracking
-    //mRobot.find(input,mDetectionInfo.prevImage,mDetectionInfo.mRobotDetection);
+    mRobot.find(input,mDetectionInfo.prevImage,mDetectionInfo.mRobotDetection);
 
     // Landmark detection and tracking
     static int counter = 100;   

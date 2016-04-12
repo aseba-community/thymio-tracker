@@ -1,4 +1,6 @@
 #include "Models.hpp"
+#include <stdexcept>
+
 
 using namespace cv;
 using namespace std;
@@ -128,7 +130,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
     //if not consider tracker lost
     const unsigned int nbBasePnp=4;//take four points out of set
     unsigned int pointers[nbBasePnp];
-    for(int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list
+    for(unsigned int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list
     
     while(1)
     {
@@ -139,7 +141,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
         //create vectors corresponding to subset
         vector<Point3f> subsetVertices;
         vector<Point2f> subsetProjections;
-        for(int i=0;i<nbBasePnp;i++)
+        for(unsigned int i=0;i<nbBasePnp;i++)
         {
             subsetVertices.push_back(detectedVertices[pointers[i]]);
             subsetProjections.push_back(mMatches[pointers[i]].position);
@@ -204,7 +206,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
         {
             //need to move the (nbBasePnp-1-nbPtStuckAtEnd)th pointer right and set the others to follow
             pointers[nbBasePnp-1-nbPtStuckAtEnd]++;
-            for(int i=nbBasePnp-1-nbPtStuckAtEnd+1;i<nbBasePnp;i++)
+            for(unsigned int i=nbBasePnp-1-nbPtStuckAtEnd+1;i<nbBasePnp;i++)
                 pointers[i]=pointers[i-1]+1;
         }
         
@@ -443,7 +445,7 @@ ThymioBlobModel::ThymioBlobModel()
     mRobotKeypointPos.push_back(cv::Point2f(422,227));*/
 
     //use half resolution
-    for(int i=0;i<mRobotKeypointPos.size();i++)
+    for(unsigned int i=0;i<mRobotKeypointPos.size();i++)
         mRobotKeypointPos[i] = mRobotKeypointPos[i]/2.;
 
 
