@@ -403,7 +403,7 @@ ThymioBlobModel::ThymioBlobModel()
 
     //define what s going to be used in active search
     //template of top view
-    mImage = cv::imread("../data/robot/robotTopCrop.png",CV_LOAD_IMAGE_GRAYSCALE);
+    mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_GRAYSCALE);
     //mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_COLOR);
 
     if(mImage.empty())
