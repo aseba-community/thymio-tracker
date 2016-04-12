@@ -16,8 +16,8 @@ set(ThymioTracker_SOURCES
     src/Generic.cpp
     src/Grouping.cpp
     src/BlobInertia.cpp
-    src/P3P.cpp
     src/Landmark.cpp
+    src/Robot.cpp
     src/ThymioTracker.h
     src/Generic.hpp
     src/GH.hpp
@@ -25,11 +25,14 @@ set(ThymioTracker_SOURCES
     src/Models.hpp
     src/Grouping.hpp
     src/BlobInertia.hpp
-    src/P3P.hpp
     src/Landmark.hpp
+    src/Robot.hpp
     )
 
 if(ANDROID_WRAPPER)
+    #SET(JAVA_INCLUDE_PATH "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/include")
+    #SET(JAVA_AWT_LIBRARY "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/libawt.dylib")
+    #SET(JAVA_JVM_LIBRARY "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/server/libjvm.dylib")
     
     # OpenCV
     find_host_package(OpenCV REQUIRED)
@@ -65,6 +68,8 @@ if(ANDROID_WRAPPER)
     include_directories(
         ${JAVA_INCLUDE_PATH}
         ${_stubDir})
+
+    INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
 
     set(ThymioTracker_SOURCES
         ${ThymioTracker_SOURCES}
