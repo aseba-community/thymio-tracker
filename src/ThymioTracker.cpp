@@ -40,16 +40,6 @@ void Timer::tic()
         mFps = CLOCKS_PER_SEC * N / static_cast<double>(current - prev);
 }
 
-void DetectionInfo::clear()
-{
-    blobs.clear();
-    blobPairs.clear();
-    blobTriplets.clear();
-    blobQuadriplets.clear();
-    blobsinTriplets.clear();
-    matches.clear();
-}
-
 void CalibrationInfo::clear()
 {
     objectPoints.clear();
@@ -93,8 +83,14 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
     , mFeatureExtractor(cv::BRISK::create())
 {
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
-    std::ifstream geomHashingStream(geomHashingFile, std::ios::in | std::ios::binary);
+    /*std::ifstream geomHashingStream(geomHashingFile, std::ios::in | std::ios::binary);
     if (!geomHashingStream.is_open())
+    {
+        std::cerr << "Could not open " << geomHashingFile << std::endl;
+        throw std::runtime_error("GHscale::loadFromFile > File not found!");
+    }*/
+    cv::FileStorage geomHashingStorage(geomHashingFile, cv::FileStorage::READ);
+    if (!geomHashingStorage.isOpened())
     {
         std::cerr << "Could not open " << geomHashingFile << std::endl;
         throw std::runtime_error("GHscale::loadFromFile > File not found!");
@@ -118,26 +114,31 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
         landmarkStorages.push_back(fs);
     }
     
-    init(calibrationStorage, geomHashingStream, landmarkStorages);
+    init(calibrationStorage, geomHashingStorage, landmarkStorages);
+    //init(calibrationStorage, geomHashingStream, landmarkStorages);
     
 }
 
 ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
-                             std::istream& geomHashingStream,
+                             cv::FileStorage& geomHashingStorage,
                              std::vector<cv::FileStorage>& landmarkStorages)
     : mDetectionInfo(landmarkStorages.size())
     , mFeatureExtractor(cv::BRISK::create())
 {
-    init(calibrationStorage, geomHashingStream, landmarkStorages);
+    init(calibrationStorage, geomHashingStorage, landmarkStorages);
 }
 
 void ThymioTracker::init(cv::FileStorage& calibrationStorage,
-                         std::istream& geomHashingStream,
+                         cv::FileStorage& geomHashingStorage,
+                         //std::istream& geomHashingStream,
                          std::vector<cv::FileStorage>& landmarkStorages)
 {
-    mGH.loadFromStream(geomHashingStream);
     readCalibrationFromFileStorage(calibrationStorage, mCalibration);
-    mGH.setCalibration(mCalibration);
+
+    //mRobot.init(&mCalibration, geomHashingStream);
+    mRobot.init(&mCalibration, geomHashingStorage);
+    //mGH.loadFromStream(geomHashingStream);
+    //mGH.setCalibration(mCalibration);
     
     // Load landmarks
     for(auto& landmarkStorage : landmarkStorages)
@@ -148,7 +149,6 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 {
     // loadCalibration(mCalibrationFile, imgSize, &mCalibration);
     rescaleCalibration(mCalibration, imgSize);
-    mGH.setCalibration(mCalibration);
 }
 
 
@@ -159,178 +159,18 @@ void ThymioTracker::update(const cv::Mat& input,
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
 
-    //to do some debugging and plot stuff on current image
+    //to do some debugging and plot stuff on current image, 
+    //need to copy frame first as it will be used to set previous frame for tracking
     cv::Mat cpImg;
     input.copyTo(cpImg);
     
-    //mDetectionInfo.clear();
-    //if robot was not found in previous image then run Geometric Hashing
-    if(!mDetectionInfo.robotFound)
-    {
-        std::cout<<"Detection"<<std::endl;
-        //get the pairs which are likely to belong to group of blobs from model
-        mGrouping.getBlobsAndPairs(input,
-                                   mDetectionInfo.blobs,
-                                   mDetectionInfo.blobPairs);
-        
-        // get triplet by checking homography and inertia
-        mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
-                                       mDetectionInfo.blobPairs,
-                                       mDetectionInfo.blobTriplets);
-        
-        //get only blobs found in triplets
-        getBlobsInTriplets(mDetectionInfo.blobs,
-                           mDetectionInfo.blobTriplets,
-                           mDetectionInfo.blobsinTriplets);
-        
-        mGrouping.getQuadripletsFromTriplets(mDetectionInfo.blobTriplets,
-                                             mDetectionInfo.blobQuadriplets);
-        
-        //extract blobs and identify which one fit model, return set of positions and Id
-        mGH.getModelPointsFromImage(mDetectionInfo.blobsinTriplets, mDetectionInfo.matches);
-        
-        mDetectionInfo.robotFound = mRobot.getPose(mCalibration,
-                                                   mDetectionInfo.matches,
-                                                   mDetectionInfo.robotPose,
-                                                   mDetectionInfo.robotFound);
+    // Robot detection and tracking
+    //mRobot.find(input,mDetectionInfo.prevImage,mDetectionInfo.mRobotDetection);
 
-        //if robot has been found init tracks
-        if(mDetectionInfo.robotFound)
-        {
-            //for now lets just estimate the homography between top view and image
-            //and do PnP from that.
-
-            //have blob pos listed in mRobot
-            //project model 3D points to get current keypoint position
-            std::vector<cv::Point2f> vprojVertices;
-            projectPoints(mRobot.mVertices, mDetectionInfo.robotPose.rvec(), mDetectionInfo.robotPose.translation(), mCalibration.cameraMatrix, mCalibration.distCoeffs, vprojVertices);
-    
-            //add to tracking correspondences
-            mDetectionInfo.mRobotCorrespondences.clear();
-            for(int i=0;i<vprojVertices.size();i++)
-                mDetectionInfo.mRobotCorrespondences[i]=vprojVertices[i];
-
-            //find homography
-            mDetectionInfo.mRobotHomography = cv::findHomography(mRobot.mRobotKeypointPos, vprojVertices);
-
-        }
-    }
-    else
-    {
-        std::cout<<"Track"<<std::endl;
-        //robot was found in previous image => can do tracking
-        //let s do active search mixed with KLT on blobs for now
-
-        // Get positions of keypoints in previous frame
-        std::vector<cv::Point2f> prevPoints;
-        for(auto p : mDetectionInfo.mRobotCorrespondences)
-            prevPoints.push_back(p.second);
-        
-        // Optical flow
-        std::vector<cv::Mat> pyramid1, pyramid2;
-        int maxLevel = 3;
-        const cv::Size winSize = cv::Size(31, 31);
-        std::vector<cv::Point2f> nextPoints;
-        std::vector<unsigned char> status;
-        cv::calcOpticalFlowPyrLK(mDetectionInfo.prevImage, input, prevPoints, nextPoints, status,
-                                cv::noArray(), winSize, maxLevel,
-                                cv::TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 20, 0.1),
-                                0,
-                                0.001);
-
-        // Keep only found keypoints in mRobotCorrespondences
-        std::vector<cv::Point2f> scenePoints;
-        std::vector<int> correspondences;
-
-        auto statusIt = status.cbegin();
-        auto nextPointsIt = nextPoints.cbegin();
-        auto prevPointsIt = prevPoints.cbegin();
-        int cpt = 0;
-        for(; statusIt != status.cend(); ++statusIt, ++nextPointsIt, ++prevPointsIt)
-        {
-            if(*statusIt)
-            {
-                scenePoints.push_back(*nextPointsIt);
-                correspondences.push_back(cpt);
-
-                //plot
-                line(input, *prevPointsIt, *nextPointsIt, cv::Scalar(0,255,255), 1);
-    
-            }
-            cpt++;
-        }
-
-        //search for correspondences using active search
-
-
-        //find homography and pose from matches
-        std::vector<cv::Point2f> objectPoints;
-        for(int c : correspondences)
-            objectPoints.push_back(mRobot.mRobotKeypointPos[c]);
-
-        int minCorresp = 10;//minimum number of matches
-        float ransacThreshold = 10.;
-        cv::Mat homography;
-        std::vector<unsigned char> mask;
-        if(scenePoints.size()>minCorresp)
-            homography = cv::findHomography(objectPoints, scenePoints, CV_RANSAC, ransacThreshold, mask);
-
-        // Save homography and inliers
-        mDetectionInfo.mRobotHomography = homography;
-        
-        mDetectionInfo.mRobotCorrespondences.clear();
-        auto maskIt = mask.cbegin();
-        auto correspIt = correspondences.cbegin();
-        auto scenePointsIt = scenePoints.cbegin();
-        for(; maskIt != mask.cend(); ++maskIt, ++correspIt, ++scenePointsIt)
-        {
-            if(!*maskIt)
-                continue;
-            
-            mDetectionInfo.mRobotCorrespondences[*correspIt] = *scenePointsIt;
-        }
-        int nbInliers = mDetectionInfo.mRobotCorrespondences.size();
-
-        //find corresponding pose
-        if(nbInliers>minCorresp)
-        {
-            //transform 4 points from image of top of robot using homography
-            std::vector<int> pointsForPose;
-            pointsForPose.push_back(0);
-            pointsForPose.push_back(3);
-            pointsForPose.push_back(10);
-            pointsForPose.push_back(13);
-
-            std::vector<cv::Point2f> mCorners;
-            for(int i=0;i<4;i++)mCorners.push_back(mRobot.mRobotKeypointPos[pointsForPose[i]]);
-           
-
-            std::vector<cv::Point2f> mCornersInScene;
-            cv::perspectiveTransform(mCorners, mCornersInScene, homography);
-
-            //perform PnP with corresp 3D positions
-            std::vector<cv::Point3f> mModelPoints;
-            for(int i=0;i<4;i++)mModelPoints.push_back(mRobot.mVertices[pointsForPose[i]]);
-           
-            //perform pnp
-            cv::Vec3d rot_v;
-            cv::Vec3d trans_v;
-            cv::solvePnP(mModelPoints,mCornersInScene, mCalibration.cameraMatrix, mCalibration.distCoeffs,rot_v,trans_v);
-            mDetectionInfo.robotPose = cv::Affine3d(rot_v,trans_v);
-        }
-        std::cout<<"Nb feat tracked = "<<nbInliers<<std::endl;
-
-        mDetectionInfo.robotFound = (nbInliers>minCorresp);
-
-    }
-    
+    // Landmark detection and tracking
     static int counter = 100;   
     ++counter;
     
-    // Landmark tracking
-    std::vector<cv::KeyPoint> detectedKeypoints;
-    cv::Mat detectedDescriptors;
-
     //check if all the landmarks are tracked
     bool allTracked = true;
     auto lmcDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
@@ -342,7 +182,9 @@ void ThymioTracker::update(const cv::Mat& input,
     }
 
 
-    // Extract features only once every 20 frames and only if need to do any detection
+    // Extract features only once every 20 frames and only if need to do any detection (ie all markers are not tracked)
+    std::vector<cv::KeyPoint> detectedKeypoints;
+    cv::Mat detectedDescriptors;
     if(!allTracked && counter >= 20)
     {
         mFeatureExtractor->detectAndCompute(input, cv::noArray(),
@@ -355,22 +197,33 @@ void ThymioTracker::update(const cv::Mat& input,
     for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
         landmarksIt->find(input, mDetectionInfo.prevImage, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
     
-    //calibration of camera: if needed, capture a set of frames where tags are tracked and use them do calibrate the camera
+    //calibration of camera: if needed, capture a set of frames where tags are tracked and use them to calibrate the camera
     //add the matches to the calibration information
-    /*static int counter_calib = 100;
-    int nb_detections_for_calibration = 30;
+    //calibrateOnline();
+
+    cpImg.copyTo(mDetectionInfo.prevImage);
+    //input.copyTo(mDetectionInfo.prevImage);
+    
+    mTimer.tic();
+}
+
+void ThymioTracker::calibrateOnline()
+{
+    static int counter_calib = 100;
+    int nb_detections_for_calibration = 10;
     ++counter_calib;
 
     if(mCalibrationInfo.objectPoints.size() < nb_detections_for_calibration && counter_calib >= 20)
     {
         //for each tracked landmark add the matches to the calibration tool
-        landmarksIt = mLandmarks.cbegin();
-        lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
+        //ie for each image and each landmark, the set of 3D points and their projections
+        auto landmarksIt = mLandmarks.cbegin();
+        auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
 
         for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
         {
             const cv::Mat& h = lmDetectionsIt->getHomography();
-            if(!h.empty())
+            if(!h.empty() && lmDetectionsIt->getCorrespondences().size()>100)
             {
                 std::vector<cv::Point3f> lmObjectPoints;
                 std::vector<cv::Point2f> lmImagePoints;
@@ -387,6 +240,8 @@ void ThymioTracker::update(const cv::Mat& input,
 
                 mCalibrationInfo.objectPoints.push_back(lmObjectPoints);
                 mCalibrationInfo.imagePoints.push_back(lmImagePoints);
+
+                //std::cout<<"nb matches for calib : "<<lmObjectPoints.size()<<std::endl;
             }
         }
 
@@ -399,19 +254,14 @@ void ThymioTracker::update(const cv::Mat& input,
             cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
 
             int flags = 0;
-            double rms = calibrateCamera(mCalibrationInfo.objectPoints, mCalibrationInfo.imagePoints, input.size(), mCalibration.cameraMatrix,
+            double rms = calibrateCamera(mCalibrationInfo.objectPoints, mCalibrationInfo.imagePoints, mCalibration.imageSize, mCalibration.cameraMatrix,
                           mCalibration.distCoeffs, rotationVectors, translationVectors, flags|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
 
             std::cout<<"camera calibration RMS = "<<rms<<std::endl;
         }
 
         counter_calib = 0;
-    }*/
-
-    cpImg.copyTo(mDetectionInfo.prevImage);
-    //input.copyTo(mDetectionInfo.prevImage);
-    
-    mTimer.tic();
+    }
 }
 
 void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation) const
@@ -426,17 +276,17 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
     //                     std::vector<std::vector<char> >(),
     //                     cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
     
-    if(mDetectionInfo.robotFound)
-        mRobot.draw(*output, mCalibration, mDetectionInfo.robotPose);
+    if(mDetectionInfo.mRobotDetection.isFound())
+        mRobot.model().draw(*output, mCalibration, mDetectionInfo.mRobotDetection.getPose());
     else
         putText(*output, "Lost",
                 cv::Point2i(10,10),
                 cv::FONT_HERSHEY_COMPLEX_SMALL,
                 0.8, cvScalar(0,0,250), 1, CV_AA);
     
-    drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
-    drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
-    drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
+    //drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
+    //drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
+    //drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
     // drawPointsAndIds(output, mDetectionInfo.matches);
     
      if(deviceOrientation)

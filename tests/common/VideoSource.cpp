@@ -117,6 +117,12 @@ void VideoSourceSeq::grabNewFrame()
         {
             std::cerr<<"VideoSourceSeq : End sequence"<<std::endl;
             frameId--;
+
+            //reload in case of we printed something over the image
+            sprintf(fileName, printfPath.c_str(), frameId);
+            img=imread(fileName);
+            if(resized)resizeImage();
+
             end_sequence=true;
         }
         else

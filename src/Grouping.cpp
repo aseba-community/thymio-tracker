@@ -48,7 +48,6 @@ Grouping::Grouping()
 void Grouping::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const
 {
     // blob detector
-    blobs.clear();
     sbd->detect(input, blobs);
 }
 
@@ -80,14 +79,13 @@ void Grouping::getClosestNeigbors(unsigned int p, const vector<KeyPoint>& mVerti
     
 }
 
-void Grouping::getBlobs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs)
+void Grouping::getBlobs(cv::Mat &img, std::vector<cv::KeyPoint> &blobs) const
 {
     //get blobs
     extractBlobs(img, blobs);
 }
-void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
+void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs) const
 {
-    blobPairs.clear();
     for(unsigned int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
@@ -109,12 +107,11 @@ void Grouping::getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::ve
     }
 }
 
-void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs)
+void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs) const
 {
     //get blobs
     extractBlobs(img, blobs);
     
-    blobPairs.clear();
     for(unsigned int p=0;p<blobs.size();p++)
     {
         //for each point have to find the nbPtBasis closest points
@@ -136,9 +133,8 @@ void Grouping::getBlobsAndPairs(const cv::Mat &img, std::vector<cv::KeyPoint> &b
     }
 }
 
-void Grouping::getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets)
+void Grouping::getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets) const
 {
-    blobTriplets.clear();
     for(unsigned int p=0;p<blobPairs.size();p++)
     {
         //get the pairs which overlap
@@ -220,9 +216,8 @@ void Grouping::getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std:
     }
 }
 
-void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads)
+void Grouping::getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads) const
 {
-    blobQuadriplets.clear();
     //many ways to do, for now go through list of triplets and check if shares 2 points with other triangles,
     //if doesn't remove it from list, if does create quadruplets and remove all other triangle contained in quadruplets
     std::vector<BlobTriplet> blobTripletsCopy=blobTriplets;

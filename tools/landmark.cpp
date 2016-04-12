@@ -1,3 +1,6 @@
+//usage example :
+//./landmark ../data/landmarks/marker_noborder.png ../data/landmarks/marker.xml.gz
+//./landmark ../data/landmarks/ziggu_nrmpart_Top.png ../data/landmarks/ziggu.xml.gz
 
 #include <iostream>
 #include <numeric>
@@ -236,11 +239,14 @@ int main(int argc, char* argv[])
         pixelsPerUnit = std::stof(argv[3]);
     
     cv::Ptr<cv::Feature2D> fextractor = cv::BRISK::create(60);
+    //cv::Ptr<cv::Feature2D> fextractor = cv::BRISK::create(30);
     // cv::Ptr<cv::Feature2D> fextractor = new brisk::BriskFeature(10.0, 4);
     LandmarkProcessor landmarkProcessor(pixelsPerUnit, fextractor);
     
     // Load image
     cv::Mat image = cv::imread(imageFilename);
+    cv::Mat originalImage; image.copyTo(originalImage);
+
     if(image.empty())
     {
         std::cerr << "Could not open " << imageFilename << ". " << std::endl;
@@ -272,7 +278,12 @@ int main(int argc, char* argv[])
     cv::write(fs, "descriptors", descriptors);
     cv::write(fs, "image_size", image.size());
     cv::write(fs, "real_size", realSize);
+
+    //BRISK and KLT work only on grayscale image 
+    //active search works for color images => check whether
+    //color is beneficial considering timing trade off
     cv::write(fs, "image", image);
+    //cv::write(fs, "image", originalImage);
     fs.release();
     
     return 0;

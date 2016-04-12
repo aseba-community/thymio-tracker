@@ -1,6 +1,10 @@
 //ModelViewer example: shows how to use Visualization3D
 //and project model on any image
 
+//to navigate use click, move and drop in 3D viewer to rotate around focal axis
+//press and hold SHIFT and click move and drop for forward/backward motion
+//press and hold ALT and click, move and drop mouse for translation along x and y
+
 #include <iostream>
 #include "Models.hpp"
 #include "Visualization3D.hpp"
@@ -41,7 +45,7 @@ int main(int argc, const char * argv[])
         {
             //pole => want only one cam
             tt::Camera3dModel newCam;
-            newCam.pose=newCam.pose.translate(Vec3d(0.0,0.0,-radiusSphere));
+            newCam.pose=newCam.pose.rotate(Vec3d(M_PI,0,0)).translate(Vec3d(0.0,0.0,radiusSphere));
             
             vCams.push_back(newCam);
         }
@@ -63,8 +67,8 @@ int main(int argc, const char * argv[])
                 Affine3d transfoRotx = Affine3d().rotate(Vec3d(M_PI/2.-latitude,0.0,0.0));
                 newCam.pose=newCam.pose*transfoRotx;
                
-                Affine3d transfoZLoc = Affine3d().translate(Vec3d(0.0,0.0,-radiusSphere));
-                newCam.pose=newCam.pose*transfoZLoc;
+                Affine3d transfoZLoc = Affine3d().translate(Vec3d(0.0,0.0,radiusSphere));
+                newCam.pose=(newCam.pose*transfoZLoc)*Affine3d().rotate(Vec3d(M_PI,0,0));
                 
                 vCams.push_back(newCam);
             }
@@ -121,18 +125,22 @@ int main(int argc, const char * argv[])
     //give that to GH
 #ifndef USE_SCALE
     tt::GH mGH;//here will train with coodrinates in meters so calibration does not matter
-    char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
+    //char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
+    char GHfilename[100]="../data/GH_Arth_Perspective.xml";
 #else
     tt::GHscale mGH;//here will train with coodrinates in meters so calibration does not matter
-    char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
+    //char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
+    char GHfilename[100]="../data/GHscale_Arth_Perspective.xml";
 #endif
     
     mGH.initHashTable(mRobot.mVertices.size());
     mGH.setModel(projPoints,vCams.size());
     {
         //save GH for later use
-        std::ofstream geomHashingStream(GHfilename, std::ios::out | std::ios::binary);
-        mGH.saveToStream(geomHashingStream);
+        //std::ofstream geomHashingStream(GHfilename, std::ios::out | std::ios::binary);
+        //mGH.saveToStream(geomHashingStream);
+        cv::FileStorage GHstorage(GHfilename, cv::FileStorage::WRITE);
+        mGH.saveToFileStorage(GHstorage);
     }
     delete[] projPoints;
     

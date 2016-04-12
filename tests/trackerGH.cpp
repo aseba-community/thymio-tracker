@@ -52,10 +52,10 @@ void doGHmatching()
 #define USE_SCALE
 
 #ifndef USE_SCALE
-    tt::GH mGH(videoSource.mCalibration);
+    tt::GH mGH(&videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
 #else
-    tt::GHscale mGH(videoSource.mCalibration);
+    tt::GHscale mGH(&videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
     {
@@ -172,10 +172,10 @@ void GoodPairsAndGH()
 #define USE_SCALE
     
 #ifndef USE_SCALE
-    tt::GH mGH(videoSource.mCalibration);
+    tt::GH mGH(&videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
 #else
-    tt::GHscale mGH(videoSource.mCalibration);
+    tt::GHscale mGH(&videoSource.mCalibration);
     char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
 #endif
     {

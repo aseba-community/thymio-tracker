@@ -12,9 +12,9 @@ using namespace std;
 namespace thymio_tracker
 {
 
-GHscale::GHscale(IntrinsicCalibration _camCalib)
+GHscale::GHscale(IntrinsicCalibration *_camCalib)
 {
-    cameraCalibration=_camCalib;
+    cameraCalibration_ptr=_camCalib;
     //for now we will consider 3 neigboring points to define bases
     nbPtBasis=2;
     
@@ -433,7 +433,7 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
     vector<Point3f> mPoints;
     for(unsigned int p=0;p<blobs.size();p++)
     {
-        Point2f m = toMeters(cameraCalibration.cameraMatrix,blobs[p].pt);
+        Point2f m = toMeters(cameraCalibration_ptr->cameraMatrix,blobs[p].pt);
         mPoints.push_back(Point3f(m.x,m.y,blobs[p].size));
     }
     
@@ -561,7 +561,46 @@ void GHscale::saveToStream(std::ostream& os) const
             for(int j=0;j<nbBinPerDim.y;j++)
                 for(int k=0;k<nbBinPerDim.z;k++)
                 os.write((char *)&HashTable[i*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + j*nbBinPerDim.z*nbIds + k*nbIds + id], sizeof(float));
+
 }
+
+void GHscale::saveToFileStorage(cv::FileStorage& fs) const
+{
+
+    //cv::FileStorage fs(outputFilename, cv::FileStorage::WRITE);
+    cv::write(fs, "nbIds", nbIds);
+    cv::write(fs, "nbBinPerDim", nbBinPerDim);
+    cv::write(fs, "poseRelMin", poseRelMin);
+    cv::write(fs, "poseRelMax", poseRelMax);
+
+    //convert array into Matrix
+    cv::Mat HTmat = cv::Mat(1, nbIds*nbBinPerDim.x*nbBinPerDim.y*nbBinPerDim.z, CV_32FC1, HashTable, 2);
+    cv::write(fs, "HTmat",HTmat);
+
+    fs.release();
+}
+
+void GHscale::loadFromFileStorage(cv::FileStorage& fs)
+{
+
+    //cv::FileStorage fs(outputFilename, cv::FileStorage::WRITE);
+    cv::read(fs["nbIds"], nbIds,0);
+    cv::read(fs["nbBinPerDim"], nbBinPerDim,cv::Point3i());
+    cv::read(fs["poseRelMin"], poseRelMin,cv::Point3f());
+    cv::read(fs["poseRelMax"], poseRelMax,cv::Point3f());
+
+    //convert array into Matrix
+    cv::Mat HTmat;
+    cv::read(fs["HTmat"],HTmat);
+
+    HashTable = new float[nbBinPerDim.x*nbBinPerDim.y*nbBinPerDim.z*nbIds];
+    float *buff = (float*)(HTmat.data);
+    for(int i=0;i<nbBinPerDim.x*nbBinPerDim.y*nbBinPerDim.z*nbIds;i++)
+        HashTable[i] = buff[i];
+
+    fs.release();
+}
+
 void GHscale::loadFromStream(std::istream& is)
 {
     is.read((char *)&nbIds, sizeof(int));

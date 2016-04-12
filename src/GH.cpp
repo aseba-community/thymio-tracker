@@ -12,9 +12,9 @@ using namespace std;
 namespace thymio_tracker
 {
 
-GH::GH(IntrinsicCalibration _camCalib)
+GH::GH(IntrinsicCalibration *_camCalib)
 {
-    cameraCalibration=_camCalib;
+    cameraCalibration_ptr=_camCalib;
     //for now we will consider 3 neigboring points to define bases
     nbPtBasis=2;
     
@@ -289,7 +289,7 @@ void GH::getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionGH> &m
     
     //get list of points from blob (will have to be removed later as just a copy of blobs)
     vector<Point2f> mPoints;
-    for(unsigned int p=0;p<blobs.size();p++)mPoints.push_back(toMeters(cameraCalibration.cameraMatrix,blobs[p].pt));
+    for(unsigned int p=0;p<blobs.size();p++)mPoints.push_back(toMeters(cameraCalibration_ptr->cameraMatrix,blobs[p].pt));
     
     //empty output vectors
     matches.clear();
@@ -444,6 +444,44 @@ void GH::loadFromFile(const std::string& filename)
         throw std::runtime_error("GH::loadFromFile > File not found!");
     }
     of.close();
+}
+
+
+void GH::saveToFileStorage(cv::FileStorage& fs) const
+{
+
+    //cv::FileStorage fs(outputFilename, cv::FileStorage::WRITE);
+    cv::write(fs, "nbIds", nbIds);
+    cv::write(fs, "nbBinPerDim", nbBinPerDim);
+    cv::write(fs, "poseRelMin", poseRelMin);
+    cv::write(fs, "poseRelMax", poseRelMax);
+
+    //convert array into Matrix
+    cv::Mat HTmat = cv::Mat(1, nbIds*nbBinPerDim.x*nbBinPerDim.y, CV_32S, HashTable, 2);
+    cv::write(fs, "HTmat",HTmat);
+
+    fs.release();
+}
+
+void GH::loadFromFileStorage(cv::FileStorage& fs)
+{
+
+    //cv::FileStorage fs(outputFilename, cv::FileStorage::WRITE);
+    cv::read(fs["nbIds"], nbIds,0);
+    cv::read(fs["nbBinPerDim"], nbBinPerDim,cv::Point2i());
+    cv::read(fs["poseRelMin"], poseRelMin,cv::Point2f());
+    cv::read(fs["poseRelMax"], poseRelMax,cv::Point2f());
+
+    //convert array into Matrix
+    cv::Mat HTmat;
+    cv::read(fs["HTmat"],HTmat);
+
+    HashTable = new int[nbBinPerDim.x*nbBinPerDim.y*nbIds];
+    int *buff = (int*)(HTmat.data);
+    for(int i=0;i<nbBinPerDim.x*nbBinPerDim.y*nbIds;i++)
+        HashTable[i] = buff[i];
+
+    fs.release();
 }
 
 void GH::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const

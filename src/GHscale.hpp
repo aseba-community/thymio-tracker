@@ -26,8 +26,8 @@ class GHscale
 {
 public:
     //constructor
-    GHscale(IntrinsicCalibration _camCalib = IntrinsicCalibration());
-    void setCalibration(IntrinsicCalibration &_camCalib){cameraCalibration=_camCalib;};
+    GHscale(IntrinsicCalibration *_camCalib = NULL);
+    void setCalibration(IntrinsicCalibration *_camCalib){cameraCalibration_ptr=_camCalib;};
     virtual ~GHscale();
     
     //set Hashing table, could do that autonomously from model, but as we have one object we code it the hard way
@@ -43,10 +43,12 @@ public:
     //GH io
     void saveToStream(std::ostream& stream) const;
     void loadFromStream(std::istream& stream);
+    void saveToFileStorage(cv::FileStorage& fs) const;
+    void loadFromFileStorage(cv::FileStorage& fs);
 
 private:
     //camera calibration
-    IntrinsicCalibration cameraCalibration;
+    IntrinsicCalibration *cameraCalibration_ptr;
     //blob extractor
     cv::Ptr<cv::SimpleBlobDetector> sbd;
     //extract the blob position and scales for getModelPointsFromImage

@@ -8,17 +8,17 @@ namespace thymio_tracker
 
 Object3D::Object3D()
 {
-    lengthHistory = 4;
+    /*lengthHistory = 4;
     nbHypoPerTime = 4;
     PoseHypothesisHistory = new PoseHypothesisSet*[lengthHistory];
     for(int i=0;i<nbHypoPerTime;i++)
-        PoseHypothesisHistory[i] = new PoseHypothesisSet[nbHypoPerTime];
+        PoseHypothesisHistory[i] = new PoseHypothesisSet[nbHypoPerTime];*/
 }
 Object3D::~Object3D()
 {
-    for(int i=0;i<nbHypoPerTime;i++)
+    /*for(int i=0;i<nbHypoPerTime;i++)
         delete[] PoseHypothesisHistory[i];
-    delete[] PoseHypothesisHistory;
+    delete[] PoseHypothesisHistory;*/
 }
 
 void Object3D::draw(Mat& img, const Mat& cameraMatrix, const Mat& distCoeffs, const Affine3d& poseCam) const
@@ -66,6 +66,7 @@ void Object3D::drawVertice(const Point3f &_vertice, Mat &img, const Mat &cameraM
     vector<Point2f> vprojVertices;
     projectPoints(pobj, poseCam.rvec(), poseCam.translation(), cameraMatrix, distCoeffs, vprojVertices);
     
+
     if(pcam.z>0 && 1./pcam.z > 0)
         circle(img, vprojVertices[0], 3./pcam.z, Scalar(255,255,0),2);
 }
@@ -125,7 +126,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
     
     //do a kind of ransac: try different subset to compute pose util find that more than majority agrees
     //if not consider tracker lost
-    int nbBasePnp=4;//take four points out of set
+    const unsigned int nbBasePnp=4;//take four points out of set
     unsigned int pointers[nbBasePnp];
     for(int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list
     
@@ -237,312 +238,6 @@ Camera3dModel::Camera3dModel()
     mEdges.push_back(ModelEdge(mVerticesTemp[4],mVerticesTemp[1]));
 }
 
-    
-bool Object3D::getPoseFromBlobs(const std::vector<cv::KeyPoint> &blobs,const IntrinsicCalibration& _mCalib, cv::Affine3d& robotPose, bool init)
-{
-    Grouping mGrouping;
-    //first extract blobs groups
-    vector<BlobPair> blobPairs;
-    mGrouping.getPairsFromBlobs(blobs,blobPairs);
-    
-    vector<BlobTriplet> blobTriplets;
-    mGrouping.getTripletsFromPairs(blobs,blobPairs,blobTriplets);
-    setClockwiseDirectionToTriplets(blobs,blobTriplets);
-    
-    vector<BlobQuadruplets> blobQuadriplets;
-    mGrouping.getQuadripletsFromTriplets(blobTriplets,blobQuadriplets,true);//here we remove the triplets in quads
-    setClockwiseDirectionToQuadruplets(blobs,blobQuadriplets);
-    
-    //then compute all the poses from all the possible P3P
-    vector<cv::Affine3d> poseHypothesis;
-    //convert all blob positions to meter coordinates
-    vector<cv::Point2f> coordImageSpaceBlobs;
-    for(unsigned int i=0;i<blobs.size();i++)
-        coordImageSpaceBlobs.push_back(toMeters(_mCalib.cameraMatrix,blobs[i].pt));
-
-    //for all the triplets compute pose hypothesis from Groups of 3 points from model
-    //std::cout<<"compute pose hypotheses"<<std::endl;
-    for(unsigned int i=0;i<mGroup3s.size();i++)
-        for(unsigned int j=0;j<blobTriplets.size();j++)
-    {
-        //std::cout<<"\t triplet "<<j<<std::endl;
-        //std::cout<<"\t group "<<i<<std::endl;
-
-        BlobTriplet &b_triplet = blobTriplets[j];
-        ModelTriplet &m_triplet = mGroup3s[i];
-
-        vector<cv::Point3f> Model3DPoints;
-        for(int p=0;p<3;p++)
-            Model3DPoints.push_back(mVertices[m_triplet.ids[p]]);
-
-        //as both tripplets are directed we have 3 possible matches between them
-        for(int k=0;k<3;k++)
-        {
-            vector<cv::Point2f> projected2DPoints;
-            for(int p=0;p<3;p++)
-                projected2DPoints.push_back(coordImageSpaceBlobs[b_triplet.ids[ (p+k)%3 ]]);
-
-            //compute the 4 hypothesis (pose cam to world=>have to inverse them)
-            vector<cv::Affine3d> poseHypothesisP3Pinv = computeP3P(projected2DPoints,Model3DPoints);
-
-            //put the hypotheses in accumulation
-            for(unsigned int h=0;h<poseHypothesisP3Pinv.size();h++)
-            {
-                //get inverse:
-                cv::Affine3d poseHypothesisP3P=poseHypothesisP3Pinv[h].inv();
-
-                //reject hypothesis where object is behind camera
-                Point3f Origin(0,0,0);
-                Point3f CenterObj = poseHypothesisP3P*Origin;
-
-                if(CenterObj.z>0)
-                    poseHypothesis.push_back(poseHypothesisP3P);
-            }
-        }
-    }
-
-    //for all the quadruplets compute pose hypothesis from Groups of 4 points from model
-    //std::cout<<"compute pose hypotheses"<<std::endl;
-    for(unsigned int i=0;i<mGroup4s.size();i++)
-        for(unsigned int j=0;j<blobQuadriplets.size();j++)
-    {
-        //std::cout<<"\t triplet "<<j<<std::endl;
-        //std::cout<<"\t group "<<i<<std::endl;
-
-        BlobQuadruplets &b_quad = blobQuadriplets[j];
-        ModelQuadruplet &m_quad = mGroup4s[i];
-
-        vector<cv::Point3f> Model3DPoints;
-        for(int p=0;p<3;p++)//only use 3 points for pose computation (as the 4 are coplanar)
-            Model3DPoints.push_back(mVertices[m_quad.ids[p]]);
-
-        //as both quadruplets are directed we have 4 possible matches between them
-        for(int k=0;k<4;k++)
-        {
-            vector<cv::Point2f> projected2DPoints;
-            for(int p=0;p<3;p++)
-                projected2DPoints.push_back(coordImageSpaceBlobs[b_quad.ids[ (p+k)%4 ]]);
-
-            //compute the 4 hypothesis (pose cam to world=>have to inverse them)
-            vector<cv::Affine3d> poseHypothesisP3Pinv = computeP3P(projected2DPoints,Model3DPoints);
-
-            //put the hypotheses in accumulation
-            for(unsigned int h=0;h<poseHypothesisP3Pinv.size();h++)
-            {
-                //get inverse:
-                cv::Affine3d poseHypothesisP3P=poseHypothesisP3Pinv[h].inv();
-
-                //reject hypothesis where object is behind camera
-                Point3f Origin(0,0,0);
-                Point3f CenterObj = poseHypothesisP3P*Origin;
-
-                if(CenterObj.z>0)
-                    poseHypothesis.push_back(poseHypothesisP3P);
-            }
-        }
-    }
-
-
-    //std::cout<<"end compute pose hypotheses"<<std::endl;
-    
-    //sort out the hypothesis which are impossible
-    //use IMU
-    //use temporal consistency
-
-    //project model using remaining hypothesis onto image
-    Mat projectionAccu(_mCalib.imageSize.height,_mCalib.imageSize.width,CV_32FC1,Scalar(0));
-    //each model blob will be proejcted on the image and it will vote for a blob to be there
-    //(then can read, for each pose, how many votes agreed)
-    //first need to define a noise on the measure
-    float sigma_meas = 5.;
-    //for each pose do the update
-    std::cout<<poseHypothesis.size()<<" hypotheses"<<std::endl;
-    for(unsigned int h=0;h<poseHypothesis.size();h++)
-    {
-        //projected vertices
-        vector<Point2f> vprojVertices;
-        //projectPoints(mVertices, poseHypothesis[h].rvec(), poseHypothesis[h].translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVertices);
-
-        for(unsigned int i=0;i<mGroup3s.size();i++)
-        {
-            std::vector<cv::Point3f> mVerticesInGroup;
-            for(int j=0;j<3;j++)mVerticesInGroup.push_back(mVertices[mGroup3s[i].ids[j]]);
-
-            //project them
-            vector<Point2f> vprojVerticesInGroup;
-            projectPoints(mVerticesInGroup, poseHypothesis[h].rvec(), poseHypothesis[h].translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVerticesInGroup);
-
-            //add them if direction is good
-            if(testDirectionGroup(vprojVerticesInGroup[0],vprojVerticesInGroup[1],vprojVerticesInGroup[2]))
-                for(int j=0;j<3;j++)vprojVertices.push_back(vprojVerticesInGroup[j]);
-        }
-        //same for groups of 4
-        for(unsigned int i=0;i<mGroup4s.size();i++)
-        {
-            std::vector<cv::Point3f> mVerticesInGroup;
-            for(int j=0;j<4;j++)mVerticesInGroup.push_back(mVertices[mGroup4s[i].ids[j]]);
-
-            //project them
-            vector<Point2f> vprojVerticesInGroup;
-            projectPoints(mVerticesInGroup, poseHypothesis[h].rvec(), poseHypothesis[h].translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVerticesInGroup);
-
-            //add them if direction is good
-            if(testDirectionGroup(vprojVerticesInGroup[0],vprojVerticesInGroup[1],vprojVerticesInGroup[2]))
-                for(int j=0;j<4;j++)vprojVertices.push_back(vprojVerticesInGroup[j]);
-        }
-
-        //update projectionAccu
-        int support_normal = int(3.*sigma_meas);
-        for(unsigned int i=0;i<vprojVertices.size();i++)
-        {
-            //std::cout<<"vprojVertices ["<<i<<"] = "<< vprojVertices[i] <<std::endl;
-            if(vprojVertices[i].x>-support_normal && vprojVertices[i].y>-support_normal && 
-                vprojVertices[i].x<_mCalib.imageSize.width+support_normal && vprojVertices[i].y<_mCalib.imageSize.height+support_normal)
-                for(int x=vprojVertices[i].x-support_normal; x <vprojVertices[i].x+support_normal; x++)
-                    for(int y=vprojVertices[i].y-support_normal; y <vprojVertices[i].y+support_normal; y++)
-                       if(x>=0 && y>=0 && x<_mCalib.imageSize.width && y<_mCalib.imageSize.height)
-                        {
-                            float dist_squared = ((float)x-vprojVertices[i].x)*((float)x-vprojVertices[i].x)
-                                            +((float)y-vprojVertices[i].y)*((float)y-vprojVertices[i].y);
-                            float normal = exp(-dist_squared/(sigma_meas*sigma_meas))/(sigma_meas*sqrt(2*M_PI));
-
-                            projectionAccu.at<float>(y,x)+=normal;
-                        }
-        }
-    }
-
-    //display projectionAccu for testing
-    /*double min;
-    double max;
-    cv::minMaxIdx(projectionAccu, &min, &max);
-    cv::Mat adjMap;
-    cv::convertScaleAbs(projectionAccu, adjMap, 255 / max);
-    cv::imshow("Out", adjMap);
-    cv::waitKey();*/
-
-    //now read nbVotes for each pose
-    float nbVotesMax=-1;
-    float idBestHypothesis=0;
-
-    //keep nbHypoPerTime best hypothesis
-    //PoseHypothesisSet *bestHypothesis=new PoseHypothesisSet[nbHypoPerTime];
-    //int idMinScoreSet = 0; //which of the hypos to replace next
-
-    for(unsigned int h=0;h<poseHypothesis.size();h++)
-    {
-        //projected vertices
-        vector<Point2f> vprojVertices;
-        projectPoints(mVertices, poseHypothesis[h].rvec(), poseHypothesis[h].translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVertices);
-
-        float nbVotes = 0;
-        for(unsigned int i=0;i<vprojVertices.size();i++)
-        {
-            int x_read = round(vprojVertices[i].x);
-            int y_read = round(vprojVertices[i].y);
-            if(x_read>=0 && y_read>=0 && x_read<_mCalib.imageSize.width && y_read<_mCalib.imageSize.height)
-                nbVotes+=projectionAccu.at<float>(y_read,x_read);
-        }
-
-        if(nbVotes>nbVotesMax)
-        {
-            nbVotesMax=nbVotes;
-            idBestHypothesis=h;
-        }
-
-        /*if(nbVotes > bestHypothesis[idMinScoreSet].score)
-        {
-            //change hyp
-            bestHypothesis[idMinScoreSet].score = nbVotes;
-            bestHypothesis[idMinScoreSet].pose = poseHypothesis[h];
-
-            //upadte idMinScoreSet
-            idMinScoreSet = 0;
-            float scoreMinBuff = bestHypothesis[idMinScoreSet].score;
-
-            for(int i=1;i<nbHypoPerTime;i++)
-                if(bestHypothesis[i].score<scoreMinBuff)
-                {
-                    idMinScoreSet = i;
-                    scoreMinBuff = bestHypothesis[idMinScoreSet].score;
-                }
-        }*/
-    }
-
-    //temporal consistency:
-    //we keep track of the N best hypothesis for the M previous times
-    //sometimes the object might have been missed=> also keep a boolean
-    //for each time weither the object was estimated found or not
-    //if not found then should not use the time for discrimiation
-
-    //=>start with history with only unfound object
-    //find best hypothesis, then could say object found while it is not...
-    //=> probably should not use boolean as we don't really know it at any time
-
-    //start with random pose hypothesis in history
-    //=> can just check how many hypothesis agree with current one
-    //and motion model (eg object has to move of 10 cm at each time step)
-    //for that can cumulate votes as : for each hypo, go through t-1 hypos and 
-    //add score of corresponding hypos weighted by distance with original hypo.
-
-    
-    //now if all the blobs were seen then we d have at least score of nbVertices*gaussian_meas(0)
-    //we can set a threshold on that to define if we found the object or not
-    bool found = false;
-    std::cout<<"nbVotesMax = "<<nbVotesMax<<std::endl;
-    if(nbVotesMax > 0.5*mVertices.size())
-    {
-        found = true;
-        robotPose=poseHypothesis[idBestHypothesis];
-
-        Point3f Origin(0,0,0);
-        Point3f CenterObj = robotPose*Origin;
-        std::cout<<"z = "<<CenterObj.z<<std::endl;
-    }
-
-    //define coarse motion model
-    /*float sigma_translation_per_time = 0.1;
-    //for each current hypo check how much history agrees with it
-    int idBestCurrentHypo = 0;
-    float bestScoreWithTime = 0;
-    for(int h=0;h<nbHypoPerTime && h<poseHypothesis.size();h++)
-    {
-        //score of agreement with current hypo and history
-        float score = bestHypothesis[h].score;
-
-        for(int t=0;t<lengthHistory;t++)
-            for(int h2=0;h2<nbHypoPerTime;h2++)
-            {
-                //add score of history hypo weighted by distance with current
-                Vec3d dist_translation = bestHypothesis[h].pose.translation() - PoseHypothesisHistory[t][h2].pose.translation();
-                float dist_norm = norm(dist_translation);
-                float sigma_c = sigma_translation_per_time*(t+1);
-                float weight = exp(-dist_norm*dist_norm/(2.*sigma_c*sigma_c))/(sigma_c*sqrt(2)*M_PI);
-                score+= weight*PoseHypothesisHistory[t][h2].score;
-            }
-
-        std::cout<<"\tscore ["<<h<<"] = "<<score<<std::endl;
-        if(score>bestScoreWithTime)
-        {
-            bestScoreWithTime=score;
-            idBestCurrentHypo=h;
-        }
-    }
-
-    //rolling buffer on hypos
-    for(int t=lengthHistory-1;t>0;t--)
-        for(int h=0;h<nbHypoPerTime;h++)
-            PoseHypothesisHistory[t][h] = PoseHypothesisHistory[t-1][h];
-    for(int h=0;h<nbHypoPerTime;h++)
-        PoseHypothesisHistory[0][h] = bestHypothesis[h];
-    
-    bool found = true;
-    robotPose=bestHypothesis[idBestCurrentHypo].pose;
-
-    std::cout<<"score = "<< bestScoreWithTime<<std::endl;
-    
-    delete[] bestHypothesis;*/
-    return found;
-}
     
 
 
@@ -705,8 +400,17 @@ ThymioBlobModel::ThymioBlobModel()
 
 
     //define what s going to be used in active search
-    mImage = cv::imread("/Users/amaurydame/Projects/arthymio/data/robot/robotTopCrop.png",CV_LOAD_IMAGE_GRAYSCALE);
+    //template of top view
+    mImage = cv::imread("../data/robot/robotTopCrop.png",CV_LOAD_IMAGE_GRAYSCALE);
+    //mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_COLOR);
 
+    if(mImage.empty())
+    {
+        std::cerr << "Could not open " << "../data/robot/robotTopCropHalf.png" << std::endl;
+        throw std::runtime_error("Template image from robot file not found!");        
+    }
+
+    //position of projection of vertices in top template
     mRobotKeypointPos.push_back(cv::Point2f(100,480));
     mRobotKeypointPos.push_back(cv::Point2f(102,421));
     mRobotKeypointPos.push_back(cv::Point2f(112,136));
@@ -724,6 +428,28 @@ ThymioBlobModel::ThymioBlobModel()
     mRobotKeypointPos.push_back(cv::Point2f(740,428));
     mRobotKeypointPos.push_back(cv::Point2f(736,141));
     mRobotKeypointPos.push_back(cv::Point2f(736,85));
+
+    //some more keypoints with a bit of texture
+    mRobotKeypointPos.push_back(cv::Point2f(422,86));
+
+    //next points are defined on bumps which appearance depends highly on illumination
+    //Cross correlation is not robut enough to do direct image similarity measure
+    //if need more points in future might have to use orientation of gradients
+    /*mRobotKeypointPos.push_back(cv::Point2f(420,456));
+    mRobotKeypointPos.push_back(cv::Point2f(525,570));
+    mRobotKeypointPos.push_back(cv::Point2f(420,684));
+    mRobotKeypointPos.push_back(cv::Point2f(310,566));
+
+    mRobotKeypointPos.push_back(cv::Point2f(422,227));*/
+
+    //use half resolution
+    for(int i=0;i<mRobotKeypointPos.size();i++)
+        mRobotKeypointPos[i] = mRobotKeypointPos[i]/2.;
+
+
+    for(int i=0;i<14;i++)
+        mVerticesTopPos.push_back(mRobotKeypointPos[i]);
+
     
 }
 

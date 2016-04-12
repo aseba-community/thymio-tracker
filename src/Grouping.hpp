@@ -49,13 +49,13 @@ public:
     Grouping();
     
     //extract blobs and get good pairs
-    void getBlobs(cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs);
-    void getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
-    void getBlobsAndPairs(const cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs);
+    void getBlobs(cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs) const;
+    void getPairsFromBlobs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs) const;
+    void getBlobsAndPairs(const cv::Mat &inputImage, std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs) const;
     //get triplets from pairs checking homography and inertia
-    void getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets);
+    void getTripletsFromPairs(const std::vector<cv::KeyPoint> &blobs, std::vector<BlobPair> &blobPairs, std::vector<BlobTriplet> &blobTriplets) const;
     //get quadriplets from triplets by checking overlap
-    void getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads=false);
+    void getQuadripletsFromTriplets(std::vector<BlobTriplet> &blobTriplets,std::vector<BlobQuadruplets> &blobQuadriplets,bool removeTripletsInQuads=false) const;
 
 
 private:

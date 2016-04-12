@@ -11,7 +11,7 @@
 #include <fstream>
 #include <cmath>
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 
@@ -24,8 +24,8 @@ class GH
 {
 public:
     //constructor
-    GH(IntrinsicCalibration _camCalib = IntrinsicCalibration());
-    void setCalibration(IntrinsicCalibration &_camCalib){cameraCalibration=_camCalib;};
+    GH(IntrinsicCalibration *_camCalib = NULL);
+    void setCalibration(IntrinsicCalibration *_camCalib){cameraCalibration_ptr=_camCalib;};
     virtual ~GH();
     
     //set Hashing table, could do that autonomously from model, but as we have one object we code it the hard way
@@ -38,10 +38,12 @@ public:
     //GH io
     void saveToFile(const std::string& filename) const;
     void loadFromFile(const std::string& filename);
+    void saveToFileStorage(cv::FileStorage& fs) const;
+    void loadFromFileStorage(cv::FileStorage& fs);
 
 private:
     //camera calibration
-    IntrinsicCalibration cameraCalibration;
+    IntrinsicCalibration *cameraCalibration_ptr;
     //blob extractor
     cv::Ptr<cv::SimpleBlobDetector> sbd;
     //extract the blob position and scales for getModelPointsFromImage

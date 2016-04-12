@@ -30,6 +30,11 @@ Landmark Landmark::fromFileStorage(cv::FileStorage& fs)
     // cv::read(fs["image_size"], imageSize);
     cv::read(fs["real_size"], realSize);
     cv::read(fs["image"], image);
+
+    std::cout<<"landmarl loading :"<<std::endl;
+    std::cout<<image.type()<<std::endl;
+    std::cout<<image.size()<<std::endl;
+
     
     if(image.empty())
         throw std::runtime_error("Could not load image data");
@@ -77,7 +82,7 @@ void Landmark::find(const cv::Mat& image,
         objectPoints.push_back(mKeypoints[c].pt);
     
     // Compute homography
-    unsigned int minCorresp = 10;//minimum number of matches
+    unsigned int minCorresp = 20;//minimum number of matches
     float ransacThreshold = 5.;
     cv::Mat homography;
     std::vector<unsigned char> mask;
@@ -195,7 +200,7 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );
 
     int nbKeypointsCoveredPerFrame = 50;
-    for(int i = 0; i < nbKeypointsCoveredPerFrame; i++)
+    for(int i = 0; i < nbKeypointsCoveredPerFrame && i < myIndexes.size(); i++)
     {
         int kpIndex = myIndexes[i];
         cv::Point2f p = mKeypointPos[kpIndex];
@@ -279,7 +284,6 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
         prevPoints.push_back(p.second);
     
     // Optical flow
-    std::vector<cv::Mat> pyramid1, pyramid2;
     int maxLevel = 3;
     const cv::Size winSize = cv::Size(21, 21);
     std::vector<cv::Point2f> nextPoints;

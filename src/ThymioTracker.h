@@ -13,10 +13,8 @@
 #include <opencv2/video.hpp>
 // #include <opencv2/xfeatures2d.hpp>
 
-#include "GHscale.hpp"
-#include "Models.hpp"
-#include "Grouping.hpp"
 #include "Landmark.hpp"
+#include "Robot.hpp"
 
 namespace thymio_tracker
 {
@@ -24,34 +22,17 @@ namespace thymio_tracker
 struct DetectionInfo
 {
     DetectionInfo(int numberOfLandmarks)
-        : robotFound(false)
-        , landmarkDetections(numberOfLandmarks)
+        : landmarkDetections(numberOfLandmarks)
     {}
     
-    // Robot pose
-    bool robotFound;
-    cv::Affine3d robotPose;
+    //robot detection info
+    RobotDetection mRobotDetection;
 
-    // Robot s tracking info
-    cv::Mat mRobotHomography;
-    std::map<int, cv::Point2f> mRobotCorrespondences;//corresp between robots keypoints index and current image
-    
-    // Landmark homographies
+    // Landmark detection information
     std::vector<LandmarkDetection> landmarkDetections;
-    // std::vector<std::pair<const Landmark*, cv::Mat> > landmarkPoses;
-    
-    // Debug info
-    std::vector<cv::KeyPoint> blobs;
-    std::vector<BlobPair> blobPairs;
-    std::vector<BlobTriplet> blobTriplets;
-    std::vector<BlobQuadruplets> blobQuadriplets;
-    std::vector<cv::KeyPoint> blobsinTriplets;
-    std::vector<DetectionGH> matches;
     
     // Previous image
     cv::Mat prevImage;
-
-    void clear();
 };
 
 struct CalibrationInfo
@@ -59,8 +40,8 @@ struct CalibrationInfo
     CalibrationInfo(){};
 
     // Sets of matches
-    std::vector<std::vector<cv::Point3f> > objectPoints;
-    std::vector<std::vector<cv::Point2f> > imagePoints;
+    std::vector<std::vector<cv::Point3f> > objectPoints;//3d vertices
+    std::vector<std::vector<cv::Point2f> > imagePoints;//projection of 3d vertices
 
     void clear();
 };
@@ -90,13 +71,17 @@ public:
                   const std::string& geomHashingFile,
                   const std::vector<std::string>& landmarkFiles={});
     ThymioTracker(cv::FileStorage& calibration,
-                  std::istream& geomHashing,
+                  cv::FileStorage& geomHashing,
+                  //std::istream& geomHashing,
                   std::vector<cv::FileStorage>& landmarkStorages);
     ~ThymioTracker(){}
     
     //standard function called by java wrapper
     void update(const cv::Mat& input,
                 const cv::Mat* deviceOrientation=0);
+
+    //use detection information on some frames to update the calibration
+    void calibrateOnline();
 
     
     //void drawLastDetection(cv::Mat* output) const;
@@ -110,22 +95,21 @@ public:
 
 private:
     void init(cv::FileStorage& calibration,
-              std::istream& geomHashing,
+              cv::FileStorage& geomHashing,
               std::vector<cv::FileStorage>& landmarkStorages);
 
     /// Resize the calibration for a new given image size.
     void resizeCalibration(const cv::Size& imgSize);
     
-    GHscale mGH;
-    ThymioBlobModel mRobot;
     IntrinsicCalibration mCalibration;
-    Grouping mGrouping;
     
-    DetectionInfo mDetectionInfo;
     CalibrationInfo mCalibrationInfo;
+    DetectionInfo mDetectionInfo;
+
+    Robot mRobot;
     
     std::vector<Landmark> mLandmarks;
-    cv::Ptr<cv::Feature2D> mFeatureExtractor;
+    cv::Ptr<cv::Feature2D> mFeatureExtractor;//want to extract features from current image once => put it out of landmark
     
     Timer mTimer;
     // cv::Ptr<cv::xfeatures2d::DAISY> mFeatureExtractor;
