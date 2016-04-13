@@ -13,8 +13,7 @@ int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
     //tt::ThymioTracker tracker("../data/calibration/nexus_camera_calib.xml",
-        "../data/GHscale_Arth_Perspective.xml",
-        "../data/robot/robotTrackInfo.xml",
+        "../data/",
         {
             "../data/landmarks/marker.xml.gz",
             "../data/landmarks/ziggu.xml.gz",
@@ -37,11 +36,11 @@ int main(int argc, char** argv)
         videoSource.grabNewFrame();
         cv::Mat inputImage = videoSource.getFramePointer();
 
-        cv::Mat inputGray;
-        cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
+        //cv::Mat inputGray;
+        //cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
 
         
-        tracker.update(inputGray);
+        tracker.update(inputImage);
         tracker.drawLastDetection(&inputImage);
         
         imshow(window_name, inputImage);

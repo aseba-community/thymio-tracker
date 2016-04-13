@@ -77,12 +77,15 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
 }
 
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
-                             const std::string& geomHashingFile,
-                             const std::string& robotModelFile,
+                             const std::string& externalFolder,
                              const std::vector<std::string>& landmarkFiles)
     : mDetectionInfo(landmarkFiles.size())
     , mFeatureExtractor(cv::BRISK::create())
 {
+
+    std::string geomHashingFile; geomHashingFile = externalFolder + "GHscale_Arth_Perspective.xml";
+    std::string robotModelFile; robotModelFile = externalFolder + "robot/robotTrackInfo.xml";
+
     //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
     /*std::ifstream geomHashingStream(geomHashingFile, std::ios::in | std::ios::binary);
     if (!geomHashingStream.is_open())
@@ -162,11 +165,15 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 
 
     
-void ThymioTracker::update(const cv::Mat& input,
+void ThymioTracker::update(const cv::Mat& inputAnyType,
                            const cv::Mat* deviceOrientation)
 {    
+    cv::Mat input;
+    cv::cvtColor(inputAnyType, input, CV_RGB2GRAY);
+
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
+
 
     //to do some debugging and plot stuff on current image, 
     //need to copy frame first as it will be used to set previous frame for tracking

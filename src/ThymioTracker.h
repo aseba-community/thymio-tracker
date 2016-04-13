@@ -68,8 +68,7 @@ class ThymioTracker
 {
 public:
     ThymioTracker(const std::string& calibrationFile,
-                  const std::string& geomHashingFile,
-                  const std::string& robotModelFile,
+                  const std::string& externalFolder,
                   const std::vector<std::string>& landmarkFiles={});
     ThymioTracker(cv::FileStorage& calibration,
                   cv::FileStorage& geomHashing,
