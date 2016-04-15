@@ -2,6 +2,12 @@
 #
 #    $ mkdir build && cd build
 #    $ cmake ..  -DANDROID_WRAPPER=ON -DCMAKE_TOOLCHAIN_FILE=../android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DOpenCV_DIR=../../../deps/OpenCV-android-sdk/sdk/native/jni/
+#    or
+#    $cmake ../source  -DANDROID_WRAPPER=ON -DCMAKE_TOOLCHAIN_FILE=../source/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DOpenCV_DIR=~/Libs/OpenCV-android-sdk/sdk/native/jni/
+#    or
+#    $cmake same_previous -DJAVA_INCLUDE_PATH=/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/include 
+#           -DJAVA_AWT_LIBRARY=/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/libawt.dylib
+#           -DJAVA_JVM_LIBRARY=/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/server/libjvm.dylib
 
 cmake_minimum_required(VERSION 2.8)
 project(ThymioTracker)
@@ -69,7 +75,7 @@ if(ANDROID_WRAPPER)
         ${JAVA_INCLUDE_PATH}
         ${_stubDir})
 
-    INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
+    #INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
 
     set(ThymioTracker_SOURCES
         ${ThymioTracker_SOURCES}
@@ -79,7 +85,7 @@ if(ANDROID_WRAPPER)
 else(ANDROID_WRAPPER)
     find_package(OpenCV REQUIRED)
 
-    INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
+    #INCLUDE_DIRECTORIES ( "$ENV{EIGEN3_INCLUDE_DIR}" )
     
 endif(ANDROID_WRAPPER)
 

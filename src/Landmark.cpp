@@ -31,10 +31,6 @@ Landmark Landmark::fromFileStorage(cv::FileStorage& fs)
     cv::read(fs["real_size"], realSize);
     cv::read(fs["image"], image);
 
-    std::cout<<"landmarl loading :"<<std::endl;
-    std::cout<<image.type()<<std::endl;
-    std::cout<<image.size()<<std::endl;
-
     
     if(image.empty())
         throw std::runtime_error("Could not load image data");
@@ -70,7 +66,10 @@ void Landmark::find(const cv::Mat& image,
     std::vector<int> correspondences;
     
     if(detection.mCorrespondences.empty())
-        this->findCorrespondencesWithKeypoints(keypoints, descriptors, scenePoints, correspondences);
+    {
+        if(!descriptors.empty())
+            this->findCorrespondencesWithKeypoints(keypoints, descriptors, scenePoints, correspondences);
+    }
     else
     {
         this->findCorrespondencesWithTracking(image, prevImage, detection, scenePoints, correspondences);

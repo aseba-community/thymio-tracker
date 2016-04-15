@@ -21,9 +21,11 @@ namespace thymio_tracker
 
 struct DetectionInfo
 {
+    DetectionInfo(){};
     DetectionInfo(int numberOfLandmarks)
-        : landmarkDetections(numberOfLandmarks)
-    {}
+        : landmarkDetections(numberOfLandmarks){}
+
+    void init(int numberOfLandmarks){landmarkDetections.resize(numberOfLandmarks);}
     
     //robot detection info
     RobotDetection mRobotDetection;
@@ -31,14 +33,20 @@ struct DetectionInfo
     // Landmark detection information
     std::vector<LandmarkDetection> landmarkDetections;
     
-    // Previous image
-    cv::Mat prevImage;
+    // Previous image (as robot and landmark detection might run on separate threads,
+    //each need to store its previous frame)
+    cv::Mat prevImageRobot;
+    cv::Mat prevImageLandm;
 };
 
 struct CalibrationInfo
 {
-    CalibrationInfo(){};
+    CalibrationInfo(){nbFramesForCalibration = 10;};
 
+    // number of frames to acquires till we can calibrate (0 = calibration is done)
+    int getNbFramesToCalibration() const {return MAX(0,nbFramesForCalibration-objectPoints.size());};
+
+    int nbFramesForCalibration;
     // Sets of matches
     std::vector<std::vector<cv::Point3f> > objectPoints;//3d vertices
     std::vector<std::vector<cv::Point2f> > imagePoints;//projection of 3d vertices
@@ -67,6 +75,7 @@ private:
 class ThymioTracker
 {
 public:
+    ThymioTracker(const std::string& configFile);
     ThymioTracker(const std::string& calibrationFile,
                   const std::string& externalFolder,
                   const std::vector<std::string>& landmarkFiles={});
@@ -77,23 +86,36 @@ public:
     ~ThymioTracker(){}
     
     //standard function called by java wrapper
-    void update(const cv::Mat& input,
+    void updateCalibration(const cv::Mat& input,
+                const cv::Mat* deviceOrientation=0);
+    void writeCalibration(cv::FileStorage& output);
+
+    //to detect and track the robot
+    void updateRobot(const cv::Mat& input,
                 const cv::Mat* deviceOrientation=0);
 
-    //use detection information on some frames to update the calibration
-    void calibrateOnline();
+    //to detect and track the landmarks
+    void updateLandmarks(const cv::Mat& input,
+                const cv::Mat* deviceOrientation=0);
+
+    void update(const cv::Mat& input,
+                const cv::Mat* deviceOrientation=0){updateRobot(input,deviceOrientation);updateLandmarks(input,deviceOrientation);};
+
+    void drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation=0) const;
 
     
-    //void drawLastDetection(cv::Mat* output) const;
-    void drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation=0) const;
-    
     inline const DetectionInfo& getDetectionInfo() const {return mDetectionInfo;}
+    inline const CalibrationInfo& getCalibrationInfo() const {return mCalibrationInfo;}
     inline const std::vector<Landmark>& getLandmarks() const {return mLandmarks;}
     
     inline const Timer& getTimer() const {return mTimer;}
     inline const IntrinsicCalibration& getIntrinsicCalibration() const {return mCalibration;}
 
 private:
+    void init(const std::string& calibration,
+              const std::string& geomHashing,
+              const std::string& robotModel,
+              const std::vector<std::string>& landmarkStorages);
     void init(cv::FileStorage& calibration,
               cv::FileStorage& geomHashing,
               cv::FileStorage& robotModel,
@@ -101,6 +123,10 @@ private:
 
     /// Resize the calibration for a new given image size.
     void resizeCalibration(const cv::Size& imgSize);
+
+    //detection information updates, => use that to perform calibration
+    void calibrateOnline();
+
     
     IntrinsicCalibration mCalibration;
     

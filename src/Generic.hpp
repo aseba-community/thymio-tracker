@@ -27,6 +27,7 @@ struct DetectionGH {
 
 //get the calibration from an open file
 void readCalibrationFromFileStorage(cv::FileStorage &fs, IntrinsicCalibration &calib);
+void writeCalibrationToFileStorage(IntrinsicCalibration &calib,cv::FileStorage &fs);
 
 //get camera intrisic matrix in case of resize of image
 void resizeCameraMatrix(cv::Mat &_cameraMatrix, const cv::Size& sFrom, const cv::Size& sTo);

@@ -73,8 +73,9 @@ public:
     const bool& isFound() const {return robotFound;}
 
     void clearBlobs();
+    void drawBlobs(cv::Mat* output) const;
     
-private:
+protected:
     //output info
     bool robotFound;
     cv::Mat mHomography;

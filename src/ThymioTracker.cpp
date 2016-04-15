@@ -76,23 +76,52 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
     }
 }
 
+ThymioTracker::ThymioTracker(const std::string& configFile)
+{
+    cv::FileStorage fs(configFile, cv::FileStorage::READ);
+
+    std::string calibrationFile;
+    fs["calibrationFile"]>> calibrationFile;
+
+    std::string geomHashingFile;
+    fs["geomHashingFile"]>> geomHashingFile;
+
+    std::string robotModelFile;
+    fs["robotModelFile"]>> robotModelFile;
+
+    std::vector<std::string> landmarkFiles;
+    cv::FileNode nLm = fs["landmarkFiles"];
+    cv::FileNodeIterator it = nLm.begin(), it_end = nLm.end(); // Go through the node
+    for (; it != it_end; ++it)
+        landmarkFiles.push_back((std::string)*it);
+
+    init(calibrationFile, geomHashingFile, robotModelFile, landmarkFiles);
+
+}
 ThymioTracker::ThymioTracker(const std::string& calibrationFile,
                              const std::string& externalFolder,
                              const std::vector<std::string>& landmarkFiles)
-    : mDetectionInfo(landmarkFiles.size())
-    , mFeatureExtractor(cv::BRISK::create())
 {
 
     std::string geomHashingFile; geomHashingFile = externalFolder + "GHscale_Arth_Perspective.xml";
     std::string robotModelFile; robotModelFile = externalFolder + "robot/robotTrackInfo.xml";
 
-    //static const std::string ghfilename = "/sdcard/GH_Arth_Perspective.dat";
-    /*std::ifstream geomHashingStream(geomHashingFile, std::ios::in | std::ios::binary);
-    if (!geomHashingStream.is_open())
+    
+    init(calibrationFile, geomHashingFile, robotModelFile, landmarkFiles);    
+}
+void ThymioTracker::init(const std::string& calibrationFile,
+                             const std::string& geomHashingFile,
+                             const std::string& robotModelFile,
+                             const std::vector<std::string>& landmarkFiles)
+{
+
+    cv::FileStorage calibrationStorage(calibrationFile, cv::FileStorage::READ);
+    if(!calibrationStorage.isOpened())
     {
-        std::cerr << "Could not open " << geomHashingFile << std::endl;
-        throw std::runtime_error("GHscale::loadFromFile > File not found!");
-    }*/
+        std::cerr << "Could not open " << calibrationFile << std::endl;
+        throw std::runtime_error("Calibration file not found!");
+    }
+
     cv::FileStorage geomHashingStorage(geomHashingFile, cv::FileStorage::READ);
     if (!geomHashingStorage.isOpened())
     {
@@ -106,16 +135,7 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
         std::cerr << "Could not open " << robotModelFile << std::endl;
         throw std::runtime_error("Robot model File not found!");
     }
-    
-    // loadCalibration("../data/calibration/embedded_camera_calib.xml", &calibration, &imgSize);
-    // loadCalibration("../data/calibration/nexus_camera_calib.xml", &calibration, &imgSize);
-    cv::FileStorage calibrationStorage(calibrationFile, cv::FileStorage::READ);
-    if(!calibrationStorage.isOpened())
-    {
-        std::cerr << "Could not open " << calibrationFile << std::endl;
-        throw std::runtime_error("Calibration file not found!");
-    }
-    
+
     std::vector<cv::FileStorage> landmarkStorages;
     for(auto& landmarkFile : landmarkFiles)
     {
@@ -125,17 +145,13 @@ ThymioTracker::ThymioTracker(const std::string& calibrationFile,
         landmarkStorages.push_back(fs);
     }
     
-    init(calibrationStorage, geomHashingStorage, robotModelStorage, landmarkStorages);
-    //init(calibrationStorage, geomHashingStream, landmarkStorages);
-    
+    init(calibrationStorage, geomHashingStorage, robotModelStorage, landmarkStorages);    
 }
 
 ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
                              cv::FileStorage& geomHashingStorage,
                              cv::FileStorage& robotModelStorage,
                              std::vector<cv::FileStorage>& landmarkStorages)
-    : mDetectionInfo(landmarkStorages.size())
-    , mFeatureExtractor(cv::BRISK::create())
 {
     init(calibrationStorage, geomHashingStorage, robotModelStorage, landmarkStorages);
 }
@@ -145,6 +161,9 @@ void ThymioTracker::init(cv::FileStorage& calibrationStorage,
                          cv::FileStorage& robotModelStorage,
                          std::vector<cv::FileStorage>& landmarkStorages)
 {
+    mDetectionInfo.init(landmarkStorages.size());
+    mFeatureExtractor = cv::BRISK::create();
+
     readCalibrationFromFileStorage(calibrationStorage, mCalibration);
 
     //mRobot.init(&mCalibration, geomHashingStream);
@@ -165,7 +184,7 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 
 
     
-void ThymioTracker::update(const cv::Mat& inputAnyType,
+void ThymioTracker::updateRobot(const cv::Mat& inputAnyType,
                            const cv::Mat* deviceOrientation)
 {    
     cv::Mat input;
@@ -174,14 +193,49 @@ void ThymioTracker::update(const cv::Mat& inputAnyType,
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
 
+    //to do some debugging and plot stuff on current image, 
+    //need to copy frame first as it will be used to set previous frame for tracking
+    //cv::Mat cpImg;
+    //input.copyTo(cpImg);
+    
+    // Robot detection and tracking
+    mRobot.find(input,mDetectionInfo.prevImageRobot,mDetectionInfo.mRobotDetection);
+
+    //cpImg.copyTo(mDetectionInfo.prevImageRobot);
+    input.copyTo(mDetectionInfo.prevImageRobot);
+    
+
+}
+void ThymioTracker::updateCalibration(const cv::Mat& inputAnyType,
+                           const cv::Mat* deviceOrientation)
+{   
+    //search the landmarks
+    updateLandmarks(inputAnyType,deviceOrientation);
+    //store 2D measures and calibrate when haev enough frames
+    calibrateOnline();
+}   
+
+void ThymioTracker::writeCalibration(cv::FileStorage& output)
+{   
+    writeCalibrationToFileStorage(mCalibration,output);
+
+}   
+
+
+
+void ThymioTracker::updateLandmarks(const cv::Mat& inputAnyType,
+                           const cv::Mat* deviceOrientation)
+{    
+    cv::Mat input;
+    cv::cvtColor(inputAnyType, input, CV_RGB2GRAY);
+
+    if(input.size() != mCalibration.imageSize)
+        resizeCalibration(input.size());
 
     //to do some debugging and plot stuff on current image, 
     //need to copy frame first as it will be used to set previous frame for tracking
     cv::Mat cpImg;
     input.copyTo(cpImg);
-    
-    // Robot detection and tracking
-    mRobot.find(input,mDetectionInfo.prevImage,mDetectionInfo.mRobotDetection);
 
     // Landmark detection and tracking
     static int counter = 100;   
@@ -211,14 +265,11 @@ void ThymioTracker::update(const cv::Mat& inputAnyType,
     auto landmarksIt = mLandmarks.cbegin();
     auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
     for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
-        landmarksIt->find(input, mDetectionInfo.prevImage, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
+        landmarksIt->find(input, mDetectionInfo.prevImageLandm, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
     
-    //calibration of camera: if needed, capture a set of frames where tags are tracked and use them to calibrate the camera
-    //add the matches to the calibration information
-    //calibrateOnline();
 
-    cpImg.copyTo(mDetectionInfo.prevImage);
-    //input.copyTo(mDetectionInfo.prevImage);
+    //cpImg.copyTo(mDetectionInfo.prevImageLandm);
+    input.copyTo(mDetectionInfo.prevImageLandm);
     
     mTimer.tic();
 }
@@ -226,10 +277,9 @@ void ThymioTracker::update(const cv::Mat& inputAnyType,
 void ThymioTracker::calibrateOnline()
 {
     static int counter_calib = 100;
-    int nb_detections_for_calibration = 10;
     ++counter_calib;
 
-    if(mCalibrationInfo.objectPoints.size() < nb_detections_for_calibration && counter_calib >= 20)
+    if(mCalibrationInfo.objectPoints.size() < mCalibrationInfo.nbFramesForCalibration && counter_calib >= 20)
     {
         //for each tracked landmark add the matches to the calibration tool
         //ie for each image and each landmark, the set of 3D points and their projections
@@ -261,7 +311,7 @@ void ThymioTracker::calibrateOnline()
             }
         }
 
-        if(mCalibrationInfo.objectPoints.size() >= nb_detections_for_calibration)
+        if(mCalibrationInfo.objectPoints.size() >= mCalibrationInfo.nbFramesForCalibration)
         {
             std::vector<cv::Mat> rotationVectors;
             std::vector<cv::Mat> translationVectors;
@@ -283,6 +333,14 @@ void ThymioTracker::calibrateOnline()
 void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation) const
 {
     // mDetectionInfo.image.copyTo(*output);
+
+    //plot FPS
+    char fpsStr[100];
+    sprintf(fpsStr, "%0.1f fps ", getTimer().getFps());
+    putText(*output, fpsStr,
+                cv::Point2i(10,output->size().height-10),
+                cv::FONT_HERSHEY_COMPLEX_SMALL,
+                0.8, cvScalar(250,250,250), 1, CV_AA);
     
     // cv::drawMatches(*output, mDetectedKeypoints,
     //                     mLandmark.image, mLandmark.keypoints,
@@ -300,9 +358,10 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
                 cv::FONT_HERSHEY_COMPLEX_SMALL,
                 0.8, cvScalar(0,0,250), 1, CV_AA);
     
-    //drawBlobPairs(*output, mDetectionInfo.blobs, mDetectionInfo.blobPairs);
-    //drawBlobTriplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobTriplets);
-    //drawBlobQuadruplets(*output, mDetectionInfo.blobs, mDetectionInfo.blobQuadriplets);
+    mDetectionInfo.mRobotDetection.drawBlobs(output);
+    //drawBlobPairs(*output, mDetectionInfo.mRobotDetection.blobs, mDetectionInfo.mRobotDetection.blobPairs);
+    //drawBlobTriplets(*output, mDetectionInfo.mRobotDetection.blobs, mDetectionInfo.mRobotDetection.blobTriplets);
+    //drawBlobQuadruplets(*output, mDetectionInfo.mRobotDetection.blobs, mDetectionInfo.mRobotDetection.blobQuadriplets);
     // drawPointsAndIds(output, mDetectionInfo.matches);
     
      if(deviceOrientation)

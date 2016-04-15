@@ -78,6 +78,7 @@ public:
     const cv::Mat& getHomography() const {return mHomography;}
     const cv::Affine3d& getPose() const {return mPose;}
     const std::map<int, cv::Point2f>& getCorrespondences() const {return mCorrespondences;}
+    bool isFound() const {return !mHomography.empty();}
     
 private:
     cv::Mat mHomography;

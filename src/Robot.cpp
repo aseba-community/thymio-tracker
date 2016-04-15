@@ -353,6 +353,11 @@ void Robot::findCorrespondencesWithActiveSearch(const cv::Mat& image,
         //                window_size+patch_size-1,window_size+patch_size-1);//region of interest is around current position of point
         //cv::Mat resultNCC = cv::Mat::zeros( window_size, window_size, CV_32FC1 );
         //Problem when point is on border with previous code
+        int margin = half_patch_size+half_window_size;
+        if(sceneFramePoints[0].x < -margin || sceneFramePoints[0].y < -margin 
+            || sceneFramePoints[0].x > image.size().width+margin || sceneFramePoints[0].y > image.size().height+margin )
+            continue;
+
         int myRoi_l = sceneFramePoints[0].x-half_patch_size-half_window_size; myRoi_l = (myRoi_l<0)?0:myRoi_l;
         int myRoi_t = sceneFramePoints[0].y-half_patch_size-half_window_size; myRoi_t = (myRoi_t<0)?0:myRoi_t;
         int myRoi_r = sceneFramePoints[0].x+half_patch_size+half_window_size; myRoi_r = (myRoi_r>image.size().width)?image.size().width:myRoi_r;
@@ -388,19 +393,24 @@ void Robot::findCorrespondencesWithActiveSearch(const cv::Mat& image,
                 scenePoints.push_back(estPos);
 
                 //plot
-                /*char pointIdStr[100];
-                sprintf(pointIdStr, "%f", maxVal);
-                circle(image, estPos, 4, cvScalar(0,250,250), -1, 8, 0);
-                putText(image, pointIdStr, estPos,cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(250,0,250), 1, CV_AA);
+                //char pointIdStr[100];
+                //sprintf(pointIdStr, "%f", maxVal);
+                //circle(image, estPos, 4, cvScalar(0,250,250), -1, 8, 0);
+                //putText(image, pointIdStr, estPos,cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(250,0,250), 1, CV_AA);
 
-                line(image, sceneFramePoints[0], estPos, cv::Scalar(0,255,125), 2);*/
+                //line(image, sceneFramePoints[0], estPos, cv::Scalar(0,255,125), 2);
             }
         }
 
     }
 
 }
-
+void RobotDetection::drawBlobs(cv::Mat* output) const
+{
+    drawBlobPairs(*output, blobs, blobPairs);
+    drawBlobTriplets(*output, blobs, blobTriplets);
+    drawBlobQuadruplets(*output, blobs, blobQuadriplets);
+}
 void RobotDetection::clearBlobs()
 {
     blobs.clear();

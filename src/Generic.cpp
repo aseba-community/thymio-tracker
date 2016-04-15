@@ -12,8 +12,16 @@ void readCalibrationFromFileStorage(cv::FileStorage &fs, IntrinsicCalibration &c
     fs["camera_matrix"] >> calibration.cameraMatrix;
     fs["distortion_coefficients"] >> calibration.distCoeffs;
     calibration.imageSize.width = (int) fs["image_width"];
-    calibration.imageSize.height = (int) fs["image_height"];
-    
+    calibration.imageSize.height = (int) fs["image_height"];  
+}
+
+void writeCalibrationToFileStorage(IntrinsicCalibration &calibration,cv::FileStorage &fs)
+{ 
+    cv::write(fs,"camera_matrix", calibration.cameraMatrix);
+    cv::write(fs,"distortion_coefficients", calibration.distCoeffs);
+    cv::write(fs,"image_width", calibration.imageSize.width);
+    cv::write(fs,"image_height", calibration.imageSize.height);
+    fs.release();
 }
 
 

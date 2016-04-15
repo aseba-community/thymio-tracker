@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<calibrationFile>"../data/calibration/embedded_camera_calib.xml"</calibrationFile>
+<geomHashingFile>"../data/GHscale_Arth_Perspective.xml"</geomHashingFile>
+<robotModelFile>"../data/robot/robotTrackInfo.xml"</robotModelFile>
+<landmarkFiles>
+  "../data/landmarks/marker.xml.gz" "../data/landmarks/ziggu.xml.gz"</landmarkFiles>
+</opencv_storage>

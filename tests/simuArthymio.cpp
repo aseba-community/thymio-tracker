@@ -1,6 +1,5 @@
 
 #include "ThymioTracker.h"
-
 #include "VideoSource.hpp"
 
 static const char window_name[] = "Tracker";
@@ -11,8 +10,9 @@ namespace tt = thymio_tracker;
 //work offline on recorded sequence
 int main(int argc, char** argv)
 {
-    tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
+    //tt::ThymioTracker tracker("../data/calibration/online_camera_calib.xml",
     //tt::ThymioTracker tracker("../data/calibration/nexus_camera_calib.xml",
+    /*tt::ThymioTracker tracker("../data/calibration/embedded_camera_calib.xml",
         "../data/",
         {
             "../data/landmarks/marker.xml.gz",
@@ -20,8 +20,9 @@ int main(int argc, char** argv)
             // "../data/marker2.xml.gz",
             // "../data/ziggu.xml.gz"
         }
-        );
-    
+        );*/
+    tt::ThymioTracker tracker("../data/Config.xml");
+
     //VideoSourceLive videoSource(EmbeddedCam);
     VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
     //VideoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
@@ -45,7 +46,7 @@ int main(int argc, char** argv)
         
         imshow(window_name, inputImage);
         
-        std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
+        //std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
         
         // const tt::DetectionInfo& di = tracker.getDetectionInfo();
         // const tt::Landmark& landmark = tracker.getLandmarks()[0];
@@ -58,8 +59,8 @@ int main(int argc, char** argv)
         //     imshow(window_name, crop);
         // }
         
-        //auto key = cv::waitKey(5);
-        auto key = cv::waitKey();
+        auto key = cv::waitKey(5);
+        //auto key = cv::waitKey();
         if(key == 27 || key == 'q')
             break;
     }
@@ -75,7 +76,7 @@ int main(int argc, char** argv)
     //tt::ThymioTracker tracker("../data/calibration/nexus_camera_calib.xml",
     tt::ThymioTracker tracker("../data/calibration/default_camera_calib.xml",
         //"../data/GHscale_Arth_Perspective.dat",
-        "../data/GHscale_Arth_Perspective.xml",
+        "../data/",
         {
             //"../data/landmarks/markerTest.xml.gz",
             "../data/landmarks/marker.xml.gz",
