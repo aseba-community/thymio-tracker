@@ -21,7 +21,8 @@ int main(int argc, char** argv)
             // "../data/ziggu.xml.gz"
         }
         );*/
-    tt::ThymioTracker tracker("../data/Config.xml");
+    //tt::ThymioTracker tracker("../data/Config.xml");
+    tt::ThymioTracker tracker("../data/");
 
     //VideoSourceLive videoSource(EmbeddedCam);
     VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
@@ -37,11 +38,10 @@ int main(int argc, char** argv)
         videoSource.grabNewFrame();
         cv::Mat inputImage = videoSource.getFramePointer();
 
-        //cv::Mat inputGray;
-        //cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
+        cv::Mat inputGray;
+        cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
 
-        
-        tracker.update(inputImage);
+        tracker.update(inputGray);
         tracker.drawLastDetection(&inputImage);
         
         imshow(window_name, inputImage);

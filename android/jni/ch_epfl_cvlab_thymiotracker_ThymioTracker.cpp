@@ -26,6 +26,14 @@ static std::string GetJStringContent(JNIEnv *AEnv, jstring AStr)
  * Method:    createNativeInstance
  * Signature: (Ljava/lang/String;Ljava/lang/String;)J
  */
+JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNativeInstance__Ljava_lang_String_2
+  (JNIEnv * env, jobject, jstring _configFile)
+{
+    std::string configFile = GetJStringContent(env, _configFile);
+    
+    return reinterpret_cast<long>(new ThymioTracker(configFile));
+}
+
 JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNativeInstance__Ljava_lang_String_2Ljava_lang_String_2
   (JNIEnv * env, jobject, jstring _calibrationFile, jstring _geomHashingFile)
 {

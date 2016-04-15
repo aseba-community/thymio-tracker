@@ -266,6 +266,11 @@ void Robot::findCorrespondencesWithTracking(const cv::Mat& image,
             cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mModel.mImage.type() );
             cv::warpAffine( mModel.mImage, patchCurr, mAffine, patchCurr.size() );
 
+            int margin = half_patch_size;
+            if(sceneFramePoints[0].x < -margin || sceneFramePoints[0].y < -margin 
+                || sceneFramePoints[0].x > image.size().width+margin || sceneFramePoints[0].y > image.size().height+margin )
+                continue;
+
             //and now just need to compare it with patch from current image centered on track
             int myRoi_l = nextPointsIt->x-half_patch_size; myRoi_l = (myRoi_l<0)?0:myRoi_l;
             int myRoi_t = nextPointsIt->y-half_patch_size; myRoi_t = (myRoi_t<0)?0:myRoi_t;

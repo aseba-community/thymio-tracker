@@ -38,10 +38,10 @@ int main(int argc, char** argv)
         videoSource.grabNewFrame();
         cv::Mat inputImage = videoSource.getFramePointer();
 
-        //if(inputImage.type() != CV_8UC1)
-        //    cv::cvtColor(inputImage, inputImage, CV_RGB2GRAY);
+        cv::Mat inputGray;
+        cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
 
-        tracker.updateCalibration(inputImage);
+        tracker.updateCalibration(inputGray);
         tracker.drawLastDetection(&inputImage);
         
         imshow(window_name, inputImage);

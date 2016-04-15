@@ -75,7 +75,7 @@ private:
 class ThymioTracker
 {
 public:
-    ThymioTracker(const std::string& configFile);
+    ThymioTracker(const std::string& configPath);
     ThymioTracker(const std::string& calibrationFile,
                   const std::string& externalFolder,
                   const std::vector<std::string>& landmarkFiles={});

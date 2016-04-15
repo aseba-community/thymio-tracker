@@ -76,24 +76,32 @@ void drawAxes(cv::Mat& image, const cv::Mat& orientation)
     }
 }
 
-ThymioTracker::ThymioTracker(const std::string& configFile)
+ThymioTracker::ThymioTracker(const std::string& configPath)
 {
+    std::string configFile; configFile = configPath + "Config.xml";
     cv::FileStorage fs(configFile, cv::FileStorage::READ);
 
     std::string calibrationFile;
     fs["calibrationFile"]>> calibrationFile;
+    calibrationFile = configPath + calibrationFile;
 
     std::string geomHashingFile;
     fs["geomHashingFile"]>> geomHashingFile;
+    geomHashingFile = configPath + geomHashingFile;
 
     std::string robotModelFile;
     fs["robotModelFile"]>> robotModelFile;
+    robotModelFile = configPath + robotModelFile;
 
     std::vector<std::string> landmarkFiles;
     cv::FileNode nLm = fs["landmarkFiles"];
     cv::FileNodeIterator it = nLm.begin(), it_end = nLm.end(); // Go through the node
     for (; it != it_end; ++it)
-        landmarkFiles.push_back((std::string)*it);
+    {
+        std::string landmarkFile = (std::string)*it;
+        landmarkFile = configPath + landmarkFile;
+        landmarkFiles.push_back(landmarkFile);
+    }
 
     init(calibrationFile, geomHashingFile, robotModelFile, landmarkFiles);
 
@@ -184,24 +192,15 @@ void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
 
 
     
-void ThymioTracker::updateRobot(const cv::Mat& inputAnyType,
+void ThymioTracker::updateRobot(const cv::Mat& input,
                            const cv::Mat* deviceOrientation)
 {    
-    cv::Mat input;
-    cv::cvtColor(inputAnyType, input, CV_RGB2GRAY);
-
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
-
-    //to do some debugging and plot stuff on current image, 
-    //need to copy frame first as it will be used to set previous frame for tracking
-    //cv::Mat cpImg;
-    //input.copyTo(cpImg);
     
     // Robot detection and tracking
     mRobot.find(input,mDetectionInfo.prevImageRobot,mDetectionInfo.mRobotDetection);
 
-    //cpImg.copyTo(mDetectionInfo.prevImageRobot);
     input.copyTo(mDetectionInfo.prevImageRobot);
     
 
@@ -223,19 +222,12 @@ void ThymioTracker::writeCalibration(cv::FileStorage& output)
 
 
 
-void ThymioTracker::updateLandmarks(const cv::Mat& inputAnyType,
+void ThymioTracker::updateLandmarks(const cv::Mat& input,
                            const cv::Mat* deviceOrientation)
 {    
-    cv::Mat input;
-    cv::cvtColor(inputAnyType, input, CV_RGB2GRAY);
-
     if(input.size() != mCalibration.imageSize)
         resizeCalibration(input.size());
 
-    //to do some debugging and plot stuff on current image, 
-    //need to copy frame first as it will be used to set previous frame for tracking
-    cv::Mat cpImg;
-    input.copyTo(cpImg);
 
     // Landmark detection and tracking
     static int counter = 100;   
@@ -268,7 +260,6 @@ void ThymioTracker::updateLandmarks(const cv::Mat& inputAnyType,
         landmarksIt->find(input, mDetectionInfo.prevImageLandm, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
     
 
-    //cpImg.copyTo(mDetectionInfo.prevImageLandm);
     input.copyTo(mDetectionInfo.prevImageLandm);
     
     mTimer.tic();
@@ -306,8 +297,6 @@ void ThymioTracker::calibrateOnline()
 
                 mCalibrationInfo.objectPoints.push_back(lmObjectPoints);
                 mCalibrationInfo.imagePoints.push_back(lmImagePoints);
-
-                //std::cout<<"nb matches for calib : "<<lmObjectPoints.size()<<std::endl;
             }
         }
 
@@ -358,11 +347,7 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
                 cv::FONT_HERSHEY_COMPLEX_SMALL,
                 0.8, cvScalar(0,0,250), 1, CV_AA);
     
-    mDetectionInfo.mRobotDetection.drawBlobs(output);
-    //drawBlobPairs(*output, mDetectionInfo.mRobotDetection.blobs, mDetectionInfo.mRobotDetection.blobPairs);
-    //drawBlobTriplets(*output, mDetectionInfo.mRobotDetection.blobs, mDetectionInfo.mRobotDetection.blobTriplets);
-    //drawBlobQuadruplets(*output, mDetectionInfo.mRobotDetection.blobs, mDetectionInfo.mRobotDetection.blobQuadriplets);
-    // drawPointsAndIds(output, mDetectionInfo.matches);
+    //mDetectionInfo.mRobotDetection.drawBlobs(output);
     
      if(deviceOrientation)
          drawAxes(*output, *deviceOrientation);

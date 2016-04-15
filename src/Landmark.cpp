@@ -229,6 +229,11 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
         //                window_size+patch_size-1,window_size+patch_size-1);//region of interest is around current position of point
         //cv::Mat resultNCC = cv::Mat::zeros( window_size, window_size, CV_32FC1 );
         //Problem when point is on border with previous code
+        int margin = half_patch_size+half_window_size;
+        if(sceneFramePoints[0].x < -margin || sceneFramePoints[0].y < -margin 
+            || sceneFramePoints[0].x > image.size().width+margin || sceneFramePoints[0].y > image.size().height+margin )
+            continue;
+
         int myRoi_l = sceneFramePoints[0].x-half_patch_size-half_window_size; myRoi_l = (myRoi_l<0)?0:myRoi_l;
         int myRoi_t = sceneFramePoints[0].y-half_patch_size-half_window_size; myRoi_t = (myRoi_t<0)?0:myRoi_t;
         int myRoi_r = sceneFramePoints[0].x+half_patch_size+half_window_size; myRoi_r = (myRoi_r>image.size().width)?image.size().width:myRoi_r;
@@ -358,6 +363,11 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
             cv::warpAffine( mImage, patchCurr, mAffine, patchCurr.size() );
 
             //and now just need to compare it with patch from current image centered on track
+            int margin = half_patch_size;
+            if(sceneFramePoints[0].x < -margin || sceneFramePoints[0].y < -margin 
+                || sceneFramePoints[0].x > image.size().width+margin || sceneFramePoints[0].y > image.size().height+margin )
+                continue;
+
             int myRoi_l = nextPointsIt->x-half_patch_size; myRoi_l = (myRoi_l<0)?0:myRoi_l;
             int myRoi_t = nextPointsIt->y-half_patch_size; myRoi_t = (myRoi_t<0)?0:myRoi_t;
             int myRoi_r = nextPointsIt->x+half_patch_size+1; myRoi_r = (myRoi_r>image.size().width)?image.size().width:myRoi_r;

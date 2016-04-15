@@ -56,7 +56,8 @@ if(ANDROID_WRAPPER)
         android/java/ch/epfl/cvlab/thymiotracker/ThymioTracker.java)
     set(CMAKE_JAVA_INCLUDE_PATH
         ${CMAKE_JAVA_INCLUDE_PATH}
-        "${OpenCV_ANDROID_SDK}/java/src")
+        "${OpenCV_ANDROID_SDK}/java/src"
+        )
     add_jar(thymiotracker_android SOURCES ${ThymioTracker_JAVA_SOURCES})
     get_target_property(_classDir thymiotracker_android CLASSDIR)
     get_target_property(_jarFile thymiotracker_android JAR_FILE)
