@@ -81,6 +81,12 @@ ThymioTracker::ThymioTracker(const std::string& configPath)
     std::string configFile; configFile = configPath + "Config.xml";
     cv::FileStorage fs(configFile, cv::FileStorage::READ);
 
+    if(!fs.isOpened())
+    {
+        std::cerr << "Could not open configFile " << configFile << std::endl;
+        throw std::runtime_error("Configuration file not found!");
+    }
+
     std::string calibrationFile;
     fs["calibrationFile"]>> calibrationFile;
     calibrationFile = configPath + calibrationFile;

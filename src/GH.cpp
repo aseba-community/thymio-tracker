@@ -298,7 +298,7 @@ void GH::getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionGH> &m
     for(unsigned int p=0;p<mPoints.size();p++)
     {
         //for each point need to accumulate votes from HT
-        float votesId[nbIds];
+        float *votesId=new float[nbIds];
         //init all votes to 0
         for(int id=0;id<nbIds;id++)
             votesId[id]=0;
@@ -373,6 +373,7 @@ void GH::getModelPointsFromImage(const cv::Mat& img, std::vector<DetectionGH> &m
                 idPointSecondBest=id;
                 nbVotesForSecondBest=votesId[id];
             }
+        delete[] votesId;
         
         
         //add the point&id pair to output if id not already in list; if it is then need to check which one has most votes
