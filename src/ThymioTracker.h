@@ -44,9 +44,9 @@ struct CalibrationInfo
     CalibrationInfo(){nbFramesForCalibration = 10;};
 
     // number of frames to acquires till we can calibrate (0 = calibration is done)
-    int getNbFramesToCalibration() const {return MAX(0,nbFramesForCalibration-objectPoints.size());};
+    unsigned int getNbFramesToCalibration() const {return nbFramesForCalibration>objectPoints.size() ? nbFramesForCalibration-objectPoints.size() : 0;}
 
-    int nbFramesForCalibration;
+    unsigned int nbFramesForCalibration;
     // Sets of matches
     std::vector<std::vector<cv::Point3f> > objectPoints;//3d vertices
     std::vector<std::vector<cv::Point2f> > imagePoints;//projection of 3d vertices

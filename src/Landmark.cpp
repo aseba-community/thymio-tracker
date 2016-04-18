@@ -198,8 +198,8 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
     for (unsigned int i=0; i<mKeypointPos.size(); i++) myIndexes.push_back(i);
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );
 
-    int nbKeypointsCoveredPerFrame = 50;
-    for(int i = 0; i < nbKeypointsCoveredPerFrame && i < myIndexes.size(); i++)
+    unsigned int nbKeypointsCoveredPerFrame = 50;
+    for(unsigned int i = 0; i < nbKeypointsCoveredPerFrame && i < myIndexes.size(); i++)
     {
         int kpIndex = myIndexes[i];
         cv::Point2f p = mKeypointPos[kpIndex];
