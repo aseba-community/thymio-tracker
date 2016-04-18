@@ -91,7 +91,7 @@ void Landmark::find(const cv::Mat& image,
 
 
     //need to recompute outliers as the ones from above are those from the ransac estimation without refinement
-    std::vector<cv::Point2f> scenePointsRefined;
+    /*std::vector<cv::Point2f> scenePointsRefined;
     //if(!scenePoints.empty())
     if(scenePoints.size()>minCorresp)
     {
@@ -110,9 +110,9 @@ void Landmark::find(const cv::Mat& image,
             }
         }
 
-        //second round refinement
+        //second round refinement: take all the inliers to compute final homography
         homography = cv::findHomography(objectPointsValid, scenePointsValid);
-    }
+    }*/
     
     // Save homography and inliers
     detection.mHomography = homography;
@@ -126,6 +126,8 @@ void Landmark::find(const cv::Mat& image,
         if(!*maskIt)
             continue;
         
+        //remark: if active search finds a correspondence which already exists from tracking then it will be
+        //replacing it.
         detection.mCorrespondences[*correspIt] = *scenePointsIt;
     }
 
@@ -198,7 +200,7 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
     for (unsigned int i=0; i<mKeypointPos.size(); i++) myIndexes.push_back(i);
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );
 
-    int nbKeypointsCoveredPerFrame = 50;
+    int nbKeypointsCoveredPerFrame = 25;
     for(int i = 0; i < nbKeypointsCoveredPerFrame && i < myIndexes.size(); i++)
     {
         int kpIndex = myIndexes[i];
@@ -375,7 +377,7 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
 
             cv::Rect myROI(myRoi_l,myRoi_t,myRoi_r-myRoi_l,myRoi_d-myRoi_t);//region of interest is around current position of point
 
-            //verify that the search region is valid
+            //verify that the search region is valid (here should have size of 1x1)
             int result_cols = myROI.size().height - patch_size + 1;
             int result_rows = myROI.size().width - patch_size + 1;
 
