@@ -1,6 +1,6 @@
 //usage example :
-//./landmark ../data/landmarks/marker_noborder.png ../data/landmarks/marker.xml.gz
-//./landmark ../data/landmarks/ziggu_nrmpart_Top.png ../data/landmarks/ziggu.xml.gz
+//./landmark ../data/landmarks/marker.png ../data/landmarks/marker.xml.gz
+//./landmark ../data/landmarks/ziggu.png ../data/landmarks/ziggu.xml.gz
 
 #include <iostream>
 #include <numeric>
