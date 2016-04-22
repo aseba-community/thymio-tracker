@@ -105,12 +105,22 @@ JNIEXPORT void JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_n_1update_
  * Method:    n_drawLastDetection
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_n_1drawLastDetection
+JNIEXPORT void JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_n_1drawLastDetection__JJ
   (JNIEnv *, jobject, jlong ptr_ttracker, jlong ptr_output)
 {
     ThymioTracker* ttracker = reinterpret_cast<ThymioTracker*>(ptr_ttracker);
     cv::Mat* output = reinterpret_cast<cv::Mat*>(ptr_output);
     ttracker->drawLastDetection(output);
+}
+
+
+JNIEXPORT void JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_n_1drawLastDetection__JJJ
+  (JNIEnv *, jobject, jlong ptr_ttracker, jlong ptr_output, jlong ptr_deviceOrientation)
+{
+    ThymioTracker* ttracker = reinterpret_cast<ThymioTracker*>(ptr_ttracker);
+    cv::Mat* output = reinterpret_cast<cv::Mat*>(ptr_output);
+    cv::Mat* deviceOrientation = reinterpret_cast<cv::Mat*>(ptr_deviceOrientation);
+    ttracker->drawLastDetection(output, deviceOrientation);
 }
 
 #ifdef __cplusplus
