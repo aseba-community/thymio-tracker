@@ -21,7 +21,6 @@ void writeCalibrationToFileStorage(IntrinsicCalibration &calibration,cv::FileSto
     cv::write(fs,"distortion_coefficients", calibration.distCoeffs);
     cv::write(fs,"image_width", calibration.imageSize.width);
     cv::write(fs,"image_height", calibration.imageSize.height);
-    fs.release();
 }
 
 
