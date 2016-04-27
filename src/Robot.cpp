@@ -53,7 +53,7 @@ void Robot::find(const cv::Mat& input,
     
             //add to tracking correspondences
             mDetectionInfo.mCorrespondences.clear();
-            for(int i=0;i<vprojVertices.size();i++)
+            for(unsigned int i=0;i<vprojVertices.size();i++)
                 mDetectionInfo.mCorrespondences[i]=vprojVertices[i];
 
             //find homography
@@ -81,7 +81,7 @@ void Robot::find(const cv::Mat& input,
         for(int c : correspondences)
             objectPoints.push_back(mModel.mRobotKeypointPos[c]);
 
-        int minCorresp = 10;//minimum number of matches
+        unsigned int minCorresp = 10;//minimum number of matches
         float ransacThreshold = 10.;
         cv::Mat homography;
         std::vector<unsigned char> mask;
@@ -102,7 +102,7 @@ void Robot::find(const cv::Mat& input,
             
             mDetectionInfo.mCorrespondences[*correspIt] = *scenePointsIt;
         }
-        int nbInliers = mDetectionInfo.mCorrespondences.size();
+        unsigned int nbInliers = mDetectionInfo.mCorrespondences.size();
 
         //find corresponding pose
         if(nbInliers>minCorresp)
@@ -327,8 +327,8 @@ void Robot::findCorrespondencesWithActiveSearch(const cv::Mat& image,
     for (unsigned int i=0; i<mModel.mRobotKeypointPos.size(); i++) myIndexes.push_back(i);
     std::random_shuffle ( myIndexes.begin(), myIndexes.end() );
 
-    int nbKeypointsCoveredPerFrame = 20;
-    for(int i = 0; i < nbKeypointsCoveredPerFrame && i < myIndexes.size(); i++)
+    unsigned int nbKeypointsCoveredPerFrame = 20;
+    for(unsigned int i = 0; i < nbKeypointsCoveredPerFrame && i < myIndexes.size(); i++)
     {
         int kpIndex = myIndexes[i];
         cv::Point2f p = mModel.mRobotKeypointPos[kpIndex];

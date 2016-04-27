@@ -182,7 +182,8 @@ int main(int argc, char** argv)
         cv::Mat inputGray;
         cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
 
-        tracker.updateCalibration(inputGray);
+        tracker.updateLandmarks(inputGray);
+        tracker.updateCalibration();
         tracker.drawLastDetection(&inputImage);
         
         imshow(window_name, inputImage);

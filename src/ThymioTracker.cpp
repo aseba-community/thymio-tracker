@@ -218,14 +218,6 @@ void ThymioTracker::updateRobot(const cv::Mat& input,
     
 
 }
-void ThymioTracker::updateCalibration(const cv::Mat& inputAnyType,
-                           const cv::Mat* deviceOrientation)
-{   
-    //search the landmarks
-    updateLandmarks(inputAnyType,deviceOrientation);
-    //store 2D measures and calibrate when haev enough frames
-    calibrateOnline();
-}   
 
 void ThymioTracker::writeCalibration(cv::FileStorage& output)
 {   
@@ -278,57 +270,54 @@ void ThymioTracker::updateLandmarks(const cv::Mat& input,
     mTimer.tic();
 }
 
-void ThymioTracker::calibrateOnline()
+bool ThymioTracker::updateCalibration()
 {
-    static int counter_calib = 100;
-    ++counter_calib;
+    //for each tracked landmark add the matches to the calibration tool
+    //ie for each image and each landmark, the set of 3D points and their projections
+    auto landmarksIt = mLandmarks.cbegin();
+    auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
 
-    if(mCalibrationInfo.objectPoints.size() < mCalibrationInfo.nbFramesForCalibration && counter_calib >= 20)
+    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
     {
-        //for each tracked landmark add the matches to the calibration tool
-        //ie for each image and each landmark, the set of 3D points and their projections
-        auto landmarksIt = mLandmarks.cbegin();
-        auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
-
-        for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
+        const cv::Mat& h = lmDetectionsIt->getHomography();
+        if(!h.empty() && lmDetectionsIt->getCorrespondences().size()>100)
         {
-            const cv::Mat& h = lmDetectionsIt->getHomography();
-            if(!h.empty() && lmDetectionsIt->getCorrespondences().size()>100)
+            std::vector<cv::Point3f> lmObjectPoints;
+            std::vector<cv::Point2f> lmImagePoints;
+
+            float scale = landmarksIt->getRealSize().width/landmarksIt->getImage().size().width;
+            auto correspIt = lmDetectionsIt->getCorrespondences().cbegin();
+            for(; correspIt != lmDetectionsIt->getCorrespondences().cend(); ++correspIt)
             {
-                std::vector<cv::Point3f> lmObjectPoints;
-                std::vector<cv::Point2f> lmImagePoints;
-
-                float scale = landmarksIt->getRealSize().width/landmarksIt->getImage().size().width;
-                auto correspIt = lmDetectionsIt->getCorrespondences().cbegin();
-                for(; correspIt != lmDetectionsIt->getCorrespondences().cend(); ++correspIt)
-                {
-                    lmImagePoints.push_back(correspIt->second);
-                    cv::Point3f lmPoint = cv::Point3f(scale*landmarksIt->getKeypointPos()[correspIt->first].x,scale*landmarksIt->getKeypointPos()[correspIt->first].y,0.);
-                    lmObjectPoints.push_back(lmPoint);
-                }
-
-
-                mCalibrationInfo.objectPoints.push_back(lmObjectPoints);
-                mCalibrationInfo.imagePoints.push_back(lmImagePoints);
+                lmImagePoints.push_back(correspIt->second);
+                cv::Point3f lmPoint = cv::Point3f(scale*landmarksIt->getKeypointPos()[correspIt->first].x,scale*landmarksIt->getKeypointPos()[correspIt->first].y,0.);
+                lmObjectPoints.push_back(lmPoint);
             }
+
+
+            mCalibrationInfo.objectPoints.push_back(lmObjectPoints);
+            mCalibrationInfo.imagePoints.push_back(lmImagePoints);
         }
+    }
 
-        if(mCalibrationInfo.objectPoints.size() >= mCalibrationInfo.nbFramesForCalibration)
-        {
-            std::vector<cv::Mat> rotationVectors;
-            std::vector<cv::Mat> translationVectors;
+    if(mCalibrationInfo.objectPoints.size() >= mCalibrationInfo.nbFramesForCalibration)
+    {
+        std::vector<cv::Mat> rotationVectors;
+        std::vector<cv::Mat> translationVectors;
 
-            cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, CV_64F); // There are 8 distortion coefficients
-            cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+        cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, CV_64F); // There are 8 distortion coefficients
+        cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
 
-            int flags = 0;
-            double rms = calibrateCamera(mCalibrationInfo.objectPoints, mCalibrationInfo.imagePoints, mCalibration.imageSize, mCalibration.cameraMatrix,
-                          mCalibration.distCoeffs, rotationVectors, translationVectors, flags|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
+        int flags = 0;
+        double rms = calibrateCamera(mCalibrationInfo.objectPoints, mCalibrationInfo.imagePoints, mCalibration.imageSize, mCalibration.cameraMatrix,
+                      mCalibration.distCoeffs, rotationVectors, translationVectors, flags|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
 
-            std::cout<<"camera calibration RMS = "<<rms<<std::endl;
-        }
+        std::cout<<"camera calibration RMS = "<<rms<<std::endl;
 
-        counter_calib = 0;
+        mCalibrationInfo.clear();
+        return true;
+    } else {
+        return false;
     }
 }
 

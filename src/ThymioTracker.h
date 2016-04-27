@@ -44,9 +44,11 @@ struct CalibrationInfo
     CalibrationInfo(){nbFramesForCalibration = 10;};
 
     // number of frames to acquires till we can calibrate (0 = calibration is done)
-    int getNbFramesToCalibration() const {return MAX(0,nbFramesForCalibration-objectPoints.size());};
+    unsigned int getNbFramesToCalibration() const {return nbFramesForCalibration>objectPoints.size() ? nbFramesForCalibration-objectPoints.size() : 0;}
 
-    int nbFramesForCalibration;
+    float getProgress() const { return float(objectPoints.size()) / float(nbFramesForCalibration); }
+
+    unsigned int nbFramesForCalibration;
     // Sets of matches
     std::vector<std::vector<cv::Point3f> > objectPoints;//3d vertices
     std::vector<std::vector<cv::Point2f> > imagePoints;//projection of 3d vertices
@@ -85,9 +87,8 @@ public:
                   std::vector<cv::FileStorage>& landmarkStorages);
     ~ThymioTracker(){}
     
-    //standard function called by java wrapper
-    void updateCalibration(const cv::Mat& input,
-                const cv::Mat* deviceOrientation=0);
+    //detection information updates, => use that to perform calibration
+    bool updateCalibration();
     void writeCalibration(cv::FileStorage& output);
 
     //to detect and track the robot
@@ -125,9 +126,6 @@ private:
 
     /// Resize the calibration for a new given image size.
     void resizeCalibration(const cv::Size& imgSize);
-
-    //detection information updates, => use that to perform calibration
-    void calibrateOnline();
 
     
     IntrinsicCalibration mCalibration;
