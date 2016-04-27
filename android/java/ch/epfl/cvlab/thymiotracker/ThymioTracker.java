@@ -40,6 +40,10 @@ public class ThymioTracker
     {
         n_drawLastDetection(this.internalPtr, output.nativeObj);
     }
+    public void drawLastDetection(Mat output, Mat deviceOrientation)
+    {
+        n_drawLastDetection(this.internalPtr, output.nativeObj, deviceOrientation.nativeObj);
+    }
     
     private native long createNativeInstance(String configFile);
     private native long createNativeInstance(String calibrationFile, String geomHashingFile);
@@ -48,4 +52,5 @@ public class ThymioTracker
     private native void n_update(long internalPtr, long input);
     private native void n_update(long internalPtr, long input, long deviceOrientation);
     private native void n_drawLastDetection(long internalPtr, long output);
+    private native void n_drawLastDetection(long internalPtr, long output, long deviceOrientation);
 }

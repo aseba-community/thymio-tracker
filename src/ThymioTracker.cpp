@@ -60,19 +60,26 @@ void drawPointsAndIds(cv::Mat& inputImage, const std::vector<DetectionGH>& match
 
 void drawAxes(cv::Mat& image, const cv::Mat& orientation)
 {
-    static const cv::Scalar axes_colors[] = {cv::Scalar(0, 0, 255), cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255)};
+    static const cv::Scalar axes_colors[] = {cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0), cv::Scalar(0, 255, 255)};
     cv::Size::value_type width = image.size().width;
     //cv::Point2d center(width * 0.1, width * 0.1);
     cv::Point2d center(width * 0.5, image.size().height * 0.5);
     double length = width * 0.05;
+
+
+    float sizecercle = 10;
+    circle(image, center, sizecercle, cv::Scalar(255,255,255),2);
     
     for(int i = 0; i < 3; ++i)
     {
-        const cv::Point2d direction(orientation.at<float>(i, 1), orientation.at<float>(i, 0));
+        //const cv::Point2d direction(orientation.at<float>(i, 1), orientation.at<float>(i, 0));
+        const cv::Point2d direction(orientation.at<float>(0, i), orientation.at<float>(1, i));
         const cv::Point2d arrow = center - length * direction;
         const cv::Scalar& color = axes_colors[i];
         
-        cv::line(image, center, arrow, color);
+        cv::line(image, center, arrow, color,2);
+
+        circle(image, arrow, sizecercle + 8 * orientation.at<float>(2, i), color,2);
     }
 }
 
@@ -345,7 +352,72 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
     //mDetectionInfo.mRobotDetection.drawBlobs(output);
     
      if(deviceOrientation)
-         drawAxes(*output, *deviceOrientation);
+     {
+        //transform orientation matrix into opencv matrix style
+        cv::Mat orientationCvStandard(3, 3, CV_32F);
+        //for us, orientation amtrix should be one which we multiply world coordinates with to get camera coord
+        //the one we get is the inverse of that, and x and y axes are switched, and axis all inverted
+        for(int i=0;i<3;i++)orientationCvStandard.at<float>(0, i) = -deviceOrientation->at<float>(i, 1);
+        for(int i=0;i<3;i++)orientationCvStandard.at<float>(1, i) = -deviceOrientation->at<float>(i, 0);
+        for(int i=0;i<3;i++)orientationCvStandard.at<float>(2, i) = -deviceOrientation->at<float>(i, 2);
+
+        //matrix is different on Sony device ... search for what is corresponds to
+        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(0, i) = -deviceOrientation->at<float>(0, i);
+        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(1, i) = -deviceOrientation->at<float>(1, i);
+        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(2, i) = -deviceOrientation->at<float>(2, i);
+        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(0, i) = -deviceOrientation->at<float>(i,0);
+        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(1, i) = -deviceOrientation->at<float>(i,1);
+        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(2, i) = -deviceOrientation->at<float>(i,2);
+
+         //drawAxes(*output, *deviceOrientation);
+         drawAxes(*output, orientationCvStandard);
+
+         //orientation is a 3x3 matrix with for each column the coordinates in the camera frame of the x,y and z axes
+         //let's see how much first landmark normal agrees with z axis
+         cv::Affine3d poseLm0 = mDetectionInfo.landmarkDetections[0].getPose();
+
+         //this pose is applied to a world coordinate to transform it into camera coordinate
+         //so if apply vector [0 0 1] to its rotation, then should get z vector expressed in camera frame
+         cv::Vec3d z_w(0.,0.,1.);
+         //cv::Vec3d z_cl = poseLm0.rotation() * z_w;
+         //cv::Vec3d z_co = *deviceOrientation * z_w;
+         cv::Vec3d z_cl(poseLm0.rotation()(0,2),poseLm0.rotation()(1,2),poseLm0.rotation()(2,2));
+         cv::Vec3d z_co(orientationCvStandard.at<float>(0, 2),orientationCvStandard.at<float>(1, 2),orientationCvStandard.at<float>(2, 2));
+
+         //compare with orientation from IMU
+         float z_agree = z_cl.dot(z_co);
+
+         //plot it
+        char zaStr[100];
+        sprintf(zaStr, "%0.1f za ", z_agree);
+        putText(*output, zaStr,
+                    cv::Point2i(output->size().width - 40,output->size().height-10),
+                    cv::FONT_HERSHEY_COMPLEX_SMALL,
+                    0.8, cvScalar(250,250,250), 1, CV_AA);
+
+        //debug
+        static const cv::Scalar axes_colors[] = {cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0), cv::Scalar(0, 255, 255)};
+        cv::Size::value_type width = output->size().width;
+        //cv::Point2d center(width * 0.1, width * 0.1);
+        cv::Point2d center(width * 0.25, output->size().height * 0.5);
+        double length = width * 0.05;
+
+        float sizecercle = 5;
+        circle(*output, center, sizecercle, cv::Scalar(255,255,255),2);
+
+        
+        for(int i = 0; i < 3; ++i)
+        {
+            const cv::Point2d direction(poseLm0.rotation()(0, i), poseLm0.rotation()(1, i));
+            const cv::Point2d arrow = center - length * direction;
+            const cv::Scalar& color = axes_colors[i];
+            
+            cv::line(*output, center, arrow, color, 2);
+
+            circle(*output, arrow, sizecercle + 3*poseLm0.rotation()(2, i), color,2);
+        }
+
+     }
     
     // Draw landmark detections
     std::vector<cv::Point2f> corners(4);
@@ -389,9 +461,9 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
         cv::Affine3d pose = lmDetectionsIt->getPose();
         std::vector<cv::Point2f> vprojVertices;
         cv::projectPoints(framePoints, pose.rvec(), pose.translation(), mCalibration.cameraMatrix, mCalibration.distCoeffs, vprojVertices);
-        cv::line(*output, vprojVertices[0], vprojVertices[1], cv::Scalar(0,0,255), 2);
+        cv::line(*output, vprojVertices[0], vprojVertices[1], cv::Scalar(255,0,0), 2);
         cv::line(*output, vprojVertices[0], vprojVertices[2], cv::Scalar(0,255,0), 2);
-        cv::line(*output, vprojVertices[0], vprojVertices[3], cv::Scalar(255,0,0), 2);
+        cv::line(*output, vprojVertices[0], vprojVertices[3], cv::Scalar(0,255,255), 2);
 
     }
 }
