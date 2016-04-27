@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<calibrationFile>"nexus_camera_calib.xml"</calibrationFile>
+<calibrationFile>"default_camera_calib.xml"</calibrationFile>
 <geomHashingFile>"GHscale_Arth_Perspective.xml"</geomHashingFile>
 <robotModelFile>"robot/robotTrackInfo.xml"</robotModelFile>
 <landmarkFiles>

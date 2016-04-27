@@ -58,7 +58,7 @@ namespace tt = thymio_tracker;
 */
 
 //work online with embedded camera
-/*int main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/");
     
@@ -81,6 +81,7 @@ namespace tt = thymio_tracker;
         tracker.drawLastDetection(&inputImage);
         
         imshow(window_name, inputImage);
+        std::cout<<inputGray.size().width<<"x"<<inputGray.size().height<<std::endl;
         
         std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
 
@@ -92,11 +93,11 @@ namespace tt = thymio_tracker;
     }
     
     return 0;
-}*/
+}
 
 
 //offline with orientation
-int main(int argc, char** argv)
+/*int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/");
 
@@ -133,4 +134,4 @@ int main(int argc, char** argv)
     }
     
     return 0;
-}
+}*/

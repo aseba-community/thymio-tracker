@@ -98,10 +98,10 @@ public:
     void updateLandmarks(const cv::Mat& input,
                 const cv::Mat* deviceOrientation=0);
 
-    //void update(const cv::Mat& input,
-    //            const cv::Mat* deviceOrientation=0){updateRobot(input,deviceOrientation);updateLandmarks(input,deviceOrientation);};
     void update(const cv::Mat& input,
-                const cv::Mat* deviceOrientation=0){updateLandmarks(input,deviceOrientation);};
+                const cv::Mat* deviceOrientation=0){updateRobot(input,deviceOrientation);updateLandmarks(input,deviceOrientation);};
+    //void update(const cv::Mat& input,
+    //            const cv::Mat* deviceOrientation=0){updateLandmarks(input,deviceOrientation);};
 
     void drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation=0) const;
 

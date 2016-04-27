@@ -36,9 +36,9 @@ set(ThymioTracker_SOURCES
     )
 
 if(ANDROID_WRAPPER)
-    #SET(JAVA_INCLUDE_PATH "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/include")
-    #SET(JAVA_AWT_LIBRARY "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/libawt.dylib")
-    #SET(JAVA_JVM_LIBRARY "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/server/libjvm.dylib")
+    SET(JAVA_INCLUDE_PATH "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/include")
+    SET(JAVA_AWT_LIBRARY "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/libawt.dylib")
+    SET(JAVA_JVM_LIBRARY "/Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/jre/lib/server/libjvm.dylib")
     
     # OpenCV
     find_host_package(OpenCV REQUIRED)
