@@ -79,8 +79,10 @@ public:
     const cv::Affine3d& getPose() const {return mPose;}
     const std::map<int, cv::Point2f>& getCorrespondences() const {return mCorrespondences;}
     bool isFound() const {return !mHomography.empty();}
+    float getConfidence()const {return mConfidence;};
     
 private:
+    float mConfidence;//between 0 and 1, 1 = very probable we found the right thing
     cv::Mat mHomography;
     cv::Affine3d mPose;
     

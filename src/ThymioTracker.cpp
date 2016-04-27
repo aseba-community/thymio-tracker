@@ -425,6 +425,7 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
     auto lmDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
     auto landmarksIt = mLandmarks.cbegin();
     auto colorIt = colorPalette.cbegin();
+    int cpt_plot = 0;
     for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt, ++colorIt)
     {
         const Landmark& landmark = *landmarksIt;
@@ -464,6 +465,15 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
         cv::line(*output, vprojVertices[0], vprojVertices[1], cv::Scalar(255,0,0), 2);
         cv::line(*output, vprojVertices[0], vprojVertices[2], cv::Scalar(0,255,0), 2);
         cv::line(*output, vprojVertices[0], vprojVertices[3], cv::Scalar(0,255,255), 2);
+
+        //print confidence
+        char confStr[100];
+        sprintf(confStr, "c[%d]: %0.1f", cpt_plot,lmDetectionsIt->getConfidence());
+        putText(*output, confStr,
+                    cv::Point2i(output->size().width - 100,20+20*cpt_plot),
+                    cv::FONT_HERSHEY_COMPLEX_SMALL,
+                    0.8, cvScalar(250,250,250), 1, CV_AA);
+        cpt_plot++;
 
     }
 }

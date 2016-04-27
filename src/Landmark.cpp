@@ -152,6 +152,13 @@ void Landmark::find(const cv::Mat& image,
         cv::solvePnP(mModelPoints,mCornersInScene, mCalibration.cameraMatrix, mCalibration.distCoeffs,rot_v,trans_v);
         detection.mPose = cv::Affine3d(rot_v,trans_v);
 
+        //compute confidence
+        detection.mConfidence = (float)scenePoints.size() / mKeypoints.size();
+
+    }
+    else
+    {
+        detection.mConfidence = 0;
     }
 
 }
