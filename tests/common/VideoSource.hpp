@@ -33,6 +33,7 @@ public:
     void resizeSource(cv::Size _newSize);
     //same but using ratio
     void resizeSource(float _r);
+    bool isOver(){return false;}
 
  //attributes:
     //camera intrinsic calibration
@@ -58,6 +59,7 @@ public:
     
     void grabNewFrame();
     int getFrameId(){return frameId;};
+    bool isOver(){return end_sequence;}
     
 private:
     //where to read image sequence

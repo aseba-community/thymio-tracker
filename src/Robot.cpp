@@ -36,7 +36,7 @@ void Robot::find(const cv::Mat& input,
     IntrinsicCalibration& mCalibration = *mCalibration_ptr;
 
     //if robot was not found in previous image then run Geometric Hashing
-    if(!mDetectionInfo.isFound())
+    //if(!mDetectionInfo.isFound())
     {
         this->findFromBlobGroupsAndGH(input,mDetectionInfo);
 
@@ -61,7 +61,13 @@ void Robot::find(const cv::Mat& input,
 
         }
     }
-    else
+    /*else
+    {
+        cv::Affine3d newPose;
+        mModel.track(input, mCalibration, mDetectionInfo.mPose, newPose);
+        mDetectionInfo.mPose = newPose;
+    }*/
+    /*else
     {
         //robot was found in previous image => can do tracking
         //let s do active search mixed with KLT on blobs for now
@@ -70,8 +76,16 @@ void Robot::find(const cv::Mat& input,
 
         //search with KLT
         this->findCorrespondencesWithTracking(input, prevImage, mDetectionInfo, scenePoints, correspondences);
-        this->findCorrespondencesWithActiveSearch(input, mDetectionInfo , scenePoints, correspondences);
+        //this->findCorrespondencesWithActiveSearch(input, mDetectionInfo , scenePoints, correspondences);
 
+        //use the klt to init search for active search
+        std::vector<cv::Point2f> objectPoints_as;
+        for(int c : correspondences)
+            objectPoints_as.push_back(mModel.mRobotKeypointPos[c]);
+        std::vector<unsigned char> mask_as;
+        if(scenePoints.size()>4)
+            mDetectionInfo.mHomography = cv::findHomography(objectPoints_as, scenePoints, CV_RANSAC, 10., mask_as);
+        this->findCorrespondencesWithActiveSearch(input, mDetectionInfo , scenePoints, correspondences);
 
         //search for correspondences using active search
         //TODO
@@ -135,7 +149,7 @@ void Robot::find(const cv::Mat& input,
 
         mDetectionInfo.robotFound = (nbInliers>minCorresp);
 
-    }
+    }*/
 
 }
 
@@ -351,7 +365,8 @@ void Robot::findCorrespondencesWithActiveSearch(const cv::Mat& image,
 
         //fill patch using template info
         cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mModel.mImage.type() );
-        cv::warpAffine( mModel.mImage, patchCurr, mAffine, patchCurr.size() );
+        //cv::warpAffine( mModel.mImage, patchCurr, mAffine, patchCurr.size() );
+        cv::warpPerspective( mModel.mImage, patchCurr, prevDetection.mHomography, patchCurr.size() );
 
         //search for it in current image
         //cv::Rect myROI(sceneFramePoints[0].x-half_patch_size-half_window_size,sceneFramePoints[0].y-half_patch_size-half_window_size,

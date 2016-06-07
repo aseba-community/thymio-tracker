@@ -19,6 +19,8 @@ add_library(common SHARED ${common_SOURCES})
 target_link_libraries(common ${OpenCV_LIBRARIES} thymiotracker)
 
 set(exec_SOURCES
+        onBoardTrack.cpp
+        onBoard.cpp
         calibrate.cpp
         trainGH.cpp
         trackerGH.cpp

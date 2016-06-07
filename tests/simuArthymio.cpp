@@ -8,23 +8,24 @@ namespace tt = thymio_tracker;
 
 
 //work offline on recorded sequence
-/*int main(int argc, char** argv)
+int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/");
 
-    //VideoSourceLive videoSource(EmbeddedCam);
-    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
+    VideoSourceLive videoSource(EmbeddedCam);
+    //VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
+    //VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/Interpolation/desktop-cv-linear/tracker%02d.png",EmbeddedCam,1);
     //VideoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    //videoSource.resizeSource(0.5);
+    videoSource.resizeSource(0.5);
     
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
-    
-    cv::Mat outputImage;
-    
+
+
     while(1)
     {
         videoSource.grabNewFrame();
         cv::Mat inputImage = videoSource.getFramePointer();
+
 
         cv::Mat inputGray;
         cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
@@ -34,6 +35,10 @@ namespace tt = thymio_tracker;
         
         imshow(window_name, inputImage);
         
+        /*char fileName[200];
+        sprintf(fileName, "/Users/amaurydame/Data/Thymio/Interpolation/output/out%02d.png", videoSource.getFrameId());
+        cv::imwrite(fileName,inputImage);
+        */
         //std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
         
         // const tt::DetectionInfo& di = tracker.getDetectionInfo();
@@ -49,14 +54,14 @@ namespace tt = thymio_tracker;
         
         auto key = cv::waitKey(5);
         //auto key = cv::waitKey();
-        if(key == 27 || key == 'q')
+        if(key == 27 || key == 'q' || videoSource.isOver())
             break;
     }
     
     return 0;
 }
-*/
 
+/*
 //work online with embedded camera
 int main(int argc, char** argv)
 {
@@ -81,7 +86,6 @@ int main(int argc, char** argv)
         tracker.drawLastDetection(&inputImage);
         
         imshow(window_name, inputImage);
-        std::cout<<inputGray.size().width<<"x"<<inputGray.size().height<<std::endl;
         
         std::cout << "\33[2K\r" << tracker.getTimer().getFps() << "fps" << std::flush;
 
@@ -94,7 +98,7 @@ int main(int argc, char** argv)
     
     return 0;
 }
-
+*/
 
 //offline with orientation
 /*int main(int argc, char** argv)

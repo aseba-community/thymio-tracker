@@ -73,6 +73,18 @@ void Landmark::find(const cv::Mat& image,
     else
     {
         this->findCorrespondencesWithTracking(image, prevImage, detection, scenePoints, correspondences);
+        //this->findCorrespondencesWithActiveSearch(image, detection , scenePoints, correspondences);
+
+        //compute intermediate detection structure taking into account homography computed using KLT tracking
+        std::vector<cv::Point2f> objectPoints;
+        for(int c : correspondences) objectPoints.push_back(mKeypoints[c].pt);
+
+        cv::Mat homography;
+        std::vector<unsigned char> mask;
+        if(scenePoints.size()>10)
+            detection.mHomography = cv::findHomography(objectPoints, scenePoints, CV_RANSAC, 5., mask);
+
+
         this->findCorrespondencesWithActiveSearch(image, detection , scenePoints, correspondences);
     }
     
@@ -151,6 +163,7 @@ void Landmark::find(const cv::Mat& image,
         cv::Vec3d trans_v;
         cv::solvePnP(mModelPoints,mCornersInScene, mCalibration.cameraMatrix, mCalibration.distCoeffs,rot_v,trans_v);
         detection.mPose = cv::Affine3d(rot_v,trans_v);
+
 
         //compute confidence
         detection.mConfidence = (float)scenePoints.size() / mKeypoints.size();
@@ -251,12 +264,12 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
         cv::Rect myROI(myRoi_l,myRoi_t,myRoi_r-myRoi_l,myRoi_d-myRoi_t);//region of interest is around current position of point
 
         //verify that the search region is valid
-        int result_cols = myROI.size().height - patch_size + 1;
-        int result_rows = myROI.size().width - patch_size + 1;
+        int result_cols = myROI.size().width - patch_size + 1;
+        int result_rows = myROI.size().height - patch_size + 1;
 
         if(result_cols > half_window_size && result_rows > half_window_size)
         {
-            cv::Mat resultNCC = cv::Mat::zeros( result_cols, result_rows, CV_32FC1 );
+            cv::Mat resultNCC = cv::Mat::zeros( result_rows, result_cols, CV_32FC1 );
 
             cv::matchTemplate( image(myROI), patchCurr, resultNCC, CV_TM_CCORR_NORMED );
             //cv::normalize( resultNCC, resultNCC, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
