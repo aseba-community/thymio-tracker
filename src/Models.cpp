@@ -63,7 +63,7 @@ void Object3D::draw(Mat& img, const Mat& cameraMatrix, const Mat& distCoeffs, co
 
 }
 
-vector<Point2f> Object3D::projectVertices(const Mat &cameraMatrix, const Mat &distCoeffs, const Affine3d &poseCam) const
+/*vector<Point2f> Object3D::projectVertices(const Mat &cameraMatrix, const Mat &distCoeffs, const Affine3d &poseCam) const
 {
     vector<Point2f> vProjPoints;
     Affine3d poseComb=poseCam * pose;
@@ -72,7 +72,7 @@ vector<Point2f> Object3D::projectVertices(const Mat &cameraMatrix, const Mat &di
     projectPoints(mVertices, poseComb.rvec(), poseComb.translation(), cameraMatrix, distCoeffs, vProjPoints);
     
     return vProjPoints;
-}
+}*/
 
 void Object3D::drawVertice(const Point3f &_vertice, Mat &img, const Mat &cameraMatrix, const Mat &distCoeffs, const Affine3d &poseCam) const
 {
@@ -586,23 +586,12 @@ void ThymioBlobModel::setSurfacesModel()
 void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
 {
     //define what s going to be used in active search
-    //template of top view
-    //mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_GRAYSCALE);
-    //mImage = cv::imread("../data/robot/robotTopCropHalf.png",CV_LOAD_IMAGE_COLOR);
-
-    //robotModelStorage.release();
-    //cv::FileStorage fsw("../data/robot/robotTrackInfo.xml", cv::FileStorage::WRITE);
-    //cv::write(fsw, "image", mImage);
-    //fsw.release();
-
     cv::read(robotModelStorage["image"], mImage);
     robotModelStorage.release();
 
-
-
     if(mImage.empty())
     {
-        std::cerr << "Could not open " << "../data/robot/robotTopCropHalf.png" << std::endl;
+        std::cerr << "Could not open robot surfaces appearance model" << std::endl;
         throw std::runtime_error("Template image from robot file not found!");        
     }
 
@@ -627,16 +616,6 @@ void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
 
     //some more keypoints with a bit of texture
     mRobotKeypointPos.push_back(cv::Point2f(422,86));
-
-    //next points are defined on bumps which appearance depends highly on illumination
-    //Cross correlation is not robut enough to do direct image similarity measure
-    //if need more points in future might have to use orientation of gradients
-    /*mRobotKeypointPos.push_back(cv::Point2f(420,456));
-    mRobotKeypointPos.push_back(cv::Point2f(525,570));
-    mRobotKeypointPos.push_back(cv::Point2f(420,684));
-    mRobotKeypointPos.push_back(cv::Point2f(310,566));
-
-    mRobotKeypointPos.push_back(cv::Point2f(422,227));*/
 
     //use half resolution
     for(unsigned int i=0;i<mRobotKeypointPos.size();i++)
@@ -816,729 +795,6 @@ void Object3D::readSurfaceLearned()
     
 }
 
-//#define USE_SIMIL_MAX // for NCC use it, for SQ search for min => don t defien it
-
-//info from NCC search to be used by PnP
-struct NCCsearchInfo {
-    cv::Point3f center;//position of the center of surface in model
-    float viewScore;//the more frontoparallel, the more it goes towards 1, goes to 0 otherwise
-
-    cv::Mat NCCpatchScore;//NCC score of surface reprojection in current image
-    cv::Point patchCoordinates;//coordinate of the NCCpatchScore (we are not searching the whole image)
-    cv::Point relMaxLoc;
-
-    //retrieve NCC score if picking center of surface at _p, weight NCC score with viewScore
-    float getNCCscore(cv::Point _p)
-    {
-        //check if _p is in patch
-        Point p = _p-patchCoordinates;
-        if(p.x>=0 && p.y>=0 && p.x<NCCpatchScore.size().width && p.y<NCCpatchScore.size().height)
-            return viewScore * NCCpatchScore.at<float>(p);
-        else
-#ifdef USE_SIMIL_MAX
-            return 0;
-#else
-            return 1e2;
-#endif
-    }
-
-    cv::Point getMaxLoc(){
-        return relMaxLoc+patchCoordinates;
-    }
-        
-} ;
-
-/*void Object3D::track(const cv::Mat &img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const
-{
-    //TODO: multiscale approach ? can simply scale image with respect to object distance
-    //TODO: try template matching with other similarity functions: NCC has wide basin, more narrow optimum would be better for RANSAC
-
-    //project textured planar surfaces to current image using the previous pose
-    //and do NCC search to have 2D correspondance for all of them and then PnP
-    //to retrieve the 3D pose from the sets of 2D matches
-
-    
-    
-
-    //cv::Mat detected_edges;
-    //cv::blur( img, detected_edges, Size(3,3) );
-    //cv::Canny( detected_edges, img, 50., 50.*3., 3 );
-
-
-    cv::Mat MDebugImg;
-    img.copyTo(MDebugImg);
-    //cv::Mat MDebugImgMask;
-    //img.copyTo(MDebugImgMask);    
-    cv::Mat MDebugImgWarp;
-    img.copyTo(MDebugImgWarp);
-    cv::Mat MDebugImgScore;
-    img.copyTo(MDebugImgScore);
-
-    int window_search_size = 32;
-    int half_window_size = window_search_size/2;
-
-    //information to keep for PnP
-    std::vector<NCCsearchInfo> mSearchInfo;
-
-    std::cout<<"compute NCC scores"<<std::endl;
-
-    for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
-    {
-        //std::cout<<"loop surf["<<v<<"]"<<std::endl;
-        const planarSurface &surf = mPlanarSurfaces[v];
-
-        //project surface corners to check if visible and get homography from image to surface model
-        Point3f ptLine = prevPoseCam * pose * surf.center;
-        Vec3d ray = Vec3d(ptLine.x,ptLine.y,ptLine.z);        ray = ray / norm(ray);
-        Vec3d normal_cam = prevPoseCam.rotation() * pose.rotation() * surf.normal;
-        float viewScore = -normal_cam.dot(ray);
-
-        if(viewScore > 0.1)
-        {
-            //std::cout<<"surf viewScore "<<viewScore<<std::endl;
-            mSearchInfo.push_back(NCCsearchInfo());
-            NCCsearchInfo &mNewINFO = mSearchInfo[mSearchInfo.size()-1];
-            mNewINFO.center = surf.center;
-            mNewINFO.viewScore = viewScore;
-
-            vector<Point3f> ObjPoints;
-            ObjPoints.push_back(surf.center+toPoint(surf.radius1*surf.b1+surf.radius2*surf.b2));
-            ObjPoints.push_back(surf.center+toPoint(surf.radius1*surf.b1-surf.radius2*surf.b2));
-            ObjPoints.push_back(surf.center+toPoint(-surf.radius1*surf.b1-surf.radius2*surf.b2));
-            ObjPoints.push_back(surf.center+toPoint(-surf.radius1*surf.b1+surf.radius2*surf.b2));
-
-            vector<Point3f> LineObj;
-            for(int i=0;i<ObjPoints.size();i++) 
-                LineObj.push_back(pose*ObjPoints[i]);
-            
-            //get position of surface corners in previous image
-            vector<Point2f> vprojVertices;
-            projectPoints(LineObj, prevPoseCam.rvec(), prevPoseCam.translation(), _mCalib.cameraMatrix, _mCalib.distCoeffs, vprojVertices);
-            
-
-            //for(int i=0;i<vprojVertices.size();i++) 
-            //    std::cout<<"vprojVertices = "<<vprojVertices[i]<<std::endl;
-
-            //get the minimal support rectangle which contains the projected surface
-            Rect box = cv::boundingRect(cv::Mat(vprojVertices));
-            //std::cout<<"box = "<<box<<std::endl;
-
-            //get projected corners coordinates in the bounding box
-            //Point vprojVertices_bb[4];
-            //for(int v=0;v<4;v++)
-            //    vprojVertices_bb[v] = (vprojVertices[v]-Point2f(box.x, box.y));
-            vector<Point> vprojVertices_bb;
-            for(int v=0;v<vprojVertices.size();v++)
-            {
-                vprojVertices_bb.push_back(vprojVertices[v]-Point2f(box.x, box.y));
-                //std::cout<<vprojVertices[v]<<std::endl;
-            }
-
-            //create the corresponding mask in box wheer surface is defined
-            cv::Mat mask = cv::Mat::zeros( box.size(), CV_8UC1 );
-            cv::fillConvexPoly(mask, &vprojVertices_bb[0], 4, 1);
-
-            //DEBUG: plot those on the image to check everything is fine
-            //mask.copyTo(MDebugImgMask(box));
-
-            //get homography from surface model to current image ROI
-            vector<Point2f> modelPoints;
-            modelPoints.push_back(Point2f(surf.mImage.size().width,0));
-            modelPoints.push_back(Point2f(surf.mImage.size().width,surf.mImage.size().height));
-            modelPoints.push_back(Point2f(0,surf.mImage.size().height));
-            modelPoints.push_back(Point2f(0,0));
-
-            cv::Mat homography = cv::findHomography(modelPoints,vprojVertices_bb);
-
-            //warp current image in it
-            cv::Mat patchCurr(box.size(), CV_8UC1);
-            //cv::Mat &patchCurr = mNewINFO.NCCpatchScore;
-            //patchCurr = cv::Mat(box.size(), CV_8UC1);
-
-            //cv::warpPerspective( surf.mImage, patchCurr, homography, patchCurr.size() );
-            //test filling with white to check if mask has effect we want
-            //cv::warpPerspective( surf.mImage, patchCurr, homography, patchCurr.size(),INTER_LINEAR, BORDER_CONSTANT ,255);
-            cv::warpPerspective( surf.mImage, patchCurr, homography, patchCurr.size(),INTER_LINEAR, BORDER_REPLICATE);
-
-            //plot it on input
-            patchCurr.copyTo(MDebugImgWarp(box));
-
-            //compute NCC over search window
-            //cv::Mat resultNCC = cv::Mat::zeros( window_search_size, window_search_size, CV_32FC1 );
-            cv::Mat &resultNCC = mNewINFO.NCCpatchScore;
-            //without taking care of image borders...
-            //resultNCC = cv::Mat::zeros( window_search_size, window_search_size, CV_32FC1 );
-            //cv::Rect myROI(box.x-half_window_size,box.y-half_window_size,box.size().width+window_search_size-1,box.size().height+window_search_size-1);
-            
-            //get the roi of the current image on which to compute similarity with patch
-            //
-            int myRoi_l = box.x-half_window_size; myRoi_l = (myRoi_l<0)?0:myRoi_l;
-            int myRoi_t = box.y-half_window_size; myRoi_t = (myRoi_t<0)?0:myRoi_t;
-            int myRoi_r = box.x+box.size().width+half_window_size; myRoi_r = (myRoi_r>img.size().width)?img.size().width:myRoi_r;
-            int myRoi_d = box.y+box.size().height+half_window_size; myRoi_d = (myRoi_d>img.size().height)?img.size().height:myRoi_d;       
-
-            cv::Rect myROI(myRoi_l,myRoi_t,myRoi_r-myRoi_l,myRoi_d-myRoi_t);//region of interest is around current position of point
-            
-            //verify that the search region is valid
-            int result_cols = myROI.size().width - box.size().width + 1;
-            int result_rows = myROI.size().height - box.size().height + 1;
-
-            if(result_cols > half_window_size && result_rows > half_window_size)
-            {
-                resultNCC = cv::Mat::zeros( result_rows, result_cols, CV_32FC1 );
-
-                cv::Mat imgNorm;
-                std::cout<<v<<std::endl;
- //               if(v==4)
-//                equalizeHist( MDebugImg(myROI), MDebugImg(myROI) );
-//                equalizeHist( img(myROI), imgNorm );
-
-//#ifdef USE_SIMIL_MAX
-//                cv::matchTemplate( imgNorm, patchCurr, resultNCC, CV_TM_CCORR_NORMED, mask);
-//#else
-//                cv::matchTemplate( imgNorm, patchCurr, resultNCC, CV_TM_SQDIFF, mask);
-//endif
-#ifdef USE_SIMIL_MAX
-                cv::matchTemplate( img(myROI), patchCurr, resultNCC, CV_TM_CCORR_NORMED, mask);
-#else
-                cv::matchTemplate( img(myROI), patchCurr, resultNCC, CV_TM_SQDIFF, mask);
-#endif
-                
-                /// Localizing the best match with minMaxLoc searching for max NCC
-                double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
-                cv::minMaxLoc( resultNCC, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
-
-                //plot result NCC on input
-                cv::Mat resultNCCnorm; resultNCC.copyTo(resultNCCnorm);
-                cv::normalize( resultNCCnorm, resultNCCnorm, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
-                cv::Mat resultNCCuc( resultNCC.size().height, resultNCC.size().width, CV_8UC1);
-                for(int i=0;i<resultNCC.size().height;i++)
-                    for(int j=0;j<resultNCC.size().width;j++)
-                        resultNCCuc.at<unsigned char>(i,j) = 255.*resultNCCnorm.at<float>(i,j);
-                cv::Rect myROIncc(myROI.x + box.size().width/2,myROI.y + box.size().height/2,result_cols,result_rows);
-                resultNCCuc.copyTo(MDebugImgScore(myROIncc));
-
-
-                //keep maximum value location and whole score patch
-                //so that can init PnP with a few maxVal locations and get corresponding NCC score
-                //of the estimated poses
-                mNewINFO.patchCoordinates = cv::Point(myROI.x + box.size().width/2,myROI.y + box.size().height/2);
-#ifdef USE_SIMIL_MAX
-                mNewINFO.relMaxLoc = maxLoc;
-                cv::circle(MDebugImgScore,mNewINFO.getMaxLoc(),2,255);
-#else
-                mNewINFO.relMaxLoc = minLoc;
-                cv::circle(MDebugImgScore,mNewINFO.getMaxLoc(),2,255);
-#endif
-                
-            
-                //std::cout<<"NCCmax patch = "<<maxVal<<std::endl;
-                //std::cout<<"minVal = "<<minVal<<std::endl;
-                //std::cout<<"NCCmax viewScore = "<<viewScore<<std::endl;
-            }
-        }
-    }
-
-    cv::imwrite("output/curr.png",MDebugImg);
-    cv::imwrite("output/warp.png",MDebugImgWarp);
-    //cv::imwrite("output/masks.png",MDebugImgMask);
-    cv::imwrite("output/score.png",MDebugImgScore);
-    
-    std::cout<<"estimate best pose"<<std::endl;
-    //perform PnPwith all subsets of 4 matches, estimate pose and check corresponding score
-    //keep best scoring pose
-    cv::Affine3d bestPose;
-#ifdef USE_SIMIL_MAX
-    float bestNCCscore=0;
-#else
-    float bestNCCscore=1e10;
-#endif
-
-    //do a kind of ransac: try different subset to compute pose util find that more than majority agrees
-    //if not consider tracker lost
-    const unsigned int nbBasePnp=3;//take four points out of set
-    unsigned int pointers[nbBasePnp];
-    for(unsigned int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list        
-
-    while(1)
-    {
-        Vec3d rvec=prevPoseCam.rvec();
-        Vec3d tvec=prevPoseCam.translation();
-        
-        //create vectors corresponding to subset
-        vector<Point3f> subsetVertices;
-        vector<Point2f> subsetProjections;
-        for(unsigned int i=0;i<nbBasePnp;i++)
-        {
-            subsetVertices.push_back(mSearchInfo[pointers[i]].center);
-            subsetProjections.push_back(mSearchInfo[pointers[i]].getMaxLoc());
-        }
-        
-        
-        //compute pose with subset
-        cv::solvePnP(subsetVertices, subsetProjections, _mCalib.cameraMatrix, _mCalib.distCoeffs, rvec, tvec, true);
-
-        //get corresponding NCC score for this pose
-        //project all the surface centers onto image using new pose
-        vector<Point3f> surfCenters;
-        for(unsigned int v=0;v<mSearchInfo.size();v++)
-            surfCenters.push_back(mSearchInfo[v].center);
-
-        vector<Point2f> surfCenterProj;
-        projectPoints(surfCenters, rvec, tvec, _mCalib.cameraMatrix, _mCalib.distCoeffs, surfCenterProj);
-
-        //accumulate NCC scores
-        //might have to change score accumulation as it penalizes the occlusions...
-        //to allow for occlusion best might be to only accumulate the n best scores
-        float NCCscore = 0;
-        for(unsigned int v=0;v<mSearchInfo.size();v++)
-        {
-            NCCscore += mSearchInfo[v].getNCCscore(cv::Point(surfCenterProj[v]));
-            //std::cout<<"Read score = "<<mSearchInfo[v].getNCCscore(cv::Point(surfCenterProj[v]))<<std::endl;
-        }
-
-        //if(NCCscore > bestNCCscore)
-        if(NCCscore < bestNCCscore)
-        {
-            bestNCCscore = NCCscore;
-            bestPose = cv::Affine3d(rvec,tvec);
-        }
-        //if not need to go to next subset:
-        //try moving last pointer, if pointer reaches end, then have to move previous pointer
-        //recursive if any pointer reaches its end position then moves it previous pointer and put current pointer after it
-        //do until first point (pointers[0]) reaches the end (for pointers[0] corresponds to pointPositions.size-nbBasePnp)
-        
-        //to do that just count how many pointers are stuck at the end:
-        bool nextSetAvailable = getNextSetPointers(&pointers[0],mSearchInfo.size(),nbBasePnp);
-
-        if(!nextSetAvailable)
-            break;        
-    }
-
-    std::cout<<"Best score = "<<bestNCCscore<<std::endl;
-    poseCam = bestPose;
-
-    //could refine by performing non linear optimization of score with respect to projection,
-    //would then have to compute the gradients of all the NCC scores patches... 
-
-}
-*/
-
-//surfaces matches to perform non linear optim and find 3D pose of the object
-struct surfaceMatchInfo {
-    cv::Point3f objCoord;//position of the center of surface in model
-    cv::Point projCoord;
-    
-    float viewScore;//the more frontoparallel, the more it goes towards 1, goes to 0 otherwise
-    float similarityScore;//the more similar, the higher (eg NCC or NCC * entropy)
-} ;
-
-void printMat(const CvMat* mat)
-{
-    //IplImage img=mat;
-    cv::Mat matt=cvarrToMat(mat);
-    std::cout<<mat->rows<<std::endl;
-    std::cout<<mat->cols<<std::endl;
-    std::cout<<matt.channels()<<std::endl;
-    for(int i=0; i<mat->rows; i++)
-    {
-        for(int j=0; j<mat->cols; j++)
-        {   
-            for(int k=0; k<matt.channels(); k++)
-                std::cout<<cvGet2D(mat,i,j).val[k]<<"\t";
-            std::cout<<std::endl;
-        }
-        std::cout<<std::endl<<std::endl;
-    }
-
-}
-
-//multiply matrix by a matrix with one element only
-void mulErrMat(const CvMat* mat,const CvMat* s,CvMat* matr)
-{
-    //score has shape (1,nbMatch,1)
-    //err has shape (1,nbMatch,2)
-    cv::Mat mat_r=cvarrToMat(mat);
-    cv::Mat mat_w=cvarrToMat(matr);
-    int nbChannel = mat_r.channels();
-
-    for(int i=0; i<mat->rows; i++)
-    {
-        //float *ptr_r = mat_r.at<float>
-        for(int j=0; j<mat->cols; j++)
-        {   
-            for(int k=0; k<mat_r.channels(); k++)
-                mat_w.ptr<double>(i)[j*nbChannel+k] = cvGet2D(s,i,j).val[0]*mat_r.ptr<double>(i)[j*nbChannel+k];
-        }
-    }
-
-}
-
-void mulJacMat(const CvMat* mat,const CvMat* s,CvMat* matr)
-{
-    //score has shape (1,nbMatch,1)
-    //Jac has shape (2*nbMatch,6,1)
-    cv::Mat mat_r=cvarrToMat(mat);
-    cv::Mat mat_w=cvarrToMat(matr);
-
-    for(int i=0; i<s->cols; i++)
-        for(int i2=0; i2<2; i2++)
-    {
-        for(int j=0; j<mat->cols; j++)
-        {   
-            mat_w.ptr<double>(2*i+i2)[j] = cvGet2D(s,0,i).val[0]*mat_r.ptr<double>(2*i+i2)[j];
-        }
-    }
-
-}
-
-void cvFindPose( const CvMat* objectPoints,
-                  const CvMat* imagePoints, const CvMat* scores, const CvMat* A,
-                  const CvMat* distCoeffs, CvMat* rvec, CvMat* tvec)
-{
-    const int max_iter = 20;
-    Ptr<CvMat> matM, _m, _mn, matL, _s;
-
-    int count;
-    double a[9], ar[9]={1,0,0,0,1,0,0,0,1};
-    CvScalar Mc;
-    double param[6];
-    CvMat matA = cvMat( 3, 3, CV_64F, a );
-    CvMat _Ar = cvMat( 3, 3, CV_64F, ar );
-    CvMat _r = cvMat( 3, 1, CV_64F, param );
-    CvMat _t = cvMat( 3, 1, CV_64F, param + 3 );
-    CvMat _param = cvMat( 6, 1, CV_64F, param );
-    CvMat _dpdr, _dpdt;
-
-    CV_Assert( CV_IS_MAT(objectPoints) && CV_IS_MAT(imagePoints) &&
-        CV_IS_MAT(A) && CV_IS_MAT(rvec) && CV_IS_MAT(tvec) );
-
-    count = MAX(objectPoints->cols, objectPoints->rows);
-    matM.reset(cvCreateMat( 1, count, CV_64FC3 ));
-    _m.reset(cvCreateMat( 1, count, CV_64FC2 ));
-
-    cvConvertPointsHomogeneous( objectPoints, matM );
-    cvConvertPointsHomogeneous( imagePoints, _m );
-    cvConvert( A, &matA );
-    //cvConvert( scores, &_s );
-
-    //std::cout<<"scores = "<<std::endl;
-    //printMat(scores);
-
-
-    CV_Assert( (CV_MAT_DEPTH(rvec->type) == CV_64F || CV_MAT_DEPTH(rvec->type) == CV_32F) &&
-        (rvec->rows == 1 || rvec->cols == 1) && rvec->rows*rvec->cols*CV_MAT_CN(rvec->type) == 3 );
-
-    CV_Assert( (CV_MAT_DEPTH(tvec->type) == CV_64F || CV_MAT_DEPTH(tvec->type) == CV_32F) &&
-        (tvec->rows == 1 || tvec->cols == 1) && tvec->rows*tvec->cols*CV_MAT_CN(tvec->type) == 3 );
-
-    _mn.reset(cvCreateMat( 1, count, CV_64FC2 ));
-
-    // normalize image points
-    // (unapply the intrinsic matrix transformation and distortion)
-    cvUndistortPoints( _m, _mn, &matA, distCoeffs, 0, &_Ar );
-
-    CvMat _r_temp = cvMat(rvec->rows, rvec->cols,
-        CV_MAKETYPE(CV_64F,CV_MAT_CN(rvec->type)), param );
-    CvMat _t_temp = cvMat(tvec->rows, tvec->cols,
-        CV_MAKETYPE(CV_64F,CV_MAT_CN(tvec->type)), param + 3);
-    cvConvert( rvec, &_r_temp );
-    cvConvert( tvec, &_t_temp );
-    
-    
-
-    cvReshape( matM, matM, 3, 1 );//3 = number of channels, 1=number of rows
-    cvReshape( _mn, _mn, 2, 1 );
-
-    // refine extrinsic parameters using iterative algorithm
-    CvLevMarq solver( 6, count*2, cvTermCriteria(CV_TERMCRIT_EPS+CV_TERMCRIT_ITER,max_iter,FLT_EPSILON), true);
-    cvCopy( &_param, solver.param );
-
-    for(;;)
-    {
-        CvMat *matJ = 0, *_err = 0;
-        const CvMat *__param = 0;
-        bool proceed = solver.update( __param, matJ, _err );
-        cvCopy( __param, &_param );
-        if( !proceed || !_err )
-            break;
-        cvReshape( _err, _err, 2, 1 );
-
-        //std::cout<<"_err = "<<std::endl;
-        //printMat(_err);
-
-        if( matJ )
-        {
-            cvGetCols( matJ, &_dpdr, 0, 3 );
-            cvGetCols( matJ, &_dpdt, 3, 6 );
-            cvProjectPoints2( matM, &_r, &_t, &matA, distCoeffs,
-                              _err, &_dpdr, &_dpdt, 0, 0, 0 );
-            //in _err just get the projection of the points now and 
-        }
-        else
-        {
-            cvProjectPoints2( matM, &_r, &_t, &matA, distCoeffs,
-                              _err, 0, 0, 0, 0, 0 );
-        }
-        cvSub(_err, _m, _err);//now get the error really
-
-        //std::cout<<"_err = "<<std::endl;
-        //printMat(_err);
-        //cvMul(_err, scores, _err);
-        mulErrMat(_err, scores, _err);
-
-        //std::cout<<"_errs = "<<std::endl;
-        //printMat(_err);
-
-        if( matJ )
-        {
-            //std::cout<<"matJ = "<<std::endl;
-            //printMat(matJ);
-            mulJacMat(matJ,scores,matJ);
-            //std::cout<<"matJs = "<<std::endl;
-            //printMat(matJ);
-            //printMat(scores);
-        }
-
-        cvReshape( _err, _err, 1, 2*count );
-        //printMat(_err);
-    }
-    cvCopy( solver.param, &_param );
-
-    _r = cvMat( rvec->rows, rvec->cols,
-        CV_MAKETYPE(CV_64F,CV_MAT_CN(rvec->type)), param );
-    _t = cvMat( tvec->rows, tvec->cols,
-        CV_MAKETYPE(CV_64F,CV_MAT_CN(tvec->type)), param + 3 );
-
-    cvConvert( &_r, rvec );
-    cvConvert( &_t, tvec );
-}
-
-//bool robustPnp(std::vector<cv::Point3f> objectPoints,std::vector<cv::Point> imagePoints,
-//    std::vector<cv::Point3f> score, const IntrinsicCalibration &_mCalib, cv::Affine3d& poseCam)
-bool robustPnp(InputArray opoints,InputArray ipoints,
-//    std::vector<float> score, InputArray _cameraMatrix, InputArray _distCoeffs,
-    InputArray score, InputArray _cameraMatrix, InputArray _distCoeffs,
-               OutputArray _rvec, OutputArray _tvec)
-{
-    //undistort points 
-    CvMat c_objectPoints = opoints.getMat(), c_imagePoints = ipoints.getMat();
-    CvMat c_score = score.getMat();
-    CvMat c_cameraMatrix = _cameraMatrix.getMat(), c_distCoeffs = _distCoeffs.getMat();
-    CvMat c_rvec = _rvec.getMat(), c_tvec = _tvec.getMat();
-
-    /*Mat Mscores(1,score.size(),CV_32FC1);
-    for(int i=0;i<score.size();++i)
-    {
-        Mscores.at<float>(0,i)=score[i];
-    }
-    CvMat c_score = Mscores;*/
-    
-    cvFindPose(&c_objectPoints, &c_imagePoints, &c_score, &c_cameraMatrix,&c_distCoeffs,
-                                     &c_rvec, &c_tvec);
-    return true;
-    
-    //get list of MeasureTempPointfrom matches and best features
-    /*std::vector<MeasureTempPoint> measurePoints;
-    for(int m=0;m<matchesCurrent.size();m++)
-    {
-        int idFeaturep=matchesCurrent[m].i1p;
-        //check if we got a 3D position estimation for the corresponding point
-        std::vector<uptoscaleFeature>::iterator it = std::find_if (best_features.begin(), best_features.end(), CompareId(idFeaturep));
-        if(it != best_features.end())
-        {
-            //match has a 3D position linked to its feature in reference
-            MeasureTempPoint newMeasure;
-            newMeasure.mMeasure=_myCamera->ToMeters(Vector2f(matchesCurrent[m].u1c,matchesCurrent[m].v1c));
-            
-            //measure in ref
-            Vector2f mMeasureRef=_myCamera->ToMeters(Vector2f(matchesCurrent[m].u1p,matchesCurrent[m].v1p));
-            newMeasure.mPosition=toHomogeneous(mMeasureRef)* it->depthInRef;
-            measurePoints.push_back(newMeasure);
-        }
-        
-    }
-    
-    if(measurePoints.size()>10)
-    {
-        //estimate relative pose by minimizing reprojection error:
-        int nb_iter=20;
-        
-        for(int iter=0;iter<nb_iter;iter++)
-        {
-
-            VectorXf Jte(6);Jte.setZero();
-            MatrixXf H(6,6);H.setZero();
-            
-            
-            for(int i=0;i<measurePoints.size();i++)
-            {
-                //matrix to be filled           
-                MeasureTempPoint measure=measurePoints[i];
-                Vector3f mapPointsCam=relPose*measure.mPosition;
-                
-                //compute error with observed points (in meter in z=1 plane)
-                Vector2f x_d=measure.mMeasure;//desired projection= measurement
-                Vector2f x_c=_myCamera->ProjectZ1(mapPointsCam);//current projection
-                
-                Vector2f error=x_d-x_c;
-                
-                float norm_reproj_error=error.transpose()*error;
-
-                //get jacobien  of error with respect to variation of camera pose
-                MatrixXf de_dp=-_myCamera->ProjectZ1_Jac_Dp(mapPointsCam);  
-                
-                Jte+=de_dp.transpose()*error;
-                
-                H+=de_dp.transpose()*de_dp;
-                
-            }
-            Eigen::FullPivLU<MatrixXf> lu(H);
-            //todo try p+=Dp
-            VectorXf Dp(6);
-            Dp=-1.*(lu.inverse()*Jte);
-            relPose=HomogeneousMatrix(Dp)* relPose;
-        }
-    }
-    return relPose;*/
-}
-
-float MI(cv::Mat img, cv::Mat &templ, cv::Mat &mask)
-{
-    int nbBin = 8;
-    float Pm[nbBin],Pn[nbBin],Pmn[nbBin*nbBin];
-
-    //init bins
-    for(int i=0;i<nbBin;i++)
-    {
-        Pm[i]=0;
-        Pn[i]=0;
-        for(int j=0;j<nbBin;j++)
-            Pmn[nbBin*i+j]=0;
-    }
-
-    //fill bins
-    //NN
-    /*int nbPix = 0;
-    for (int i = 0; i < img.rows; ++i)
-    {
-        uchar* pixel_mask = mask.ptr<uchar>(i);  // point to first color in row
-        uchar* pixel_m = img.ptr<uchar>(i);  // point to first color in row
-        uchar* pixel_n = templ.ptr<uchar>(i);  // point to first color in row
-        for (int j = 0; j < img.cols; ++j)
-        {
-
-            uchar mask = *pixel_mask++;
-            if (mask>0)
-            {
-                uchar m = *pixel_m++;
-                uchar n = *pixel_n++;
-
-                uchar bm = (int)(nbBin*(float)m/256.);
-                uchar bn = (int)(nbBin*(float)n/256.);
-
-                Pm[bm]++;
-                Pn[bn]++;
-                Pmn[nbBin*bm+bn]++;
-                nbPix++;
-            }
-        }
-    }*/
-
-    int nbPix = 0;
-    for (int i = 0; i < img.rows; ++i)
-    {
-        uchar* pixel_mask = mask.ptr<uchar>(i);  // point to first color in row
-        uchar* pixel_m = img.ptr<uchar>(i);  // point to first color in row
-        uchar* pixel_n = templ.ptr<uchar>(i);  // point to first color in row
-        for (int j = 0; j < img.cols; ++j)
-        {
-
-            uchar mask = *pixel_mask++;
-            if (mask>0)
-            {
-                uchar m = *pixel_m++;
-                uchar n = *pixel_n++;
-
-                float bm = (float)(nbBin-1.)*(float)m/256.;
-                float bn = (float)(nbBin-1.)*(float)n/256.;
-
-                int Ebm = (int)bm;
-                int Ebn = (int)bn;
-                float em = bm-(float)Ebm;
-                float en = bn-(float)Ebn;
-
-                Pm[Ebm]  += 1.- em;
-                Pm[Ebm+1]+= em;
-
-                Pn[Ebn]  += 1.- en;
-                Pn[Ebn+1]+= en;
-
-                Pmn[nbBin*(Ebm)+Ebn] += (1.- em)*(1.- en);
-                Pmn[nbBin*(Ebm+1)+Ebn] += (em)*(1.- en);
-                Pmn[nbBin*(Ebm)+Ebn+1] += (1.- em)*(en);
-                Pmn[nbBin*(Ebm+1)+Ebn+1] += (em)*(en);
-
-                nbPix++;
-            }
-        }
-    }
-    //normalise
-    //int nbPix = img.rows*img.cols;
-    for(int i=0;i<nbBin;i++)
-    {
-        Pm[i]=Pm[i]/nbPix;
-        Pn[i]=Pn[i]/nbPix;
-        for(int j=0;j<nbBin;j++)
-            Pmn[nbBin*i+j]=Pmn[nbBin*i+j]/nbPix;
-    }
-
-    //compute MI
-    float res = 0;
-   for(int i=0;i<nbBin;i++)
-    {
-        for(int j=0;j<nbBin;j++)
-            if(Pmn[nbBin*i+j]>0 && Pm[i]>0 && Pn[j]>0)
-                res += Pmn[nbBin*i+j]*log(Pmn[nbBin*i+j]/(Pm[i]*Pn[j]));
-    }
-
-
-
-    return res;
-}
-
-void matchTemplateMI( cv::Mat img, cv::Mat &templ, cv::Mat &res, cv::Mat &mask)
-{
-    for(int i=0;i<res.size().height;i++)
-        for(int j=0;j<res.size().width;j++)
-        {
-            Rect box = cv::Rect(j,i,templ.size().width,templ.size().height);
-            res.at<float>(i,j) = MI(img(box),templ,mask);
-        }
-}
-
-void parabolicRefinement(cv::Mat &curv,cv::Point maxLoc,cv::Point2f &maxLocF)
-{
-    if(maxLoc.x>0 && maxLoc.y>0 && maxLoc.x<curv.size().width-1 && maxLoc.y<curv.size().height-1)
-        maxLocF = maxLoc;
-    else
-    {
-        float centerVal = curv.at<float>(maxLoc.y,maxLoc.x);
-
-        //fit parabola horizontally and vertically
-        //for this simply get derivative x left and right and do linear regression
-        float dx_l = centerVal - curv.at<float>(maxLoc.y,maxLoc.x-1);
-        float dx_r = curv.at<float>(maxLoc.y,maxLoc.x+1) - centerVal;
-
-        float dy_t = centerVal - curv.at<float>(maxLoc.y-1,maxLoc.x);
-        float dy_b = curv.at<float>(maxLoc.y+1,maxLoc.x) - centerVal;
-
-        float ex = -0.5 + dx_l / (dx_l-dx_r);
-        float ey = -0.5 + dy_t / (dy_t-dy_b);
-
-        maxLocF = cv::Point2f(maxLoc)+cv::Point2f(ex,ey);
-    }
-}               
 
 void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const
 {
@@ -1550,15 +806,14 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     //to retrieve the 3D pose from the sets of 2D matches
 
 
-
-    cv::Mat MDebugImg;
+    /*cv::Mat MDebugImg;
     img.copyTo(MDebugImg); 
     cv::Mat MDebugImgWarp;
     img.copyTo(MDebugImgWarp);
     cv::Mat MDebugImgScore;
     img.copyTo(MDebugImgScore);
     cv::Mat MDebugImgScorer;
-    img.copyTo(MDebugImgScorer);
+    img.copyTo(MDebugImgScorer);*/
 
     int window_search_size = 32;
     int half_window_size = window_search_size/2;
@@ -1572,7 +827,7 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     std::vector<cv::Point2f> imagePoints;
     std::vector<float> score;
 
-    std::cout<<"compute NCC scores"<<std::endl;
+    //std::cout<<"compute NCC scores"<<std::endl;
 
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
     {
@@ -1609,9 +864,6 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             //if entirely projects in image
             if(box.x >=0 && box.y >=0 && box.x + box.size().width < img.size().width && box.y + box.size().height < img.size().height)
             {
-                surfaceMatchInfo newMatch;
-                newMatch.objCoord = surf.center;
-                newMatch.viewScore = viewScore;
 
                  //get projected corners coordinates in the bounding box
                 vector<Point> vprojVertices_bb;
@@ -1632,7 +884,7 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                 prev_img(box).copyTo(patchCurr);
 
                 //Debug : plot it on input
-                patchCurr.copyTo(MDebugImgWarp(box));
+                //patchCurr.copyTo(MDebugImgWarp(box));
 
                 //compute NCC over search window
                 //get the roi of the current image on which to compute similarity with patch
@@ -1651,19 +903,14 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                 //if(result_cols >= window_search_size && result_rows >= window_search_size)
                 {
                     cv::Mat resultNCC = cv::Mat::zeros( result_rows, result_cols, CV_32FC1 );
-
-#ifdef USE_SIMIL_MAX
-                    cv::matchTemplate( img(myROI), patchCurr, resultNCC, CV_TM_CCORR_NORMED, mask);
-#else
                     cv::matchTemplate( img(myROI), patchCurr, resultNCC, CV_TM_SQDIFF, mask);
-#endif
                     
                     /// Localizing the best match with minMaxLoc searching for max NCC
                     double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
                     cv::minMaxLoc( resultNCC, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
 
                     //plot result NCC on input
-                    cv::Mat resultNCCnorm; resultNCC.copyTo(resultNCCnorm);
+                    /*cv::Mat resultNCCnorm; resultNCC.copyTo(resultNCCnorm);
                     cv::normalize( resultNCCnorm, resultNCCnorm, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
                     cv::Mat resultNCCuc( resultNCC.size().height, resultNCC.size().width, CV_8UC1);
                     for(int i=0;i<resultNCC.size().height;i++)
@@ -1672,22 +919,8 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                     cv::Rect myROIncc(myROI.x + box.size().width/2,myROI.y + box.size().height/2,result_cols,result_rows);
                     resultNCCuc.copyTo(MDebugImgScore(myROIncc));
                     cv::circle(MDebugImgScore,minLoc + myROI.tl() + vprojVertices_bb[4],2,255);
+*/
 
-
-                    //keep maximum value location and whole score patch
-                    //so that can init PnP with a few maxVal locations and get corresponding NCC score
-                    //of the estimated poses
-#ifdef USE_SIMIL_MAX
-                    newMatch.projCoord = maxLoc + myROI.tl() + vprojVertices_bb[4];
-                    newMatch.similarityScore = maxVal;
-#else
-                    newMatch.projCoord = minLoc + myROI.tl() + vprojVertices_bb[4];
-                    newMatch.similarityScore = -minVal;
-#endif
-
-                    //objectPoints.push_back(surf.center);
-                    //imagePoints.push_back(newMatch.projCoord);
-                    //score.push_back(viewScore*newMatch.similarityScore);
 
                     //now we have hopefully the position of the surface up to some drift
                     //so we want to use the model to correct the drift
@@ -1708,13 +941,7 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                     //to make it simple, use box previously defined,
                     //box was centered on projection of vertex in previous image
                     //now center it on previously found optimum so can use same code afterward
-#ifdef USE_SIMIL_MAX
-                    box = box + maxLoc + myROI.tl() - box.tl();
-                    //box = box + maxLoc - vprojVertices_bb[4];
-#else
                     box = box + minLoc + myROI.tl() - box.tl();
-                    //box = box + minLoc - vprojVertices_bb[4];
-#endif
 
                     myRoi_l = box.x-half_window_size_drift; myRoi_l = (myRoi_l<0)?0:myRoi_l;
                     myRoi_t = box.y-half_window_size_drift; myRoi_t = (myRoi_t<0)?0:myRoi_t;
@@ -1744,7 +971,7 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
 
 
                         //plot result NCC on input
-                        cv::Mat resultNCCnorm; resultNCC_drift.copyTo(resultNCCnorm);
+                        /*cv::Mat resultNCCnorm; resultNCC_drift.copyTo(resultNCCnorm);
                         cv::normalize( resultNCCnorm, resultNCCnorm, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
                         cv::Mat resultNCCuc( resultNCC_drift.size().height, resultNCC_drift.size().width, CV_8UC1);
                         for(int i=0;i<resultNCC_drift.size().height;i++)
@@ -1761,13 +988,8 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                         putText(MDebugImgScorer, confStr,
                                     maxLoc + myROI.br(),
                                     cv::FONT_HERSHEY_COMPLEX_SMALL,
-                                    0.8, cvScalar(250,250,250), 1, CV_AA);
+                                    0.8, cvScalar(250,250,250), 1, CV_AA);*/
 
-
-                        //keep maximum value location and whole score patch
-                        //newMatch.projCoord = maxLoc + myROI.tl() + vprojVertices_bb[4];
-                        //newMatch.similarityScore = maxVal;
-                        //mSearchInfo.push_back(newMatch);
 
                         objectPoints.push_back(surf.center);
                         imagePoints.push_back(maxLocF + Point2f(myROI.tl()) + vprojVertices_bbF[4]);
@@ -1780,39 +1002,24 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         }
     }
 
-    cv::imwrite("output/curr.png",MDebugImg);
+    /*cv::imwrite("output/curr.png",MDebugImg);
     cv::imwrite("output/warp.png",MDebugImgWarp);
     //cv::imwrite("output/masks.png",MDebugImgMask);
     cv::imwrite("output/score.png",MDebugImgScore);
-    cv::imwrite("output/scorer.png",MDebugImgScorer);
+    cv::imwrite("output/scorer.png",MDebugImgScorer);*/
     
-    std::cout<<"estimate best pose"<<std::endl;
-
-    //poseCam = prevPoseCam;
-    //robustPnp(mSearchInfo,_mCalib,poseCam);
-
-    /*Vec3d rvec=prevPoseCam.rvec();
-    Vec3d tvec=prevPoseCam.translation();
-
-    std::cout<<objectPoints.size()<<std::endl;
-    robustPnp(objectPoints,imagePoints,score,_mCalib.cameraMatrix, _mCalib.distCoeffs,rvec,tvec);
-    poseCam = cv::Affine3d(rvec,tvec);*/
-
-
-    //perform PnPwith all subsets of 4 matches, estimate pose and check corresponding score
+    //Ransac : perform PnPwith all subsets of 4 matches, estimate pose and check corresponding score
     //keep best scoring pose
+    //matches have been stored in lists: objectPoints, imagePoints and score;
     cv::Affine3d bestPose;
     float bestScore=0;
     int bestValidSurf=0;
 
-    //std::vector<cv::Point3f> objectPoints;
-    //std::vector<cv::Point> imagePoints;
-    //std::vector<float> score;
-    bool inliers[objectPoints.size()];
+    bool *inliers=new bool[objectPoints.size()];
 
-    //do a kind of ransac: try different subset to compute pose util find that more than majority agrees
-    //if not consider tracker lost
-    const unsigned int nbBasePnp=4;//take four points out of set
+    //do a kind of ransac: try all different subset of nbBasePnp matches to compute pose 
+    //and keep the pose which returns the most inliers
+    const unsigned int nbBasePnp=4;
     unsigned int pointers[nbBasePnp];
     for(unsigned int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list        
 
@@ -1830,7 +1037,6 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             subsetProjections.push_back(imagePoints[pointers[i]]);
         }
         
-        
         //compute pose with subset
         cv::solvePnP(subsetVertices, subsetProjections, _mCalib.cameraMatrix, _mCalib.distCoeffs, rvec, tvec, true);
 
@@ -1845,7 +1051,7 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         //check how many surfaces agree with the pose and get cumulative score
         int nbValidSurf = 0;
         float scoreAccu = 0;
-        bool inliers_temp[objectPoints.size()];
+        bool *inliers_temp=new bool[objectPoints.size()];
         for(unsigned int v=0;v<imagePoints.size();v++)
         {
             if(cv::norm(surfCenterProj[v] - Point2f(imagePoints[v]))<5.)
@@ -1858,6 +1064,8 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                 inliers_temp[v] = false;
         }
 
+        //compare current pose validity with the best one so far
+        //at this point we could also have used the MI and viewing angle score accumulated in scoreAccu
         if(nbValidSurf > bestValidSurf)
         {
             bestValidSurf = nbValidSurf;
@@ -1868,8 +1076,8 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             //save inleirs
             for(unsigned int v=0;v<imagePoints.size();v++)
                 inliers[v] = inliers_temp[v];
-
         }
+        delete[] inliers_temp;
 
         //if not need to go to next subset:
         bool nextSetAvailable = getNextSetPointers(&pointers[0],imagePoints.size(),nbBasePnp);
@@ -1877,8 +1085,14 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         if(!nextSetAvailable)
             break;        
     }
-    std::cout<<"best cpt valid surf = "<<bestValidSurf<<std::endl;
-    std::cout<<"score = "<<bestScore<<std::endl;
+    
+    //std::cout<<"best cpt valid surf = "<<bestValidSurf<<std::endl;
+    //std::cout<<"score = "<<bestScore<<std::endl;
+
+    //for now there is nothing to protect us from diverging
+    //we will have to use the MI score which has shown to be robust to occlusions
+    //and illumination changes; can use lower threshold on it, 
+    //and if score is lower then consider tracker lost
     
     //refine pose with inliers
     Vec3d rvec=prevPoseCam.rvec();
@@ -1895,21 +1109,14 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             subsetVertices.push_back(objectPoints[i]);
             subsetProjections.push_back(imagePoints[i]);
             scores.push_back(score[i]);
-            //scores.push_back(1.);
         }
     }
+    delete[] inliers;
       
-    //compute pose with subset
-    //cv::solvePnP(subsetVertices, subsetProjections, _mCalib.cameraMatrix, _mCalib.distCoeffs, rvec, tvec, true);
+    //compute pose with all the inliers and the similarity and viewing angle score taken into account
     robustPnp(subsetVertices, subsetProjections, scores, _mCalib.cameraMatrix, _mCalib.distCoeffs, rvec, tvec);
 
     poseCam = cv::Affine3d(rvec,tvec);
-
-    //poseCam = bestPose;
-
-    //could refine by performing non linear optimization of score with respect to projection,
-    //would then have to compute the gradients of all the NCC scores patches... 
-
 }
 
 }

@@ -18,6 +18,7 @@
 #include "Generic.hpp"
 #include "GH.hpp"
 #include "Grouping.hpp"
+#include "TrackingFcts.hpp"
 
 namespace thymio_tracker
 {
@@ -120,7 +121,7 @@ public:
     void drawSurface(const planarSurface &_edge, const cv::Mat &img, const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs, const cv::Affine3d &poseCam) const;
     
     //project vertices and return them in vector
-    std::vector<cv::Point2f> projectVertices(const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs, const cv::Affine3d &poseCam) const;
+    //std::vector<cv::Point2f> projectVertices(const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs, const cv::Affine3d &poseCam) const;
     //do pose estimation using projection of vertices and matches from GH
     //bruteforce pose estimation: all subsets of 4 matches are used to solve PnP until half of matches agree
     bool getPose(const IntrinsicCalibration& _mCalib, std::vector<DetectionGH> mMatches, cv::Affine3d& robotPose, bool init) const;

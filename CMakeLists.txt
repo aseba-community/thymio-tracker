@@ -33,6 +33,8 @@ set(ThymioTracker_SOURCES
     src/BlobInertia.hpp
     src/Landmark.hpp
     src/Robot.hpp
+    src/TrackingFcts.hpp
+    src/TrackingFcts.cpp
     )
 
 if(ANDROID_WRAPPER)

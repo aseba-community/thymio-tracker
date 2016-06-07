@@ -36,7 +36,7 @@ void Robot::find(const cv::Mat& input,
     IntrinsicCalibration& mCalibration = *mCalibration_ptr;
 
     //if robot was not found in previous image then run Geometric Hashing
-    //if(!mDetectionInfo.isFound())
+    if(!mDetectionInfo.isFound())
     {
         this->findFromBlobGroupsAndGH(input,mDetectionInfo);
 
@@ -61,12 +61,12 @@ void Robot::find(const cv::Mat& input,
 
         }
     }
-    /*else
+    else
     {
         cv::Affine3d newPose;
-        mModel.track(input, mCalibration, mDetectionInfo.mPose, newPose);
+        mModel.track(input, prevImage, mCalibration, mDetectionInfo.mPose, newPose);
         mDetectionInfo.mPose = newPose;
-    }*/
+    }
     /*else
     {
         //robot was found in previous image => can do tracking
