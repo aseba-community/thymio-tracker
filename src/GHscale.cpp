@@ -161,7 +161,7 @@ void GHscale::readVotesFromBin(const cv::Point3f& bin,float *votes) const
         for(int id=0;id<nbIds;id++)
             votes[id]+=HashTable[(int)bin.x*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + (int)bin.y*nbBinPerDim.z*nbIds + (int)bin.z*nbIds + id];*/
     
-    if(bin.x>=0 && bin.x<nbBinPerDim.x && bin.y>=0 && bin.y<nbBinPerDim.y && bin.z>=0 && bin.z<nbBinPerDim.z)
+    if(bin.x>=0 && bin.x<nbBinPerDim.x-1 && bin.y>=0 && bin.y<nbBinPerDim.y-1 && bin.z>=0 && bin.z<nbBinPerDim.z-1)
     {
         int Ex=(int)bin.x;float ex=bin.x-Ex;
         int Ey=(int)bin.y;float ey=bin.y-Ey;
@@ -510,7 +510,6 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
         
         //find second best id to compute discriminative power
         int idPointSecondBest=-1;
-        (void)idPointSecondBest;
         float nbVotesForSecondBest=0;
         for(int id=0;id<nbIds;id++)
             if(id!=idPointEstim && votesId[id]>nbVotesForSecondBest)

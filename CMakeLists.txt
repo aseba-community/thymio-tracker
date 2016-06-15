@@ -15,26 +15,28 @@ project(ThymioTracker)
 set(ANDROID_WRAPPER OFF CACHE BOOL "Compile for Android with Java wrapper")
 
 set(ThymioTracker_SOURCES
-    src/ThymioTracker.cpp
-    src/GH.cpp
-    src/GHscale.cpp
-    src/Models.cpp
-    src/Generic.cpp
-    src/Grouping.cpp
-    src/BlobInertia.cpp
-    src/Landmark.cpp
-    src/Robot.cpp
     src/ThymioTracker.h
-    src/Generic.hpp
+    src/ThymioTracker.cpp
     src/GH.hpp
+    src/GH.cpp
     src/GHscale.hpp
+    src/GHscale.cpp
     src/Models.hpp
+    src/Models.cpp
+    src/Generic.hpp
+    src/Generic.cpp
     src/Grouping.hpp
+    src/Grouping.cpp
     src/BlobInertia.hpp
+    src/BlobInertia.cpp
     src/Landmark.hpp
+    src/Landmark.cpp
     src/Robot.hpp
+    src/Robot.cpp
     src/TrackingFcts.hpp
     src/TrackingFcts.cpp
+    src/Calibrator.hpp
+    src/Calibrator.cpp
     )
 
 if(ANDROID_WRAPPER)
@@ -55,7 +57,8 @@ if(ANDROID_WRAPPER)
 
     # JAR
     set(ThymioTracker_JAVA_SOURCES
-        android/java/ch/epfl/cvlab/thymiotracker/ThymioTracker.java)
+        android/java/ch/epfl/cvlab/thymiotracker/ThymioTracker.java
+        android/java/ch/epfl/cvlab/calibrator/Calibrator.java)
     set(CMAKE_JAVA_INCLUDE_PATH
         ${CMAKE_JAVA_INCLUDE_PATH}
         "${OpenCV_ANDROID_SDK}/java/src"
@@ -74,6 +77,14 @@ if(ANDROID_WRAPPER)
             -d ${_stubDir}
             ch.epfl.cvlab.thymiotracker.ThymioTracker)
 
+    add_custom_command(
+        OUTPUT ch_epfl_cvlab_calibrator_Calibrator.h
+        DEPENDS ${_jarFile}
+        COMMAND ${Java_JAVAH_EXECUTABLE} -verbose
+            -classpath ${_classDir}:${CMAKE_JAVA_INCLUDE_PATH}
+            -d ${_stubDir}
+            ch.epfl.cvlab.calibrator.Calibrator)
+
     include_directories(
         ${JAVA_INCLUDE_PATH}
         ${_stubDir})
@@ -83,7 +94,9 @@ if(ANDROID_WRAPPER)
     set(ThymioTracker_SOURCES
         ${ThymioTracker_SOURCES}
         ch_epfl_cvlab_thymiotracker_ThymioTracker.h
-        android/jni/ch_epfl_cvlab_thymiotracker_ThymioTracker.cpp)
+        ch_epfl_cvlab_calibrator_Calibrator.h
+        android/jni/ch_epfl_cvlab_thymiotracker_ThymioTracker.cpp
+        android/jni/ch_epfl_cvlab_calibrator_Calibrator.cpp)
 
 else(ANDROID_WRAPPER)
     find_package(OpenCV REQUIRED)

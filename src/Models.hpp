@@ -140,11 +140,11 @@ public:
     void learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& poseCam);
     //all board sequence has been used => save appearance
     void writeSurfaceLearned();
-    void readSurfaceLearned();
+    void readSurfaceLearned(cv::FileStorage& robotModelStorage);
 
     //temporary tracking function for develop, will have to be moved to Robot if works
     //void track(const cv::Mat &img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const;
-    void track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const;
+    bool track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const;
 
     
     //groups of vertices in our model
@@ -180,12 +180,12 @@ public:
     void setEdgePlotModel();
     void setEdgeTrackModel();
     void setSurfacesModel();
-    void loadTrackingModel(cv::FileStorage& robotModelStorage);
+    //void loadTrackingModel(cv::FileStorage& robotModelStorage);
 
     //for tracking using top surface and similar approach as landmark => not robust enough
-    cv::Mat mImage;
+    /*cv::Mat mImage;
     std::vector<cv::Point2f> mRobotKeypointPos;
-    std::vector<cv::Point2f> mVerticesTopPos;
+    std::vector<cv::Point2f> mVerticesTopPos;*/
 };
 
 }

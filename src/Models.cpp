@@ -111,11 +111,11 @@ void Object3D::drawSurface(const planarSurface &_edge, const Mat &img, const Mat
     ObjPoints.push_back(_edge.center+toPoint(_edge.radius1*-_edge.b1+_edge.radius2*_edge.b2));
 
     vector<Point3f> LineObj;
-    for(int i=0;i<ObjPoints.size();i++) 
+    for(uint i=0;i<ObjPoints.size();i++) 
         LineObj.push_back(pose*ObjPoints[i]);
 
     vector<Point3f> LineCam;
-    for(int i=0;i<LineObj.size();i++) 
+    for(uint i=0;i<LineObj.size();i++) 
         LineCam.push_back(poseCam*LineObj[i]);
     
     vector<Point2f> vprojVertices;
@@ -204,7 +204,7 @@ bool getNextSetPointers(unsigned int *pointers, int n, int p)
 {
     int nbPtStuckAtEnd=0;
     for(int i=p-1;i>=0;i--)
-        if(pointers[i]==n-p+i)
+        if((int)pointers[i]==n-p+i)
             nbPtStuckAtEnd++;
     
     if(nbPtStuckAtEnd==0)//if none stuck then can simply move last one
@@ -218,7 +218,7 @@ bool getNextSetPointers(unsigned int *pointers, int n, int p)
     {
         //need to move the (nbBasePnp-1-nbPtStuckAtEnd)th pointer right and set the others to follow
         pointers[p-1-nbPtStuckAtEnd]++;
-        for(unsigned int i=p-1-nbPtStuckAtEnd+1;i<p;i++)
+        for(int i=p-1-nbPtStuckAtEnd+1;i<p;i++)
             pointers[i]=pointers[i-1]+1;
     }
     return true;
@@ -237,7 +237,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
     //create list of 3d points corresponding to detected projections
     vector<Point3f> detectedVertices;
     for(unsigned int i=0;i<mMatches.size();i++)detectedVertices.push_back(mVertices[mMatches[i].id]);
-    
+
     //use opencv function
     //get previous position if there is any
     Vec3d rvec_prec,tvec_prec;
@@ -258,11 +258,13 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
     unsigned int pointers[nbBasePnp];
     for(unsigned int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list
 
-    //for testing: ratio max agreeing matches
-    float ratio_max = 0;
+    //limit the number of trials:
+    int cpt_trials = 0;
+    int nb_trials_max = 30;
    
-    while(1)
+    while(cpt_trials<nb_trials_max)
     {
+        cpt_trials ++;
         //want to test all the unsorted subsets of 4 points
         Vec3d rvec,tvec;
         //if(!init)    {rvec=rvec_prec;tvec=tvec_prec;}
@@ -289,7 +291,8 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
         {
             
             //check how many points agree
-            float threshold_proj=5.;//set error max to 5 pixels
+            float threshold_proj=2.;//set error max to 5 pixels
+            //float threshold_proj=40.;//set error max to 5 pixels
             unsigned int nbPointAgree=0;
             vector<Point2f> vProjPoints;//project all points
             projectPoints(detectedVertices, rvec, tvec, _mCalib.cameraMatrix, _mCalib.distCoeffs, vProjPoints);
@@ -302,6 +305,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
             //first subset which after some refining would be back in...
             //can also run several iterations of the previous selection and following optimisation
             if(nbPointAgree>mMatches.size()/2)
+            //if(nbPointAgree>mMatches.size()/6)
             {
                 vector<Point3f> newSubsetVertices;
                 vector<Point2f> newSubsetProjections;
@@ -318,43 +322,17 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
                 //std::cout<< "rotationVSfrontoparallel(rvec) = "<<rotationVSfrontoparallel(rvec)<<std::endl;
                 return true;
             }
-
-            if((float)nbPointAgree/mMatches.size()>ratio_max)
-                ratio_max = (float)nbPointAgree/mMatches.size();
         }
         
-        //if not need to go to next subset:
-        //try moving last pointer, if pointer reaches end, then have to move previous pointer
-        //recursive if any pointer reaches its end position then moves it previous pointer and put current pointer after it
-        //do until first point (pointers[0]) reaches the end (for pointers[0] corresponds to pointPositions.size-nbBasePnp)
-        
-        //to do that just count how many pointers are stuck at the end:
+        //get next subset
         bool nextSetAvailable = getNextSetPointers(&pointers[0],mMatches.size(),nbBasePnp);
 
         if(!nextSetAvailable)
             return false;
 
-        /*int nbPtStuckAtEnd=0;
-        for(int i=nbBasePnp-1;i>=0;i--)
-            if(pointers[i]==mMatches.size()-nbBasePnp+i)
-                nbPtStuckAtEnd++;
-        
-        if(nbPtStuckAtEnd==0)//if none stuck then can simply move last one
-            pointers[nbBasePnp-1]++;
-        else if(nbPtStuckAtEnd==nbBasePnp)//all of them are stuck and we didn t find anything good=> lost
-        {
-            //std::cout<< "ratio_max = "<<ratio_max<<std::endl;
-            return false;
-        }
-        else//some of them are at the end
-        {
-            //need to move the (nbBasePnp-1-nbPtStuckAtEnd)th pointer right and set the others to follow
-            pointers[nbBasePnp-1-nbPtStuckAtEnd]++;
-            for(unsigned int i=nbBasePnp-1-nbPtStuckAtEnd+1;i<nbBasePnp;i++)
-                pointers[i]=pointers[i-1]+1;
-        }*/
         
     }
+    return false;
 
     
 }
@@ -543,7 +521,7 @@ ThymioBlobModel::ThymioBlobModel()
     setEdgePlotModel();
     setEdgeTrackModel();
     setSurfacesModel();
-    readSurfaceLearned();
+    //readSurfaceLearned();
 }
 
 void ThymioBlobModel::setSurfacesModel()
@@ -583,7 +561,7 @@ void ThymioBlobModel::setSurfacesModel()
 
 }
     
-void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
+/*void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
 {
     //define what s going to be used in active search
     cv::read(robotModelStorage["image"], mImage);
@@ -626,7 +604,7 @@ void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
         mVerticesTopPos.push_back(mRobotKeypointPos[i]);
 
     
-}
+}*/
 
 void Object3D::allocateSurfaceLearning()
 {
@@ -655,7 +633,7 @@ void Object3D::learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib
             ObjPoints.push_back(surf.center+toPoint(surf.radius1*-surf.b1+surf.radius2*surf.b2));
 
             vector<Point3f> LineObj;
-            for(int i=0;i<ObjPoints.size();i++) 
+            for(uint i=0;i<ObjPoints.size();i++) 
                 LineObj.push_back(pose*ObjPoints[i]);
             
             vector<Point2f> vprojVertices;
@@ -769,13 +747,13 @@ void Object3D::writeSurfaceLearned()
 
 }
 
-void Object3D::readSurfaceLearned()
+void Object3D::readSurfaceLearned(cv::FileStorage& robotModelStorage)
 {
     std::vector<cv::Mat> imageVectorr;
-    cv::FileStorage storer("modelSurfaces.xml.gz", cv::FileStorage::READ);
-    cv::FileNode n1 = storer["imageVector"];
+    //cv::FileStorage robotModelStorage("modelSurfaces.xml.gz", cv::FileStorage::READ);
+    cv::FileNode n1 = robotModelStorage["imageVector"];
     cv::read(n1,imageVectorr);
-    storer.release();
+    robotModelStorage.release();
 
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
     {
@@ -788,15 +766,15 @@ void Object3D::readSurfaceLearned()
         imageVectorr[v].copyTo(mPlanarSurfaces[v].mImage);
 
         //ouput as files to check them out
-        char fileName[200];
+        /*char fileName[200];
         sprintf(fileName, "output/surface%d.png", v);
-        cv::imwrite(fileName,imageVectorr[v]);
+        cv::imwrite(fileName,imageVectorr[v]);*/
     }
     
 }
 
 
-void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const
+bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const
 {
     //TODO: multiscale approach ? can simply scale image with respect to object distance
     //TODO: try template matching with other similarity functions: NCC has wide basin, more narrow optimum would be better for RANSAC
@@ -851,7 +829,7 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             ObjPoints.push_back(surf.center);
 
             vector<Point3f> LineObj;
-            for(int i=0;i<ObjPoints.size();i++) 
+            for(uint i=0;i<ObjPoints.size();i++) 
                 LineObj.push_back(pose*ObjPoints[i]);
             
             //get position of surface corners in previous image
@@ -861,17 +839,18 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             //get the minimal support rectangle which contains the projected surface
             Rect box = cv::boundingRect(cv::Mat(vprojVertices));
 
-            //if entirely projects in image
+            //if reasonable size and entirely projects in image
+            if(box.size().width<100 && box.size().height<100)
             if(box.x >=0 && box.y >=0 && box.x + box.size().width < img.size().width && box.y + box.size().height < img.size().height)
             {
 
                  //get projected corners coordinates in the bounding box
                 vector<Point> vprojVertices_bb;
-                for(int v=0;v<vprojVertices.size();v++)
+                for(uint v=0;v<vprojVertices.size();v++)
                     vprojVertices_bb.push_back(vprojVertices[v]-Point2f(box.x, box.y));
 
                 vector<Point2f> vprojVertices_bbF;
-                for(int v=0;v<vprojVertices.size();v++)
+                for(uint v=0;v<vprojVertices.size();v++)
                     vprojVertices_bbF.push_back(vprojVertices[v]-Point2f(box.x, box.y));
 
 
@@ -1007,7 +986,13 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     //cv::imwrite("output/masks.png",MDebugImgMask);
     cv::imwrite("output/score.png",MDebugImgScore);
     cv::imwrite("output/scorer.png",MDebugImgScorer);*/
+
+    const unsigned int nbBasePnp=4;
+    if(objectPoints.size() < nbBasePnp)
+        return false;
     
+    std::cout<<"RANSAC with nb matches = "<<objectPoints.size()<<std::endl;
+
     //Ransac : perform PnPwith all subsets of 4 matches, estimate pose and check corresponding score
     //keep best scoring pose
     //matches have been stored in lists: objectPoints, imagePoints and score;
@@ -1019,7 +1004,6 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
 
     //do a kind of ransac: try all different subset of nbBasePnp matches to compute pose 
     //and keep the pose which returns the most inliers
-    const unsigned int nbBasePnp=4;
     unsigned int pointers[nbBasePnp];
     for(unsigned int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list        
 
@@ -1082,41 +1066,54 @@ void Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         //if not need to go to next subset:
         bool nextSetAvailable = getNextSetPointers(&pointers[0],imagePoints.size(),nbBasePnp);
 
+        //std::cout<<"nb matches = "<<imagePoints.size()<<std::endl;
+
+        //for(int i=0;i<nbBasePnp;i++)
+        //    std::cout<<pointers[i]<<"  ";
+        //std::cout<<std::endl;
+
         if(!nextSetAvailable)
             break;        
     }
     
     //std::cout<<"best cpt valid surf = "<<bestValidSurf<<std::endl;
-    //std::cout<<"score = "<<bestScore<<std::endl;
-
-    //for now there is nothing to protect us from diverging
-    //we will have to use the MI score which has shown to be robust to occlusions
-    //and illumination changes; can use lower threshold on it, 
-    //and if score is lower then consider tracker lost
-    
-    //refine pose with inliers
-    Vec3d rvec=prevPoseCam.rvec();
-    Vec3d tvec=prevPoseCam.translation();
-    
-    //create vectors corresponding to subset
-    vector<Point3f> subsetVertices;
-    vector<Point2f> subsetProjections;
-    vector<float> scores;
-    for(unsigned int i=0;i<objectPoints.size();i++)
+    std::cout<<"score tracking MI= "<<bestScore<<std::endl;
+    if(bestScore>0.4)
     {
-        if(inliers[i])
-        {
-            subsetVertices.push_back(objectPoints[i]);
-            subsetProjections.push_back(imagePoints[i]);
-            scores.push_back(score[i]);
-        }
-    }
-    delete[] inliers;
-      
-    //compute pose with all the inliers and the similarity and viewing angle score taken into account
-    robustPnp(subsetVertices, subsetProjections, scores, _mCalib.cameraMatrix, _mCalib.distCoeffs, rvec, tvec);
+        //std::cout<<"score = "<<bestScore<<std::endl;
 
-    poseCam = cv::Affine3d(rvec,tvec);
+        //for now there is nothing to protect us from diverging
+        //we will have to use the MI score which has shown to be robust to occlusions
+        //and illumination changes; can use lower threshold on it, 
+        //and if score is lower then consider tracker lost
+        
+        //refine pose with inliers
+        Vec3d rvec=prevPoseCam.rvec();
+        Vec3d tvec=prevPoseCam.translation();
+        
+        //create vectors corresponding to subset
+        vector<Point3f> subsetVertices;
+        vector<Point2f> subsetProjections;
+        vector<float> scores;
+        for(unsigned int i=0;i<objectPoints.size();i++)
+        {
+            if(inliers[i])
+            {
+                subsetVertices.push_back(objectPoints[i]);
+                subsetProjections.push_back(imagePoints[i]);
+                scores.push_back(score[i]);
+            }
+        }
+        delete[] inliers;
+          
+        //compute pose with all the inliers and the similarity and viewing angle score taken into account
+        robustPnp(subsetVertices, subsetProjections, scores, _mCalib.cameraMatrix, _mCalib.distCoeffs, rvec, tvec);
+
+        poseCam = cv::Affine3d(rvec,tvec);
+        return true;
+    }
+    else
+        return false;
 }
 
 }

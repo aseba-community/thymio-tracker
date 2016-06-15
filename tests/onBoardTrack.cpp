@@ -39,7 +39,8 @@ int main(int argc, char** argv)
     cv::Mat outputImage;
     int cpt = firstFrame;
 
-    //mRobot.readSurfaceLearned();
+    cv::FileStorage fs("../data/modelSurfaces.xml.gz", cv::FileStorage::READ);
+    mRobot.readSurfaceLearned(fs);
     bool isRobotposeInit = false;
     
     cv::Affine3d robotPose;

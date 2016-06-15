@@ -14,8 +14,6 @@ static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::
     for( int i = 0; i < boardSize.height; i++ )
         for( int j = 0; j < boardSize.width; j++ )
             corners.push_back(cv::Point3f((2*j + i % 2)*squareSize, i*squareSize, 0));
-
-
 }
 
 
@@ -83,6 +81,7 @@ int main(int, char**)
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
     
     cv::Mat outputImage;
+    int cpt_found_in_a_row = 0;
     
     while(1)
     {
@@ -95,7 +94,13 @@ int main(int, char**)
         //process grid
         found = findCirclesGrid( inputImage, boardSize, pointBuf, cv::CALIB_CB_ASYMMETRIC_GRID );
         
-        if(found)drawChessboardCorners( inputImage, boardSize, cv::Mat(pointBuf), found );
+        if(found)
+        {
+            drawChessboardCorners( inputImage, boardSize, cv::Mat(pointBuf), found );
+            cpt_found_in_a_row ++;
+        }
+        else
+            cpt_found_in_a_row = 0;
         
         //plot counter
         char cStr[100];
@@ -111,11 +116,14 @@ int main(int, char**)
         auto key = cv::waitKey(5);
 
 
-        if(found && key == 32)//space => keep frame for calib and next frame
+        //if(found && key == 32)//space => keep frame for calib and next frame
+        if(found && cpt_found_in_a_row == 20)//only add a detection when we had n of them in a row
         {
             imagePoints.push_back(pointBuf);
             objectPoints.push_back(objectCorners);
+            cpt_found_in_a_row = 0;
         }
+
 
         if(key == 13)//enter => calibrate
         {

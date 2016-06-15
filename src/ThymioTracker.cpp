@@ -212,7 +212,8 @@ void ThymioTracker::updateRobot(const cv::Mat& input,
         resizeCalibration(input.size());
     
     // Robot detection and tracking
-    mRobot.find(input,mDetectionInfo.prevImageRobot,mDetectionInfo.mRobotDetection);
+    if(!mDetectionInfo.prevImageRobot.empty())
+        mRobot.find(input,mDetectionInfo.prevImageRobot,mDetectionInfo.mRobotDetection);
 
     input.copyTo(mDetectionInfo.prevImageRobot);
     
@@ -236,34 +237,37 @@ void ThymioTracker::updateLandmarks(const cv::Mat& input,
 
     // Landmark detection and tracking
     static int counter = 100;   
-    ++counter;
-    
-    //check if all the landmarks are tracked
-    bool allTracked = true;
-    auto lmcDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
-    for(; lmcDetectionsIt != mDetectionInfo.landmarkDetections.cend(); ++lmcDetectionsIt)
+
+    if(!mDetectionInfo.prevImageLandm.empty())
     {
-        const cv::Mat& h = lmcDetectionsIt->getHomography();
-        if(h.empty()) 
-            allTracked = false;
-    }
+        ++counter;
+        
+        //check if all the landmarks are tracked
+        bool allTracked = true;
+        auto lmcDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
+        for(; lmcDetectionsIt != mDetectionInfo.landmarkDetections.cend(); ++lmcDetectionsIt)
+        {
+            const cv::Mat& h = lmcDetectionsIt->getHomography();
+            if(h.empty()) 
+                allTracked = false;
+        }
 
 
-    // Extract features only once every 20 frames and only if need to do any detection (ie all markers are not tracked)
-    std::vector<cv::KeyPoint> detectedKeypoints;
-    cv::Mat detectedDescriptors;
-    if(!allTracked && counter >= 20)
-    {
-        mFeatureExtractor->detectAndCompute(input, cv::noArray(),
-                                            detectedKeypoints, detectedDescriptors);
-        counter = 0;
+        // Extract features only once every 20 frames and only if need to do any detection (ie all markers are not tracked)
+        std::vector<cv::KeyPoint> detectedKeypoints;
+        cv::Mat detectedDescriptors;
+        if(!allTracked && counter >= 20)
+        {
+            mFeatureExtractor->detectAndCompute(input, cv::noArray(),
+                                                detectedKeypoints, detectedDescriptors);
+            counter = 0;
+        }
+        
+        auto landmarksIt = mLandmarks.cbegin();
+        auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
+        for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
+            landmarksIt->find(input, mDetectionInfo.prevImageLandm, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
     }
-    
-    auto landmarksIt = mLandmarks.cbegin();
-    auto lmDetectionsIt = mDetectionInfo.landmarkDetections.begin();
-    for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt)
-        landmarksIt->find(input, mDetectionInfo.prevImageLandm, mCalibration, detectedKeypoints, detectedDescriptors, *lmDetectionsIt);
-    
 
     input.copyTo(mDetectionInfo.prevImageLandm);
     
@@ -351,7 +355,9 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
     
     //mDetectionInfo.mRobotDetection.drawBlobs(output);
     
-     if(deviceOrientation)
+    //check compatibility of landmark pose and device orientation and plot device orientation
+     //if(deviceOrientation)
+     if(0)
      {
         //transform orientation matrix into opencv matrix style
         cv::Mat orientationCvStandard(3, 3, CV_32F);
@@ -361,15 +367,6 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
         for(int i=0;i<3;i++)orientationCvStandard.at<float>(1, i) = -deviceOrientation->at<float>(i, 0);
         for(int i=0;i<3;i++)orientationCvStandard.at<float>(2, i) = -deviceOrientation->at<float>(i, 2);
 
-        //matrix is different on Sony device ... search for what is corresponds to
-        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(0, i) = -deviceOrientation->at<float>(0, i);
-        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(1, i) = -deviceOrientation->at<float>(1, i);
-        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(2, i) = -deviceOrientation->at<float>(2, i);
-        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(0, i) = -deviceOrientation->at<float>(i,0);
-        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(1, i) = -deviceOrientation->at<float>(i,1);
-        //for(int i=0;i<3;i++)orientationCvStandard.at<float>(2, i) = -deviceOrientation->at<float>(i,2);
-
-         //drawAxes(*output, *deviceOrientation);
          drawAxes(*output, orientationCvStandard);
 
          //orientation is a 3x3 matrix with for each column the coordinates in the camera frame of the x,y and z axes
@@ -379,8 +376,6 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
          //this pose is applied to a world coordinate to transform it into camera coordinate
          //so if apply vector [0 0 1] to its rotation, then should get z vector expressed in camera frame
          cv::Vec3d z_w(0.,0.,1.);
-         //cv::Vec3d z_cl = poseLm0.rotation() * z_w;
-         //cv::Vec3d z_co = *deviceOrientation * z_w;
          cv::Vec3d z_cl(poseLm0.rotation()(0,2),poseLm0.rotation()(1,2),poseLm0.rotation()(2,2));
          cv::Vec3d z_co(orientationCvStandard.at<float>(0, 2),orientationCvStandard.at<float>(1, 2),orientationCvStandard.at<float>(2, 2));
 

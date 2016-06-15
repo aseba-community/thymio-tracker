@@ -32,7 +32,7 @@ public:
     void findFromBlobGroupsAndGH(const cv::Mat& image,
                                  RobotDetection& detection) const;
 
-    void findCorrespondencesWithTracking(const cv::Mat& image,
+    /*void findCorrespondencesWithTracking(const cv::Mat& image,
                                 const cv::Mat& prevImage,
                                 const RobotDetection& prevDetection,
                                 std::vector<cv::Point2f>& scene_points,
@@ -41,7 +41,7 @@ public:
     void findCorrespondencesWithActiveSearch(const cv::Mat& image,
                                 const RobotDetection& prevDetection,
                                 std::vector<cv::Point2f>& scenePoints,
-                                std::vector<int>& correspondences) const;
+                                std::vector<int>& correspondences) const;*/
 
     
     //find homography from top view to current image
@@ -67,9 +67,9 @@ public:
         : robotFound(false)
         {}
     
-    const cv::Mat& getHomography() const {return mHomography;}
+    //const cv::Mat& getHomography() const {return mHomography;}
     const cv::Affine3d& getPose() const {return mPose;}
-    const std::map<int, cv::Point2f>& getCorrespondences() const {return mCorrespondences;}
+    //const std::map<int, cv::Point2f>& getCorrespondences() const {return mCorrespondences;}
     const bool& isFound() const {return robotFound;}
 
     void clearBlobs();
@@ -78,7 +78,7 @@ public:
 protected:
     //output info
     bool robotFound;
-    cv::Mat mHomography;
+    //cv::Mat mHomography;
     cv::Affine3d mPose;
     
     //temporal detection variables
@@ -90,7 +90,7 @@ protected:
     std::vector<DetectionGH> matches;
 
     //temporary tracking variables
-    std::map<int, cv::Point2f> mCorrespondences;
+    //std::map<int, cv::Point2f> mCorrespondences;
 };
 
 }

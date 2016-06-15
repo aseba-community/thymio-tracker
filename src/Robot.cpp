@@ -24,7 +24,7 @@ void Robot::init(IntrinsicCalibration *_mCalibration_ptr,
     mGH.loadFromFileStorage(geomHashingStorage);
     mGH.setCalibration(mCalibration_ptr);
 
-    mModel.loadTrackingModel(robotModelStorage);
+    mModel.readSurfaceLearned(robotModelStorage);
 }
 
 
@@ -39,6 +39,7 @@ void Robot::find(const cv::Mat& input,
     if(!mDetectionInfo.isFound())
     {
         this->findFromBlobGroupsAndGH(input,mDetectionInfo);
+        //mDetectionInfo.robotFound = false;
 
         //if robot has been found init tracks
         if(mDetectionInfo.robotFound)
@@ -48,24 +49,26 @@ void Robot::find(const cv::Mat& input,
 
             //have blob pos listed in mRobot
             //project model 3D points to get current keypoint position
-            std::vector<cv::Point2f> vprojVertices;
-            projectPoints(mModel.mVertices, mDetectionInfo.mPose.rvec(), mDetectionInfo.mPose.translation(), mCalibration.cameraMatrix, mCalibration.distCoeffs, vprojVertices);
+            //std::vector<cv::Point2f> vprojVertices;
+            //projectPoints(mModel.mVertices, mDetectionInfo.mPose.rvec(), mDetectionInfo.mPose.translation(), mCalibration.cameraMatrix, mCalibration.distCoeffs, vprojVertices);
     
             //add to tracking correspondences
-            mDetectionInfo.mCorrespondences.clear();
-            for(unsigned int i=0;i<vprojVertices.size();i++)
-                mDetectionInfo.mCorrespondences[i]=vprojVertices[i];
+            //mDetectionInfo.mCorrespondences.clear();
+            //for(unsigned int i=0;i<vprojVertices.size();i++)
+            //    mDetectionInfo.mCorrespondences[i]=vprojVertices[i];
 
             //find homography
-            mDetectionInfo.mHomography = cv::findHomography(mModel.mVerticesTopPos, vprojVertices);
+            //mDetectionInfo.mHomography = cv::findHomography(mModel.mVerticesTopPos, vprojVertices);
 
         }
     }
     else
     {
         cv::Affine3d newPose;
-        mModel.track(input, prevImage, mCalibration, mDetectionInfo.mPose, newPose);
-        mDetectionInfo.mPose = newPose;
+        mDetectionInfo.robotFound = mModel.track(input, prevImage, mCalibration, mDetectionInfo.mPose, newPose);
+        
+        if(mDetectionInfo.robotFound)
+            mDetectionInfo.mPose = newPose;
     }
     /*else
     {
@@ -184,7 +187,7 @@ void Robot::findFromBlobGroupsAndGH(const cv::Mat& image,
 }
 
 
-void Robot::findCorrespondencesWithTracking(const cv::Mat& image,
+/*void Robot::findCorrespondencesWithTracking(const cv::Mat& image,
                                 const cv::Mat& prevImage,
                                 const RobotDetection& prevDetection,
                                 std::vector<cv::Point2f>& scenePoints,
@@ -210,24 +213,6 @@ void Robot::findCorrespondencesWithTracking(const cv::Mat& image,
                             0.001);
 
     // Keep only found keypoints in mCorrespondences
-
-    /*auto statusIt = status.cbegin();
-    auto nextPointsIt = nextPoints.cbegin();
-    auto correspIt = prevDetection.mCorrespondences.cbegin();
-
-    auto prevPointsIt = prevPoints.cbegin();//for printing only
-    for(; statusIt != status.cend(); ++statusIt, ++nextPointsIt, ++correspIt, ++prevPointsIt)
-    {
-        if(*statusIt)
-        {
-            scenePoints.push_back(*nextPointsIt);
-            correspondences.push_back(correspIt->first);
-
-            //plot
-            //line(image, *prevPointsIt, *nextPointsIt, cv::Scalar(0,255,255), 1);
-
-        }
-    }*/
 
         //pick up random subset of tracked features and do sanity check based on NCC
     auto statusIt = status.cbegin();
@@ -308,11 +293,6 @@ void Robot::findCorrespondencesWithTracking(const cv::Mat& image,
                     scenePoints.push_back(*nextPointsIt);
                     correspondences.push_back(correspIt->first);                    
 
-                    /*char pointIdStr[100];
-                    sprintf(pointIdStr, "%f", resultNCC.at<float>(0,0));
-                    circle(image, sceneFramePoints[0], 4, cvScalar(0,120,250), -1, 8, 0);
-                    putText(image, pointIdStr, sceneFramePoints[0],cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cvScalar(120,120,250), 1, CV_AA);
-                    */
                 }
 
             }
@@ -424,7 +404,7 @@ void Robot::findCorrespondencesWithActiveSearch(const cv::Mat& image,
 
     }
 
-}
+}*/
 void RobotDetection::drawBlobs(cv::Mat* output) const
 {
     drawBlobPairs(*output, blobs, blobPairs);
