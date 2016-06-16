@@ -991,7 +991,7 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     if(objectPoints.size() < nbBasePnp)
         return false;
     
-    std::cout<<"RANSAC with nb matches = "<<objectPoints.size()<<std::endl;
+    //std::cout<<"RANSAC with nb matches = "<<objectPoints.size()<<std::endl;
 
     //Ransac : perform PnPwith all subsets of 4 matches, estimate pose and check corresponding score
     //keep best scoring pose
@@ -1077,7 +1077,7 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     }
     
     //std::cout<<"best cpt valid surf = "<<bestValidSurf<<std::endl;
-    std::cout<<"score tracking MI= "<<bestScore<<std::endl;
+    //std::cout<<"score tracking MI= "<<bestScore<<std::endl;
     if(bestScore>0.4)
     {
         //std::cout<<"score = "<<bestScore<<std::endl;

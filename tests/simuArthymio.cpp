@@ -12,16 +12,13 @@ int main(int argc, char** argv)
 {
     tt::ThymioTracker tracker("../data/");
 
-    //VideoSourceLive videoSource(EmbeddedCam);
-    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,1);
+    VideoSourceLive videoSource(EmbeddedCam);
+    //VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/landmark/Landmark2/image-%03d.png",EmbeddedCam,700);
     //VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/Interpolation/desktop-cv-linear/tracker%02d.png",EmbeddedCam,1);
     //VideoSourceSeq videoSource("/Users/amaurydame/Data/nexus/TrackSeq2/image-%03d.png",NexusCam,1);
-    //videoSource.resizeSource(0.5);
+    videoSource.resizeSource(0.5);
     
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );
-
-    for(int i=0;i<-1;i++)
-        std::cout<<"test"<<std::endl;
 
     while(1)
     {

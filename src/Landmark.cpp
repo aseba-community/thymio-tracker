@@ -49,7 +49,19 @@ Landmark::Landmark(const cv::Mat& image,
     , mRealSize(realSize)
     , mMatcher(cv::NORM_HAMMING)
 {
-    cv::buildOpticalFlowPyramid(image, mPyramid, cv::Size(21, 21), 0);
+    //create iamge pyramid for active search
+    //cv::buildOpticalFlowPyramid(image, mPyramid, cv::Size(21, 21), 0);
+    //compute number of levels
+    int minDim = (mImage.size().height<mImage.size().width)?mImage.size().height:mImage.size().width;
+    int nbLevels = 0;
+    do{minDim = minDim/2;nbLevels++;}while(minDim>40);
+
+    //fill pyramid
+    mPyramid.resize(nbLevels);
+    image.copyTo(mPyramid[0]);
+    for(int l=1;l<nbLevels;l++)
+        pyrDown( mPyramid[l-1], mPyramid[l], cv::Size( mPyramid[l-1].cols/2, mPyramid[l-1].rows/2 ) );
+
     
     std::transform(mKeypoints.begin(), mKeypoints.end(), mKeypointPos.begin(),
         [](const cv::KeyPoint& kp){return kp.pt;});
@@ -205,6 +217,7 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
                                 std::vector<cv::Point2f>& scenePoints,
                                 std::vector<int>& correspondences) const
 {
+
     //project all the keypoints using previous homography, 
     //fill patches 9x9 patches using template warped over current image
     //search for the patches in current image and 16x16 window
@@ -238,13 +251,28 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
 
         //find affine transformation from template to scene frame
         cv::Mat mAffine = cv::getAffineTransform(templateFramePoints,sceneFramePoints);
+
         //need to map to patch not current frame
         mAffine.at<double>(0,2) += half_patch_size - sceneFramePoints[0].x;
         mAffine.at<double>(1,2) += half_patch_size - sceneFramePoints[0].y;
 
         //fill patch using template info
+        //cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mImage.type() );
+        //cv::warpAffine( mImage, patchCurr, mAffine, patchCurr.size() );
+
+        //check determinant of affine transformation to know which model resolution to use
+        float detTransfo = cv::determinant(mAffine(cv::Rect(0,0,2,2)));
+        //compute corresponding pyramid level
+        int levPyr = log(1./detTransfo)/log(2);
+        if(levPyr<0)levPyr = 0;if(levPyr>mPyramid.size()-1)levPyr = mPyramid.size()-1;
+
+        //change the transformation to transform coordinates of the cooresponding model resolution
+        float rescalePyr = pow(2,levPyr);
+        mAffine(cv::Rect(0,0,2,2)) *= rescalePyr; 
+        //fill patch using template info
         cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mImage.type() );
-        cv::warpAffine( mImage, patchCurr, mAffine, patchCurr.size() );
+        cv::warpAffine( mPyramid[levPyr], patchCurr, mAffine, patchCurr.size() );
+            
 
         //search for it in current image
         //cv::Rect myROI(sceneFramePoints[0].x-half_patch_size-half_window_size,sceneFramePoints[0].y-half_patch_size-half_window_size,
@@ -363,6 +391,7 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
         {
             int kpIndex = correspIt->first;
             cv::Point2f p = mKeypointPos[kpIndex];
+            //approximate the homography with an affine transformation
             //for each keypoint in template, define reference points to warp using homography
             //and get corresponding affine transformation
             std::vector<cv::Point2f> templateFramePoints;
@@ -381,9 +410,22 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
             mAffine.at<double>(1,2) += half_patch_size - sceneFramePoints[0].y;
 
             //fill patch using template info
-            cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mImage.type() );
-            cv::warpAffine( mImage, patchCurr, mAffine, patchCurr.size() );
+            //cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mImage.type() );
+            //cv::warpAffine( mImage, patchCurr, mAffine, patchCurr.size() );
 
+            //check determinant of affine transformation to know which model resolution to use
+            float detTransfo = cv::determinant(mAffine(cv::Rect(0,0,2,2)));
+            //compute corresponding pyramid level
+            int levPyr = log(1./detTransfo)/log(2);
+            if(levPyr<0)levPyr = 0;if(levPyr>mPyramid.size()-1)levPyr = mPyramid.size()-1;
+
+            //change the transformation to transform coordinates of the cooresponding model resolution
+            float rescalePyr = pow(2,levPyr);
+            mAffine(cv::Rect(0,0,2,2)) *= rescalePyr; 
+            //fill patch using template info
+            cv::Mat patchCurr = cv::Mat::zeros( patch_size, patch_size, mImage.type() );
+            cv::warpAffine( mPyramid[levPyr], patchCurr, mAffine, patchCurr.size() );
+            
             //and now just need to compare it with patch from current image centered on track
             int margin = half_patch_size;
             if(sceneFramePoints[0].x < -margin || sceneFramePoints[0].y < -margin 
