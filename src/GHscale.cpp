@@ -509,12 +509,10 @@ void GHscale::getModelPointsFromImage(const vector<KeyPoint> &blobs, std::vector
             }
         
         //find second best id to compute discriminative power
-        int idPointSecondBest=-1;
         float nbVotesForSecondBest=0;
         for(int id=0;id<nbIds;id++)
             if(id!=idPointEstim && votesId[id]>nbVotesForSecondBest)
             {
-                idPointSecondBest=id;
                 nbVotesForSecondBest=votesId[id];
             }
         delete[] votesId;

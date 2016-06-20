@@ -263,8 +263,7 @@ void Landmark::findCorrespondencesWithActiveSearch(const cv::Mat& image,
         //check determinant of affine transformation to know which model resolution to use
         float detTransfo = cv::determinant(mAffine(cv::Rect(0,0,2,2)));
         //compute corresponding pyramid level
-        int levPyr = log(1./detTransfo)/log(2);
-        if(levPyr<0)levPyr = 0;if(levPyr>mPyramid.size()-1)levPyr = mPyramid.size()-1;
+        unsigned int levPyr = std::min(size_t(std::max(int(log(1./detTransfo)/log(2)), 0)), mPyramid.size()-1);
 
         //change the transformation to transform coordinates of the cooresponding model resolution
         float rescalePyr = pow(2,levPyr);
@@ -416,8 +415,7 @@ void Landmark::findCorrespondencesWithTracking(const cv::Mat& image,
             //check determinant of affine transformation to know which model resolution to use
             float detTransfo = cv::determinant(mAffine(cv::Rect(0,0,2,2)));
             //compute corresponding pyramid level
-            int levPyr = log(1./detTransfo)/log(2);
-            if(levPyr<0)levPyr = 0;if(levPyr>mPyramid.size()-1)levPyr = mPyramid.size()-1;
+            unsigned int levPyr = std::min(size_t(std::max(int(log(1./detTransfo)/log(2)), 0)), mPyramid.size()-1);
 
             //change the transformation to transform coordinates of the cooresponding model resolution
             float rescalePyr = pow(2,levPyr);
