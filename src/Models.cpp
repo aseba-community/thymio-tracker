@@ -727,13 +727,13 @@ void Object3D::writeSurfaceLearned()
         imageVector.push_back(mPlanarSurfaces[v].mImage);
 
 
-    cv::FileStorage store("modelSurfaces.xml.gz", cv::FileStorage::WRITE);
+    cv::FileStorage store("modelSurfaces.xml", cv::FileStorage::WRITE);
     cv::write(store,"imageVector",imageVector);
     store.release();
 
     //read debug
     /*std::vector<cv::Mat> imageVectorr;
-    cv::FileStorage storer("modelSurfaces.xml.gz", cv::FileStorage::READ);
+    cv::FileStorage storer("modelSurfaces.xml", cv::FileStorage::READ);
     cv::FileNode n1 = storer["imageVector"];
     cv::read(n1,imageVectorr);
     storer.release();
@@ -750,7 +750,7 @@ void Object3D::writeSurfaceLearned()
 void Object3D::readSurfaceLearned(cv::FileStorage& robotModelStorage)
 {
     std::vector<cv::Mat> imageVectorr;
-    //cv::FileStorage robotModelStorage("modelSurfaces.xml.gz", cv::FileStorage::READ);
+    //cv::FileStorage robotModelStorage("modelSurfaces.xml", cv::FileStorage::READ);
     cv::FileNode n1 = robotModelStorage["imageVector"];
     cv::read(n1,imageVectorr);
     robotModelStorage.release();

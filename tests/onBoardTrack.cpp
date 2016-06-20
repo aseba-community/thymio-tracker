@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     cv::Mat outputImage;
     int cpt = firstFrame;
 
-    cv::FileStorage fs("../data/modelSurfaces.xml.gz", cv::FileStorage::READ);
+    cv::FileStorage fs("../data/modelSurfaces.xml", cv::FileStorage::READ);
     mRobot.readSurfaceLearned(fs);
     bool isRobotposeInit = false;
     
