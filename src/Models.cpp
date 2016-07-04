@@ -260,7 +260,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
 
     //limit the number of trials:
     int cpt_trials = 0;
-    int nb_trials_max = 30;
+    int nb_trials_max = 20;
    
     while(cpt_trials<nb_trials_max)
     {
@@ -291,7 +291,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
         {
             
             //check how many points agree
-            float threshold_proj=2.;//set error max to 5 pixels
+            float threshold_proj=2.;//set error max to 2 pixels
             //float threshold_proj=40.;//set error max to 5 pixels
             unsigned int nbPointAgree=0;
             vector<Point2f> vProjPoints;//project all points
@@ -304,7 +304,7 @@ bool Object3D::getPose(const IntrinsicCalibration &_mCalib, vector<DetectionGH> 
             //might be better to instead do a tuckey optimisation with all points, as their might be points rejected with
             //first subset which after some refining would be back in...
             //can also run several iterations of the previous selection and following optimisation
-            if(nbPointAgree>mMatches.size()/2)
+            if(nbPointAgree>mMatches.size()*0.75)
             //if(nbPointAgree>mMatches.size()/6)
             {
                 vector<Point3f> newSubsetVertices;
@@ -529,9 +529,7 @@ void ThymioBlobModel::setSurfacesModel()
     //remark: order matters as we use simetry afeterward... might be better to change it to a model for one side only
 
     //wheels
-    //mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,0,0), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.03));
-    //mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.055,0,0), cv::Vec3d(0.,-1.,0.), cv::Vec3d(0.,0.,1.), 0.03));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055, 0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
+    /*mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055, 0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
     mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,-0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
     //top blobs
     mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
@@ -558,6 +556,82 @@ void ThymioBlobModel::setSurfacesModel()
     mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.04, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
     mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.055,-0.015,0.005), cv::Vec3d(0.,-1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
     mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.055, 0.015,0.005), cv::Vec3d(0.,-1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015)); 
+*/
+    mPlanarSurfaces.reserve(15);
+    //wheels
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055, 0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,-0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
+    //top blobs
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04,  0.033,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    //back rectangle
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.03, -0.0295,0.012), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,0.,1.), 0.01));
+    
+    //front rectanglular bits
+    int nbRoundCut = 2;
+    //more elliptic than perfect circle => define two radii
+    float radiusFront = 0.08;
+    float radiusSides = 0.078;
+    for(int i=-nbRoundCut;i<=0;i++)
+    {
+        float angle = - i * M_PI / (4.7 * nbRoundCut);
+        float radius = radiusSides * abs(i) / nbRoundCut + radiusFront * (nbRoundCut - abs(i)) / nbRoundCut;
+        Point3f center(radius * sin(angle),radius * cos(angle),0.013);    
+        mPlanarSurfaces.push_back(planarSurface(center,cv::Vec3d(-cos(angle),sin(angle),0.),cv::Vec3d(0,0,1.),0.01,0.005));    
+    }
+
+    //create symetrical surfaces
+    for(int i=0;i<7;i++)
+    {
+        planarSurface newSurf;
+        newSurf.setSymetry(mPlanarSurfaces[i]);
+        mPlanarSurfaces.push_back(newSurf);
+    }
+
+    /*mPlanarSurfaces.reserve(27);
+    //wheels
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055, 0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,-0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,0.0,0.015), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.015,0.01));
+
+    //crosses on side
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,0.033,0.01), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.015,0.015));
+
+
+    //top blobs
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.035, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04, -0.01,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04,  0.033,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.035,  0.033,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04,  0.028,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
+    
+    //back rectangle
+    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.03, -0.0295,0.012), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,0.,1.), 0.01));
+    
+    //front rectanglular bits
+    int nbRoundCut = 2;
+    //more elliptic than perfect circle => define two radii
+    float radiusFront = 0.08;
+    float radiusSides = 0.078;
+    for(int i=-nbRoundCut;i<=0;i++)
+    {
+        float angle = - i * M_PI / (4.7 * nbRoundCut);
+        float radius = radiusSides * abs(i) / nbRoundCut + radiusFront * (nbRoundCut - abs(i)) / nbRoundCut;
+        Point3f center(radius * sin(angle),radius * cos(angle),0.013);    
+        mPlanarSurfaces.push_back(planarSurface(center,cv::Vec3d(-cos(angle),sin(angle),0.),cv::Vec3d(0,0,1.),0.01,0.005));    
+    }
+
+    //create symetrical surfaces (don't forget last surface is at center => don't want symetrical copy)
+    for(int i=0;i<13;i++)
+    {
+        planarSurface newSurf;
+        newSurf.setSymetry(mPlanarSurfaces[i]);
+        mPlanarSurfaces.push_back(newSurf);
+    }
+    */
+
 
 }
     
@@ -608,10 +682,12 @@ void ThymioBlobModel::setSurfacesModel()
 
 void Object3D::allocateSurfaceLearning()
 {
+    //allocate, but not the symetrical copies ...
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
-        mPlanarSurfaces[v].allocateLearning();
-
+        if(!mPlanarSurfaces[v].isSymetricCopy)
+            mPlanarSurfaces[v].allocateLearning();
 }
+
 void Object3D::learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& poseCam)
 {
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
@@ -622,7 +698,8 @@ void Object3D::learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib
         Point3f ptLine = poseCam * pose * surf.center;
         Vec3d ray = Vec3d(ptLine.x,ptLine.y,ptLine.z);        ray = ray / norm(ray);
         Vec3d normal_cam = poseCam.rotation() * pose.rotation() * surf.normal;
-        float viewScore = -normal_cam.dot(ray);
+        //float viewScore = -normal_cam.dot(ray);
+        float viewScore = 1.-2.*acos(-normal_cam.dot(ray))/3.141592;
 
         if(viewScore > 0)
         {
@@ -641,23 +718,24 @@ void Object3D::learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib
 
             //get homography
             vector<Point2f> modelPoints;
-            modelPoints.push_back(Point2f(surf.mImage.size().width,0));
-            modelPoints.push_back(Point2f(surf.mImage.size().width,surf.mImage.size().height));
-            modelPoints.push_back(Point2f(0,surf.mImage.size().height));
+            modelPoints.push_back(Point2f(surf.mImagePtr->size().width,0));
+            modelPoints.push_back(Point2f(surf.mImagePtr->size().width,surf.mImagePtr->size().height));
+            modelPoints.push_back(Point2f(0,surf.mImagePtr->size().height));
             modelPoints.push_back(Point2f(0,0));
 
             cv::Mat homography = cv::findHomography(vprojVertices, modelPoints);
 
             //warp current image in it
-            cv::Mat patchCurr( surf.mImage.size().height, surf.mImage.size().width, img.type() );
+            cv::Mat patchCurr( surf.mImagePtr->size().height, surf.mImagePtr->size().width, img.type() );
             cv::warpPerspective( img, patchCurr, homography, patchCurr.size() );
 
             //accumulate
-            for(int i=0;i<surf.mImage.size().height;i++)
-                for(int j=0;j<surf.mImage.size().width;j++)
-                    surf.mImage.at<float>(i,j) += viewScore* (float)patchCurr.at<unsigned char>(i,j);
+            for(int i=0;i<surf.mImagePtr->size().height;i++)
+                for(int j=0;j<surf.mImagePtr->size().width;j++)
+                    //surf.mImage.at<float>(i,j) += viewScore* (float)patchCurr.at<unsigned char>(i,j);
+                    surf.mImagePtr->at<float>(i,j) += viewScore* (float)patchCurr.at<unsigned char>(i,j);
 
-            surf.weight += viewScore;
+            *surf.weight += viewScore;
 
             //debug
             /*if(surf.weight > 0.1)
@@ -685,46 +763,28 @@ void Object3D::learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib
 
 void Object3D::writeSurfaceLearned()
 {
-    //surfaces should be symetric (6 first with 6 last and 6th should be symetric with itself)
-    std::vector<cv::Mat> flippedImages;flippedImages.resize(mPlanarSurfaces.size());
-    std::vector<float> weightBuff;weightBuff.resize(mPlanarSurfaces.size());
-
-    for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
-    {
-        planarSurface &surf = mPlanarSurfaces[v];
-        cv::flip(surf.mImage,flippedImages[v],1);
-        weightBuff[v] = surf.weight;
-    }
-
-    for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
-    {
-        planarSurface &surf = mPlanarSurfaces[v];
-
-        surf.weight += weightBuff[mPlanarSurfaces.size()-1-v];
-
-        for(int i=0;i<surf.mImage.size().height;i++)
-            for(int j=0;j<surf.mImage.size().width;j++)
-                surf.mImage.at<float>(i,j) += flippedImages[mPlanarSurfaces.size()-1-v].at<float>(i,j);        
-    }
-
 
     //convert mImage which is in float to unsigned char as it will be used during tracking
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
     {
         planarSurface &surf = mPlanarSurfaces[v];
-        cv::Mat buff( surf.mImage.size().height, surf.mImage.size().width, CV_8UC1);
-        for(int i=0;i<surf.mImage.size().height;i++)
-            for(int j=0;j<surf.mImage.size().width;j++)
-                buff.at<unsigned char>(i,j) = surf.mImage.at<float>(i,j)/surf.weight;
+        if(!surf.isSymetricCopy)
+        {
+            cv::Mat buff( surf.mImage.size().height, surf.mImage.size().width, CV_8UC1);
+            for(int i=0;i<surf.mImage.size().height;i++)
+                for(int j=0;j<surf.mImage.size().width;j++)
+                    buff.at<unsigned char>(i,j) = surf.mImage.at<float>(i,j)/(*surf.weight);
 
-        surf.mImage.release();
-        buff.copyTo(surf.mImage);
+            surf.mImage.release();
+            buff.copyTo(surf.mImage);
+        }
     }
 
     //save to xml file
     std::vector<cv::Mat> imageVector;
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
-        imageVector.push_back(mPlanarSurfaces[v].mImage);
+        if(!mPlanarSurfaces[v].isSymetricCopy)
+            imageVector.push_back(mPlanarSurfaces[v].mImage);
 
 
     cv::FileStorage store("modelSurfaces.xml.gz", cv::FileStorage::WRITE);
@@ -756,6 +816,7 @@ void Object3D::readSurfaceLearned(cv::FileStorage& robotModelStorage)
     robotModelStorage.release();
 
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
+        if(!mPlanarSurfaces[v].isSymetricCopy)
     {
         //cv::Mat detected_edges;
         //cv::blur( imageVectorr[v], detected_edges, Size(3,3) );
@@ -773,6 +834,18 @@ void Object3D::readSurfaceLearned(cv::FileStorage& robotModelStorage)
     
 }
 
+struct surfaceMatch {
+    cv::Point3f objectPoints;
+    cv::Point2f imagePoints;
+    float score;
+} ;
+
+    
+
+bool compareByScore(const surfaceMatch &a, const surfaceMatch &b)
+{
+    return a.score > b.score;
+}
 
 bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const
 {
@@ -801,9 +874,11 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
 
     //information to keep for PnP
     //std::vector<surfaceMatchInfo> mSearchInfo;
-    std::vector<cv::Point3f> objectPoints;
-    std::vector<cv::Point2f> imagePoints;
-    std::vector<float> score;
+    //std::vector<cv::Point3f> objectPoints;
+    //std::vector<cv::Point2f> imagePoints;
+    //std::vector<float> score;
+
+    std::vector<surfaceMatch> mSurfaceMatches;
 
     //std::cout<<"compute NCC scores"<<std::endl;
 
@@ -906,16 +981,16 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
 
                     //get homography from surface model to current image ROI
                     vector<Point2f> modelPoints;
-                    modelPoints.push_back(Point2f(surf.mImage.size().width,0));
-                    modelPoints.push_back(Point2f(surf.mImage.size().width,surf.mImage.size().height));
-                    modelPoints.push_back(Point2f(0,surf.mImage.size().height));
+                    modelPoints.push_back(Point2f(surf.mImagePtr->size().width,0));
+                    modelPoints.push_back(Point2f(surf.mImagePtr->size().width,surf.mImagePtr->size().height));
+                    modelPoints.push_back(Point2f(0,surf.mImagePtr->size().height));
                     modelPoints.push_back(Point2f(0,0));
-                    modelPoints.push_back(Point2f(surf.mImage.size().width/2,surf.mImage.size().height/2));
+                    modelPoints.push_back(Point2f(surf.mImagePtr->size().width/2,surf.mImagePtr->size().height/2));
 
                     cv::Mat homography = cv::findHomography(modelPoints,vprojVertices_bb);
 
                     cv::Mat patchCurr_drift(box.size(), CV_8UC1);
-                    cv::warpPerspective( surf.mImage, patchCurr_drift, homography, patchCurr_drift.size(),INTER_LINEAR, BORDER_REPLICATE);
+                    cv::warpPerspective( *surf.mImagePtr, patchCurr_drift, homography, patchCurr_drift.size(),INTER_LINEAR, BORDER_REPLICATE);
                     
                     //to make it simple, use box previously defined,
                     //box was centered on projection of vertex in previous image
@@ -970,9 +1045,15 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                                     0.8, cvScalar(250,250,250), 1, CV_AA);*/
 
 
-                        objectPoints.push_back(surf.center);
-                        imagePoints.push_back(maxLocF + Point2f(myROI.tl()) + vprojVertices_bbF[4]);
-                        score.push_back(viewScore*maxVal);
+                        //objectPoints.push_back(surf.center);
+                        //imagePoints.push_back(maxLocF + Point2f(myROI.tl()) + vprojVertices_bbF[4]);
+                        //score.push_back(viewScore*maxVal);
+
+                        surfaceMatch newMatch;
+                        newMatch.objectPoints = surf.center;
+                        newMatch.imagePoints = maxLocF + Point2f(myROI.tl()) + vprojVertices_bbF[4];
+                        newMatch.score = viewScore*maxVal;
+                        mSurfaceMatches.push_back(newMatch);
 
                     }
 
@@ -981,6 +1062,8 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         }
     }
 
+    std::sort(mSurfaceMatches.begin(), mSurfaceMatches.end(), compareByScore);
+
     /*cv::imwrite("output/curr.png",MDebugImg);
     cv::imwrite("output/warp.png",MDebugImgWarp);
     //cv::imwrite("output/masks.png",MDebugImgMask);
@@ -988,7 +1071,7 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     cv::imwrite("output/scorer.png",MDebugImgScorer);*/
 
     const unsigned int nbBasePnp=4;
-    if(objectPoints.size() < nbBasePnp)
+    if(mSurfaceMatches.size() < nbBasePnp)
         return false;
     
     //std::cout<<"RANSAC with nb matches = "<<objectPoints.size()<<std::endl;
@@ -1000,15 +1083,21 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     float bestScore=0;
     int bestValidSurf=0;
 
-    bool *inliers=new bool[objectPoints.size()];
+    bool *inliers=new bool[mSurfaceMatches.size()];
 
     //do a kind of ransac: try all different subset of nbBasePnp matches to compute pose 
     //and keep the pose which returns the most inliers
     unsigned int pointers[nbBasePnp];
     for(unsigned int i=0;i<nbBasePnp;i++)pointers[i]=i;//set first pointers as first elements of list        
 
-    while(1)
+    //limit the number of trials:
+    int cpt_trials = 0;
+    int nb_trials_max = 30;
+   
+    while(cpt_trials<nb_trials_max)
     {
+        cpt_trials ++;
+
         Vec3d rvec=prevPoseCam.rvec();
         Vec3d tvec=prevPoseCam.translation();
         
@@ -1017,8 +1106,8 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         vector<Point2f> subsetProjections;
         for(unsigned int i=0;i<nbBasePnp;i++)
         {
-            subsetVertices.push_back(objectPoints[pointers[i]]);
-            subsetProjections.push_back(imagePoints[pointers[i]]);
+            subsetVertices.push_back(mSurfaceMatches[pointers[i]].objectPoints);
+            subsetProjections.push_back(mSurfaceMatches[pointers[i]].imagePoints);
         }
         
         //compute pose with subset
@@ -1026,8 +1115,8 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
 
         //project all the surface centers onto image using new pose
         vector<Point3f> surfCenters;
-        for(unsigned int v=0;v<objectPoints.size();v++)
-            surfCenters.push_back(objectPoints[v] );
+        for(unsigned int v=0;v<mSurfaceMatches.size();v++)
+            surfCenters.push_back(mSurfaceMatches[v].objectPoints);
 
         vector<Point2f> surfCenterProj;
         projectPoints(surfCenters, rvec, tvec, _mCalib.cameraMatrix, _mCalib.distCoeffs, surfCenterProj);
@@ -1035,13 +1124,13 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         //check how many surfaces agree with the pose and get cumulative score
         int nbValidSurf = 0;
         float scoreAccu = 0;
-        bool *inliers_temp=new bool[objectPoints.size()];
-        for(unsigned int v=0;v<imagePoints.size();v++)
+        bool *inliers_temp=new bool[mSurfaceMatches.size()];
+        for(unsigned int v=0;v<mSurfaceMatches.size();v++)
         {
-            if(cv::norm(surfCenterProj[v] - Point2f(imagePoints[v]))<5.)
+            if(cv::norm(surfCenterProj[v] - Point2f(mSurfaceMatches[v].imagePoints))<5.)
             {
                 nbValidSurf++;
-                scoreAccu += score[v];
+                scoreAccu += mSurfaceMatches[v].score;
                 inliers_temp[v] = true;
             }
             else
@@ -1058,13 +1147,13 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
             bestPose = cv::Affine3d(rvec,tvec);
 
             //save inleirs
-            for(unsigned int v=0;v<imagePoints.size();v++)
+            for(unsigned int v=0;v<mSurfaceMatches.size();v++)
                 inliers[v] = inliers_temp[v];
         }
         delete[] inliers_temp;
 
         //if not need to go to next subset:
-        bool nextSetAvailable = getNextSetPointers(&pointers[0],imagePoints.size(),nbBasePnp);
+        bool nextSetAvailable = getNextSetPointers(&pointers[0],mSurfaceMatches.size(),nbBasePnp);
 
         //std::cout<<"nb matches = "<<imagePoints.size()<<std::endl;
 
@@ -1077,7 +1166,7 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     }
     
     //std::cout<<"best cpt valid surf = "<<bestValidSurf<<std::endl;
-    //std::cout<<"score tracking MI= "<<bestScore<<std::endl;
+    std::cout<<"score tracking MI= "<<bestScore<<std::endl;
     if(bestScore>0.4)
     {
         //std::cout<<"score = "<<bestScore<<std::endl;
@@ -1095,13 +1184,13 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         vector<Point3f> subsetVertices;
         vector<Point2f> subsetProjections;
         vector<float> scores;
-        for(unsigned int i=0;i<objectPoints.size();i++)
+        for(unsigned int i=0;i<mSurfaceMatches.size();i++)
         {
             if(inliers[i])
             {
-                subsetVertices.push_back(objectPoints[i]);
-                subsetProjections.push_back(imagePoints[i]);
-                scores.push_back(score[i]);
+                subsetVertices.push_back(mSurfaceMatches[i].objectPoints);
+                subsetProjections.push_back(mSurfaceMatches[i].imagePoints);
+                scores.push_back(mSurfaceMatches[i].score);
             }
         }
         delete[] inliers;

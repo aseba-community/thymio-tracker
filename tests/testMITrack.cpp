@@ -13,11 +13,26 @@ namespace tt = thymio_tracker;
 //work offline on recorded sequence
 int main(int argc, char** argv)
 {
-    int firstFrame = 1000;
+    //test
+    cv::Mat mImage;
+    cv::Mat *mImagePtr = &mImage;
+
+    mImage.create(3,3, CV_32FC1);
+    mImage.setTo(0.);
+    std::cout<<*mImagePtr<<std::endl;
+
+
+    mImage.setTo(1.);
+    std::cout<<*mImagePtr<<std::endl;
+
+
+
+
+    int firstFrame = 10;
     tt::ThymioBlobModel mRobot;
 
     //get sequence
-    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png",NexusCam,firstFrame+1);
+    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png",NexusCam,firstFrame+2);
     videoSource.resizeSource(0.5);
 
     //get pose computed in aruco
@@ -40,6 +55,7 @@ int main(int argc, char** argv)
     int cpt = firstFrame;
 
     cv::FileStorage fs("../data/modelSurfaces.xml.gz", cv::FileStorage::READ);
+    std::cout<<"readSurfaceLearned"<<std::endl;
     mRobot.readSurfaceLearned(fs);
     bool isRobotposeInit = false;
     

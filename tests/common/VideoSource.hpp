@@ -20,7 +20,9 @@ class VideoSource
 {
 public:
 	//constructor with calibration
-	VideoSource(CameraType _camType=UndefinedCam);
+    VideoSource(CameraType _camType=UndefinedCam);
+    VideoSource(const std::string& calibrationFile);
+    void init(const std::string& calibrationFile);
 	
 	//acquire a new frame
 	virtual void grabNewFrame()=0;

@@ -19,14 +19,9 @@ add_library(common SHARED ${common_SOURCES})
 target_link_libraries(common ${OpenCV_LIBRARIES} thymiotracker)
 
 set(exec_SOURCES
-        onBoardTrack.cpp
-        onBoard.cpp
-        calibrate.cpp
-        trainGH.cpp
+        testMITrack.cpp
         trackerGH.cpp
-        simuArthymio.cpp
-        blobStat.cpp
-        landmarks.cpp)
+        simuArthymio.cpp)
 
 foreach(source ${exec_SOURCES})
   # Compute the name of the binary to create

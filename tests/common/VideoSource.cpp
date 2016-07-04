@@ -9,6 +9,27 @@ using namespace cv;
 
 VideoSource::VideoSource(CameraType _camType)
 {
+    switch (_camType)
+    {
+        case NexusCam:
+            init("../data/calibration/nexus_camera_calib.xml");
+            break;
+        case EmbeddedCam:
+            init("../data/calibration/embedded_camera_calib.xml");
+            break;
+        default:
+            init("../data/calibration/default_camera_calib.xml");
+            break;
+    }
+}
+
+VideoSource::VideoSource(const std::string& calibrationFile)
+{
+    init(calibrationFile);
+}
+
+void VideoSource::init(const std::string& calibrationFile)
+{
     resized=false;
     
     char cwd[200];
@@ -16,18 +37,8 @@ VideoSource::VideoSource(CameraType _camType)
     std::cerr << cwd << std::endl;
     
     FileStorage fs;
-    switch (_camType)
-    {
-        case NexusCam:
-            fs.open("../data/calibration/nexus_camera_calib.xml", FileStorage::READ);
-            break;
-        case EmbeddedCam:
-            fs.open("../data/calibration/embedded_camera_calib.xml", FileStorage::READ);
-            break;
-        default:
-            fs.open("../data/calibration/default_camera_calib.xml", FileStorage::READ);
-            break;
-    }
+    fs.open(calibrationFile, FileStorage::READ);
+
     if(!fs.isOpened())
         throw std::runtime_error("Calibration file not found!");
     

@@ -80,20 +80,86 @@ struct planarSurface {
     float radius1;
     float radius2;
 
+    int test;
+    cv::Mat *mImagePtr;
     cv::Mat mImage;
     //information to learn appearance of face
-    float weight; //defined by accumulation of weights of each appearances accumulated in mImageWrite (depending on angle view)
+    float *weight; //defined by accumulation of weights of each appearances accumulated in mImageWrite (depending on angle view)
 
+    //is the surface the symetry of an other one
+    bool isSymetricCopy;//if true, then during learning instead of filling mImage, fill the one from symetric surface
+
+    planarSurface(){isSymetricCopy=true;test = 0;mImagePtr = &mImage;};
     planarSurface(const cv::Point3f _center, const cv::Vec3d _b1, const cv::Vec3d _b2, const float _radius)
-        : center(_center), b1(_b1), b2(_b2), radius1(_radius), radius2(_radius)    {normal = b1.cross(b2); weight=0;}
+        : center(_center), b1(_b1), b2(_b2), radius1(_radius), radius2(_radius)    
+        {normal = b1.cross(b2); weight = new float;*weight=0;isSymetricCopy=false;mImagePtr = &mImage;}
     planarSurface(const cv::Point3f _center, const cv::Vec3d _b1, const cv::Vec3d _b2, const float _radius1, const float _radius2)
-        : center(_center), b1(_b1), b2(_b2), radius1(_radius1), radius2(_radius2)    {normal = b1.cross(b2); weight=0; }
+        : center(_center), b1(_b1), b2(_b2), radius1(_radius1), radius2(_radius2)    
+        {normal = b1.cross(b2); weight = new float;*weight=0;isSymetricCopy=false;mImagePtr = &mImage; }
+    
+    //constructor for symetrical surfaces
+    void setSymetry(const planarSurface &_s)
+    {
+        //symetry is considered with respect to yOz axis
+        isSymetricCopy = true;
+        center = _s.center; center.x = - center.x;
+        b1 = _s.b1; b1[0] = - b1[0];
+        b2 = _s.b2; b2[0] = - b2[0];
+        normal = _s.normal; normal[0] = - normal[0];
+
+        radius1 = _s.radius1;
+        radius2 = _s.radius2;
+
+        //mImage = _s.mImage;//basis is mirrored, so image is already mirrored
+        mImagePtr = _s.mImagePtr;
+
+        test=1;
+        weight = _s.weight;
+    }
+
+    //constructor par copy
+    planarSurface(const planarSurface &_s)
+    {
+        //symetry is considered with respect to yOz axis
+        center = _s.center;
+        b1 = _s.b1;
+        b2 = _s.b2;
+        normal = _s.normal;
+
+        radius1 = _s.radius1;
+        radius2 = _s.radius2;
+
+        isSymetricCopy = _s.isSymetricCopy;
+
+        if(isSymetricCopy)
+        {
+            mImagePtr = _s.mImagePtr;
+            weight = _s.weight;
+            test=1;
+        }
+        else
+        {
+            _s.mImage.copyTo(mImage);
+            mImagePtr = &mImage;
+            weight = new float;
+            *weight = *_s.weight;  
+            test = 0;          
+        }
+
+    }
+
 
     void allocateLearning()
     {
-        weight=0;
+        *weight=0;
         mImage.create((int)(1000.*radius2*surfacePpmm),(int)(1000.*radius1*surfacePpmm), CV_32FC1);
         mImage.setTo(0.);
+    }
+
+    ~planarSurface()
+    {
+        if(!isSymetricCopy)
+            delete weight;
     }
 } ;
 

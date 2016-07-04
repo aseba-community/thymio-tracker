@@ -1,7 +1,9 @@
+//This program project the blobs model onto several camera frames 
+//by default, project the model in top view and around, and from 
+//those projections, the Lookup Table for the geometric hashing 
+//is filled and stored
 
-//ModelViewer example: shows how to use Visualization3D
-//and project model on any image
-
+//ModelViewer example: 
 //to navigate use click, move and drop in 3D viewer to rotate around focal axis
 //press and hold SHIFT and click move and drop for forward/backward motion
 //press and hold ALT and click, move and drop mouse for translation along x and y
@@ -28,15 +30,9 @@ int main(int argc, const char * argv[])
     //create an sphere of camera watching object
     vector<tt::Camera3dModel> vCams;
     float radiusSphere=0.3;//radius sphere
-    //float distCamCam=0.25*radiusSphere;
-    //float minLatitude=M_PI/6.;
     float distCamCam=0.15*radiusSphere;
     float minLatitude=M_PI/12.;
-    
-    /*float radiusSphere=0.3;//radius sphere
-    float distCamCam=0.15*radiusSphere;
-    float minLatitude=M_PI/12.;*/
-    
+        
     //get latitude angle increment from desired distCamCam
     int l=0;
     float latitude=M_PI/2.-l*distCamCam/radiusSphere;
@@ -92,6 +88,10 @@ int main(int argc, const char * argv[])
     tt::resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
     moveWindow(window_name, 720, 0);
 
+//there are two versions of the geometric hashing: one using only the 2D coordinates
+//of the features to define the bin in a 2D lookup table, and an other which also uses
+//the size/scale of the blob to have 3D coordinates in a 3D LT.
+
 #define USE_SCALE
     
     //use created cameras to train GH to become robust to perspective
@@ -103,7 +103,6 @@ int main(int argc, const char * argv[])
     for(unsigned int p=0;p<vCams.size();p++)
     {
         Affine3d poseInv=vCams[p].pose.inv();
-        //projPoints[p]=mRobot.projectVertices(cameraMatrix, distCoeffs, poseInv);//give coord in px, not good anymore
         
         Affine3d poseComb=poseInv * mRobot.pose;
         for(unsigned int v=0;v<mRobot.mVertices.size();v++)
@@ -126,11 +125,9 @@ int main(int argc, const char * argv[])
     //give that to GH
 #ifndef USE_SCALE
     tt::GH mGH;//here will train with coodrinates in meters so calibration does not matter
-    //char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GH_Arth_Perspective.dat";
     char GHfilename[100]="../data/GH_Arth_Perspective.xml";
 #else
     tt::GHscale mGH;//here will train with coodrinates in meters so calibration does not matter
-    //char GHfilename[100]="/Users/amaurydame/Projects/BlobotTracker/files/GHscale_Arth_Perspective.dat";
     char GHfilename[100]="../data/GHscale_Arth_Perspective.xml";
 #endif
     
@@ -138,14 +135,15 @@ int main(int argc, const char * argv[])
     mGH.setModel(projPoints,vCams.size());
     {
         //save GH for later use
-        //std::ofstream geomHashingStream(GHfilename, std::ios::out | std::ios::binary);
-        //mGH.saveToStream(geomHashingStream);
         cv::FileStorage GHstorage(GHfilename, cv::FileStorage::WRITE);
         mGH.saveToFileStorage(GHstorage);
     }
     delete[] projPoints;
     
-    //loop to switch from one cam to the next
+    //loop to switch from one cam to the next, 
+    //for viewing purpose only: press any key except ESC, 
+    //to view the projection of the model in one of the cameras
+    
     int key=0;
     int currentCam=0;
     while(key!=27)//esc press

@@ -14,11 +14,13 @@ namespace tt = thymio_tracker;
 //work offline on recorded sequence
 int main(int argc, char** argv)
 {
-    int firstFrame = 0;
+    int firstFrame = 2;
     tt::ThymioBlobModel mRobot;
+    std::cout<<"allocate"<<std::endl;
+    mRobot.allocateSurfaceLearning();
 
     //get sequence
-    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png",NexusCam,firstFrame+1);
+    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png",NexusCam,firstFrame+2);
     videoSource.resizeSource(0.5);
 
     //get pose computed in aruco
@@ -27,6 +29,8 @@ int main(int argc, char** argv)
     std::vector<cv::Vec3d> tvecs;
 
     cv::FileStorage store("/Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard.bin", cv::FileStorage::READ);
+    //cv::FileStorage store("/Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard_offCentered.bin", cv::FileStorage::READ);
+    //cv::FileStorage store("/Users/amaurydame/Libs/aruco-1.3.0/build/utils/detections.bin", cv::FileStorage::READ);
     cv::FileNode n1 = store["founds"];
     cv::read(n1,founds);
     cv::FileNode n2 = store["rvecs"];
@@ -40,7 +44,6 @@ int main(int argc, char** argv)
     cv::Mat outputImage;
     int cpt = firstFrame;
 
-    mRobot.allocateSurfaceLearning();
     
     while(!videoSource.isOver())
     //while(cpt<10)
