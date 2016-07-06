@@ -109,6 +109,7 @@ public:
     void drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation=0) const;
 
     
+    inline const IntrinsicCalibration& getCalibration() const {return mCalibration;}
     inline const DetectionInfo& getDetectionInfo() const {return mDetectionInfo;}
     inline const CalibrationInfo& getCalibrationInfo() const {return mCalibrationInfo;}
     inline const std::vector<Landmark>& getLandmarks() const {return mLandmarks;}

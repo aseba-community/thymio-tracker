@@ -660,7 +660,6 @@ void Object3D::writeSurfaceLearned(const std::string& robotFilePath)
     cv::FileStorage store(robotFilePath, cv::FileStorage::WRITE);
     cv::write(store,"imageVector",imageVector);
     store.release();
-
 }
 
 void Object3D::readSurfaceLearned(cv::FileStorage& robotModelStorage)
