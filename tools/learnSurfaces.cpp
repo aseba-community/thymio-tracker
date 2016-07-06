@@ -6,7 +6,7 @@ Several 3D planar surfaces have been defined in ThymioBlobModel from Models.hpp,
 we learn their texture by backprojecting the images from the sequence into the surface and averaging them
 
 Default usage:
-learnSurfaces ../data/calibration/nexus_camera_calib.xml /Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png /Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard.bin modelSurfaces.xml.gz 2
+learnSurfaces ../data/calibration/nexus_camera_calib.xml /Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png /Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard.bin modelSurfaces.xml 2
 
 */
 
