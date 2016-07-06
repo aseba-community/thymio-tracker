@@ -8,22 +8,6 @@ using namespace std;
 namespace thymio_tracker
 {
 
-Object3D::Object3D()
-{
-    /*lengthHistory = 4;
-    nbHypoPerTime = 4;
-    PoseHypothesisHistory = new PoseHypothesisSet*[lengthHistory];
-    for(int i=0;i<nbHypoPerTime;i++)
-        PoseHypothesisHistory[i] = new PoseHypothesisSet[nbHypoPerTime];*/
-
-}
-Object3D::~Object3D()
-{
-    /*for(int i=0;i<nbHypoPerTime;i++)
-        delete[] PoseHypothesisHistory[i];
-    delete[] PoseHypothesisHistory;*/
-}
-
 Vec3d toVec(Point3f _p)
 {
     return Vec3d(_p.x,_p.y,_p.z);
@@ -62,17 +46,6 @@ void Object3D::draw(Mat& img, const Mat& cameraMatrix, const Mat& distCoeffs, co
     line(img, vprojVertices[0], vprojVertices[3], Scalar(255,0,0), 2);
 
 }
-
-/*vector<Point2f> Object3D::projectVertices(const Mat &cameraMatrix, const Mat &distCoeffs, const Affine3d &poseCam) const
-{
-    vector<Point2f> vProjPoints;
-    Affine3d poseComb=poseCam * pose;
-    
-    //project all points
-    projectPoints(mVertices, poseComb.rvec(), poseComb.translation(), cameraMatrix, distCoeffs, vProjPoints);
-    
-    return vProjPoints;
-}*/
 
 void Object3D::drawVertice(const Point3f &_vertice, Mat &img, const Mat &cameraMatrix, const Mat &distCoeffs, const Affine3d &poseCam) const
 {
@@ -465,12 +438,6 @@ void ThymioBlobModel::setEdgeTrackModel()
     mNormals2TrackTop.push_back(Vec3d(0.,sqrt2_2,0));
     mNormals2TrackTop.push_back(Vec3d(-sqrt2_2,0,0));
 
-    //radius of rounding of edge
-    /*vector<float> mEdgesRounding;
-    mEdgesRounding.push_back(0.004);
-    mEdgesRounding.push_back(0.0015);
-    mEdgesRounding.push_back(0.004);*/
-
     for(unsigned int v=0;v<mVerticesTrackTop.size()-1;v++)
         //mEdgesTrack.push_back(ModelEdgeTrack(mVerticesTrackTop[v],mVerticesTrackTop[(v+1)],mNormalsTrackTop[v],mEdgesRounding[v]));
         mEdgesTrack.push_back(ModelEdgeTrack(mVerticesTrackTop[v],mVerticesTrackTop[(v+1)],mNormals1TrackTop,mNormals2TrackTop[v]));
@@ -509,8 +476,6 @@ void ThymioBlobModel::setEdgeTrackModel()
     mEdgesTrack.push_back(ModelEdgeTrack(mVerticesTrackTop[2],mVerticesTrackTop[2] - heightRobot,Vec3d(0.,1.,0.),Vec3d(-1.,0.,0.)) );
     mEdgesTrack.push_back(ModelEdgeTrack(mVerticesTrackTop[3],mVerticesTrackTop[3] - heightRobot,Vec3d(-sqrt2_2,-sqrt2_2,0.),Vec3d(-1.,0.,0.)) );
 
-
-
 }
     
 
@@ -521,42 +486,10 @@ ThymioBlobModel::ThymioBlobModel()
     setEdgePlotModel();
     setEdgeTrackModel();
     setSurfacesModel();
-    //readSurfaceLearned();
 }
 
 void ThymioBlobModel::setSurfacesModel()
 {
-    //remark: order matters as we use simetry afeterward... might be better to change it to a model for one side only
-
-    //wheels
-    /*mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055, 0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055,-0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
-    //top blobs
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.04,  0.033,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
-    //back rectangle
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( 0.03, -0.0295,0.012), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,0.,1.), 0.01));
-    
-    //front rectanglular bits
-    int nbRoundCut = 2;
-    //more elliptic than perfect circle => define two radii
-    float radiusFront = 0.08;
-    float radiusSides = 0.078;
-    for(int i=-nbRoundCut;i<=nbRoundCut;i++)
-    {
-        float angle = - i * M_PI / (4.7 * nbRoundCut);
-        float radius = radiusSides * abs(i) / nbRoundCut + radiusFront * (nbRoundCut - abs(i)) / nbRoundCut;
-        Point3f center(radius * sin(angle),radius * cos(angle),0.013);    
-        mPlanarSurfaces.push_back(planarSurface(center,cv::Vec3d(-cos(angle),sin(angle),0.),cv::Vec3d(0,0,1.),0.01,0.005));    
-    }
-
-
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f( -0.03, -0.0295,0.012), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,0.,1.), 0.01));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.04,  0.033,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.04, -0.015,0.031), cv::Vec3d(1.,0.,0.), cv::Vec3d(0.,1.,0.), 0.01));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.055,-0.015,0.005), cv::Vec3d(0.,-1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
-    mPlanarSurfaces.push_back(planarSurface(cv::Point3f(-0.055, 0.015,0.005), cv::Vec3d(0.,-1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015)); 
-*/
     mPlanarSurfaces.reserve(15);
     //wheels
     mPlanarSurfaces.push_back(planarSurface(cv::Point3f(0.055, 0.015,0.005), cv::Vec3d(0.,1.,0.), cv::Vec3d(0.,0.,1.), 0.01,0.015));
@@ -634,51 +567,6 @@ void ThymioBlobModel::setSurfacesModel()
 
 
 }
-    
-/*void ThymioBlobModel::loadTrackingModel(cv::FileStorage& robotModelStorage)
-{
-    //define what s going to be used in active search
-    cv::read(robotModelStorage["image"], mImage);
-    robotModelStorage.release();
-
-    if(mImage.empty())
-    {
-        std::cerr << "Could not open robot surfaces appearance model" << std::endl;
-        throw std::runtime_error("Template image from robot file not found!");        
-    }
-
-    //position of projection of vertices in top template
-    mRobotKeypointPos.push_back(cv::Point2f(100,480));
-    mRobotKeypointPos.push_back(cv::Point2f(102,421));
-    mRobotKeypointPos.push_back(cv::Point2f(112,136));
-    mRobotKeypointPos.push_back(cv::Point2f(114,80));
-
-    mRobotKeypointPos.push_back(cv::Point2f(160,421));
-    mRobotKeypointPos.push_back(cv::Point2f(168,137));
-    mRobotKeypointPos.push_back(cv::Point2f(170,81));
-
-    mRobotKeypointPos.push_back(cv::Point2f(681,427));
-    mRobotKeypointPos.push_back(cv::Point2f(679,141));
-    mRobotKeypointPos.push_back(cv::Point2f(679,83));
-
-    mRobotKeypointPos.push_back(cv::Point2f(742,487));
-    mRobotKeypointPos.push_back(cv::Point2f(740,428));
-    mRobotKeypointPos.push_back(cv::Point2f(736,141));
-    mRobotKeypointPos.push_back(cv::Point2f(736,85));
-
-    //some more keypoints with a bit of texture
-    mRobotKeypointPos.push_back(cv::Point2f(422,86));
-
-    //use half resolution
-    for(unsigned int i=0;i<mRobotKeypointPos.size();i++)
-        mRobotKeypointPos[i] = mRobotKeypointPos[i]/2.;
-
-
-    for(int i=0;i<14;i++)
-        mVerticesTopPos.push_back(mRobotKeypointPos[i]);
-
-    
-}*/
 
 void Object3D::allocateSurfaceLearning()
 {
@@ -737,31 +625,13 @@ void Object3D::learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib
 
             *surf.weight += viewScore;
 
-            //debug
-            /*if(surf.weight > 0.1)
-            {
-                char fileName[200];
-                sprintf(fileName, "output/surface%d.png", v);
-
-                //convert to uchar
-                for(int i=0;i<surf.mImage.size().height;i++)
-                    for(int j=0;j<surf.mImage.size().width;j++)
-                        patchCurr.at<unsigned char>(i,j) = surf.mImage.at<float>(i,j)/surf.weight;
-
-                //save
-                cv::imwrite(fileName,patchCurr);
-
-            }*/
-
-
-
         }
 
     }
 
 }
 
-void Object3D::writeSurfaceLearned()
+void Object3D::writeSurfaceLearned(const std::string& robotFilePath)
 {
 
     //convert mImage which is in float to unsigned char as it will be used during tracking
@@ -787,50 +657,22 @@ void Object3D::writeSurfaceLearned()
             imageVector.push_back(mPlanarSurfaces[v].mImage);
 
 
-    cv::FileStorage store("modelSurfaces.xml.gz", cv::FileStorage::WRITE);
+    cv::FileStorage store(robotFilePath, cv::FileStorage::WRITE);
     cv::write(store,"imageVector",imageVector);
     store.release();
-
-    //read debug
-    /*std::vector<cv::Mat> imageVectorr;
-    cv::FileStorage storer("modelSurfaces.xml.gz", cv::FileStorage::READ);
-    cv::FileNode n1 = storer["imageVector"];
-    cv::read(n1,imageVectorr);
-    storer.release();
-
-    for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
-    {
-        char fileName[200];
-        sprintf(fileName, "output/surface%d.png", v);
-        cv::imwrite(fileName,imageVectorr[v]);
-    }*/
 
 }
 
 void Object3D::readSurfaceLearned(cv::FileStorage& robotModelStorage)
 {
     std::vector<cv::Mat> imageVectorr;
-    //cv::FileStorage robotModelStorage("modelSurfaces.xml.gz", cv::FileStorage::READ);
     cv::FileNode n1 = robotModelStorage["imageVector"];
     cv::read(n1,imageVectorr);
     robotModelStorage.release();
 
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
         if(!mPlanarSurfaces[v].isSymetricCopy)
-    {
-        //cv::Mat detected_edges;
-        //cv::blur( imageVectorr[v], detected_edges, Size(3,3) );
-        //cv::Canny( detected_edges, imageVectorr[v], 50., 50.*3., 3 );
-
-        //equalizeHist( imageVectorr[v], imageVectorr[v] );
-
-        imageVectorr[v].copyTo(mPlanarSurfaces[v].mImage);
-
-        //ouput as files to check them out
-        /*char fileName[200];
-        sprintf(fileName, "output/surface%d.png", v);
-        cv::imwrite(fileName,imageVectorr[v]);*/
-    }
+            imageVectorr[v].copyTo(mPlanarSurfaces[v].mImage);
     
 }
 
@@ -849,22 +691,10 @@ bool compareByScore(const surfaceMatch &a, const surfaceMatch &b)
 
 bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& prevPoseCam, cv::Affine3d& poseCam) const
 {
-    //TODO: multiscale approach ? can simply scale image with respect to object distance
-    //TODO: try template matching with other similarity functions: NCC has wide basin, more narrow optimum would be better for RANSAC
-
     //project textured planar surfaces to current image using the previous pose
-    //and do NCC search to have 2D correspondance for all of them and then PnP
+    //do NCC search to find displacement up to drift for each surface using frame to frame similarity
+    //refine with MI search and parabolic fitting to correct drift then PnP
     //to retrieve the 3D pose from the sets of 2D matches
-
-
-    /*cv::Mat MDebugImg;
-    img.copyTo(MDebugImg); 
-    cv::Mat MDebugImgWarp;
-    img.copyTo(MDebugImgWarp);
-    cv::Mat MDebugImgScore;
-    img.copyTo(MDebugImgScore);
-    cv::Mat MDebugImgScorer;
-    img.copyTo(MDebugImgScorer);*/
 
     int window_search_size = 32;
     int half_window_size = window_search_size/2;
@@ -872,26 +702,16 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
     int window_search_size_drift = 6;
     int half_window_size_drift = window_search_size_drift/2;
 
-    //information to keep for PnP
-    //std::vector<surfaceMatchInfo> mSearchInfo;
-    //std::vector<cv::Point3f> objectPoints;
-    //std::vector<cv::Point2f> imagePoints;
-    //std::vector<float> score;
-
     std::vector<surfaceMatch> mSurfaceMatches;
-
-    //std::cout<<"compute NCC scores"<<std::endl;
 
     for(unsigned int v=0;v<mPlanarSurfaces.size();v++)
     {
-        //std::cout<<"loop surf["<<v<<"]"<<std::endl;
         const planarSurface &surf = mPlanarSurfaces[v];
 
         //project surface corners to check if visible and get homography from image to surface model
         Point3f ptLine = prevPoseCam * pose * surf.center;
         Vec3d ray = Vec3d(ptLine.x,ptLine.y,ptLine.z);        ray = ray / norm(ray);
         Vec3d normal_cam = prevPoseCam.rotation() * pose.rotation() * surf.normal;
-        //float viewScore = -normal_cam.dot(ray);
         float viewScore = 1.-2.*acos(-normal_cam.dot(ray))/3.141592;
 
         if(viewScore > 0.2)
@@ -937,9 +757,6 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                 cv::Mat patchCurr(box.size(), CV_8UC1);
                 prev_img(box).copyTo(patchCurr);
 
-                //Debug : plot it on input
-                //patchCurr.copyTo(MDebugImgWarp(box));
-
                 //compute NCC over search window
                 //get the roi of the current image on which to compute similarity with patch
                 int myRoi_l = box.x-half_window_size; myRoi_l = (myRoi_l<0)?0:myRoi_l;
@@ -954,7 +771,6 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                 int result_rows = myROI.size().height - box.size().height + 1;
 
                 if(result_cols > half_window_size && result_rows > half_window_size)
-                //if(result_cols >= window_search_size && result_rows >= window_search_size)
                 {
                     cv::Mat resultNCC = cv::Mat::zeros( result_rows, result_cols, CV_32FC1 );
                     cv::matchTemplate( img(myROI), patchCurr, resultNCC, CV_TM_SQDIFF, mask);
@@ -962,19 +778,6 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                     /// Localizing the best match with minMaxLoc searching for max NCC
                     double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
                     cv::minMaxLoc( resultNCC, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
-
-                    //plot result NCC on input
-                    /*cv::Mat resultNCCnorm; resultNCC.copyTo(resultNCCnorm);
-                    cv::normalize( resultNCCnorm, resultNCCnorm, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
-                    cv::Mat resultNCCuc( resultNCC.size().height, resultNCC.size().width, CV_8UC1);
-                    for(int i=0;i<resultNCC.size().height;i++)
-                        for(int j=0;j<resultNCC.size().width;j++)
-                            resultNCCuc.at<unsigned char>(i,j) = 255.*resultNCCnorm.at<float>(i,j);
-                    cv::Rect myROIncc(myROI.x + box.size().width/2,myROI.y + box.size().height/2,result_cols,result_rows);
-                    resultNCCuc.copyTo(MDebugImgScore(myROIncc));
-                    cv::circle(MDebugImgScore,minLoc + myROI.tl() + vprojVertices_bb[4],2,255);
-*/
-
 
                     //now we have hopefully the position of the surface up to some drift
                     //so we want to use the model to correct the drift
@@ -1012,9 +815,7 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                     {
                         cv::Mat resultNCC_drift = cv::Mat::zeros( result_rows, result_cols, CV_32FC1 );
 
-                        //cv::matchTemplate( img(myROI), patchCurr_drift, resultNCC_drift, CV_TM_CCORR_NORMED, mask);
                         matchTemplateMI( img(myROI), patchCurr_drift, resultNCC_drift, mask);
-                        //cv::matchTemplate( img(myROI), patchCurr_drift, resultNCC_drift, CV_TM_CCORR_NORMED);
                         
                         /// Localizing the best match with minMaxLoc searching for max NCC
                         cv::minMaxLoc( resultNCC_drift, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
@@ -1023,32 +824,7 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
                         cv::Point2f maxLocF;
                         parabolicRefinement(resultNCC_drift,maxLoc,maxLocF);
 
-
-                        //plot result NCC on input
-                        /*cv::Mat resultNCCnorm; resultNCC_drift.copyTo(resultNCCnorm);
-                        cv::normalize( resultNCCnorm, resultNCCnorm, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
-                        cv::Mat resultNCCuc( resultNCC_drift.size().height, resultNCC_drift.size().width, CV_8UC1);
-                        for(int i=0;i<resultNCC_drift.size().height;i++)
-                            for(int j=0;j<resultNCC_drift.size().width;j++)
-                                resultNCCuc.at<unsigned char>(i,j) = 255.*resultNCCnorm.at<float>(i,j);
-                        cv::Rect myROIncc(myROI.x + box.size().width/2,myROI.y + box.size().height/2,result_cols,result_rows);
-                        resultNCCuc.copyTo(MDebugImgScorer(myROIncc));
-
-                        //print confidence
-                        char confStr[100];
-                        //sprintf(confStr, "%0.2f", viewScore);
-                        sprintf(confStr, "%0.2f", maxVal);
-                        //putText(MDebugImgScore, confStr,
-                        putText(MDebugImgScorer, confStr,
-                                    maxLoc + myROI.br(),
-                                    cv::FONT_HERSHEY_COMPLEX_SMALL,
-                                    0.8, cvScalar(250,250,250), 1, CV_AA);*/
-
-
-                        //objectPoints.push_back(surf.center);
-                        //imagePoints.push_back(maxLocF + Point2f(myROI.tl()) + vprojVertices_bbF[4]);
-                        //score.push_back(viewScore*maxVal);
-
+                        //add to list of matches
                         surfaceMatch newMatch;
                         newMatch.objectPoints = surf.center;
                         newMatch.imagePoints = maxLocF + Point2f(myROI.tl()) + vprojVertices_bbF[4];
@@ -1062,27 +838,22 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         }
     }
 
+    //sort out the matchesdepending on their score
     std::sort(mSurfaceMatches.begin(), mSurfaceMatches.end(), compareByScore);
 
-    /*cv::imwrite("output/curr.png",MDebugImg);
-    cv::imwrite("output/warp.png",MDebugImgWarp);
-    //cv::imwrite("output/masks.png",MDebugImgMask);
-    cv::imwrite("output/score.png",MDebugImgScore);
-    cv::imwrite("output/scorer.png",MDebugImgScorer);*/
-
-    const unsigned int nbBasePnp=4;
-    if(mSurfaceMatches.size() < nbBasePnp)
-        return false;
-    
-    //std::cout<<"RANSAC with nb matches = "<<objectPoints.size()<<std::endl;
 
     //Ransac : perform PnPwith all subsets of 4 matches, estimate pose and check corresponding score
     //keep best scoring pose
     //matches have been stored in lists: objectPoints, imagePoints and score;
+
+    const unsigned int nbBasePnp=4;
+
+    if(mSurfaceMatches.size() < nbBasePnp)
+        return false;
+    
     cv::Affine3d bestPose;
     float bestScore=0;
     int bestValidSurf=0;
-
     bool *inliers=new bool[mSurfaceMatches.size()];
 
     //do a kind of ransac: try all different subset of nbBasePnp matches to compute pose 
@@ -1155,26 +926,16 @@ bool Object3D::track(const cv::Mat &img, const cv::Mat &prev_img, const Intrinsi
         //if not need to go to next subset:
         bool nextSetAvailable = getNextSetPointers(&pointers[0],mSurfaceMatches.size(),nbBasePnp);
 
-        //std::cout<<"nb matches = "<<imagePoints.size()<<std::endl;
-
-        //for(int i=0;i<nbBasePnp;i++)
-        //    std::cout<<pointers[i]<<"  ";
-        //std::cout<<std::endl;
-
         if(!nextSetAvailable)
             break;        
     }
     
-    //std::cout<<"best cpt valid surf = "<<bestValidSurf<<std::endl;
-    std::cout<<"score tracking MI= "<<bestScore<<std::endl;
+    //std::cout<<"score tracking MI= "<<bestScore<<std::endl;
+
+    //use the MI score which has shown to be robust to occlusions
+    //and illumination changes to estimate if we still track
     if(bestScore>0.4)
     {
-        //std::cout<<"score = "<<bestScore<<std::endl;
-
-        //for now there is nothing to protect us from diverging
-        //we will have to use the MI score which has shown to be robust to occlusions
-        //and illumination changes; can use lower threshold on it, 
-        //and if score is lower then consider tracker lost
         
         //refine pose with inliers
         Vec3d rvec=prevPoseCam.rvec();

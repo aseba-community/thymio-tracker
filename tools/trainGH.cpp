@@ -8,6 +8,9 @@
 //press and hold SHIFT and click move and drop for forward/backward motion
 //press and hold ALT and click, move and drop mouse for translation along x and y
 
+//If you changed the function setBlobModel which includes the blob positions 
+//and blob groups then use this program to update the geometric hashing xml file.
+
 #include <iostream>
 #include "Models.hpp"
 #include "Visualization3D.hpp"
@@ -20,10 +23,30 @@ using namespace cv;
 
 namespace tt = thymio_tracker;
 
+void print_usage(const char* command)
+{
+    std::cerr << "Usage:\n\t" << command << " <geo hashing outfile>" << std::endl;
+}
+
 int main(int argc, const char * argv[])
 {
+    if(argc != 2)
+    {
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    //output file, typically "../data/GHscale_Arth_Perspective.xml"
+    std::string outFilename = argv[1];
+
+    //get default calibration
+    tt::IntrinsicCalibration mCalibration;
+    cv::Size imageViewSize(640,480);
+    rescaleCalibration(mCalibration,imageViewSize);
+
+
     //create visualization tool
-    Visualization3D vizu;
+    Visualization3D vizu(&mCalibration);
     tt::ThymioBlobModel mRobot;
     vizu.addObject(mRobot);
     
@@ -79,14 +102,9 @@ int main(int argc, const char * argv[])
     //create another window to show projection in created cameras
     char window_name[100] = "Camera Views";
     namedWindow( window_name, WINDOW_AUTOSIZE );
-   
-    //get projection matrix
-    Mat cameraMatrix; Mat distCoeffs;
-    FileStorage fs;    fs.open("/Users/amaurydame/Data/nexus/CamCalib/nexus_camera_calib.xml", FileStorage::READ);
-    fs["camera_matrix"] >> cameraMatrix;fs["distortion_coefficients"] >> distCoeffs;
-    Mat imBackground(405, 720, CV_8UC3, Scalar(0,0,0));
-    tt::resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
+    Mat imBackground(mCalibration.imageSize.height, mCalibration.imageSize.width, CV_8UC3, Scalar(0,0,0));
     moveWindow(window_name, 720, 0);
+   
 
 //there are two versions of the geometric hashing: one using only the 2D coordinates
 //of the features to define the bin in a 2D lookup table, and an other which also uses
@@ -122,20 +140,18 @@ int main(int argc, const char * argv[])
         
     }
     
-    //give that to GH
+//give that to GH
 #ifndef USE_SCALE
     tt::GH mGH;//here will train with coodrinates in meters so calibration does not matter
-    char GHfilename[100]="../data/GH_Arth_Perspective.xml";
 #else
     tt::GHscale mGH;//here will train with coodrinates in meters so calibration does not matter
-    char GHfilename[100]="../data/GHscale_Arth_Perspective.xml";
 #endif
     
     mGH.initHashTable(mRobot.mVertices.size());
     mGH.setModel(projPoints,vCams.size());
     {
         //save GH for later use
-        cv::FileStorage GHstorage(GHfilename, cv::FileStorage::WRITE);
+        cv::FileStorage GHstorage(outFilename, cv::FileStorage::WRITE);
         mGH.saveToFileStorage(GHstorage);
     }
     delete[] projPoints;
@@ -154,7 +170,7 @@ int main(int argc, const char * argv[])
         
         //project object
         Affine3d poseInv=vCams[currentCam].pose.inv();
-        mRobot.draw(imCam,cameraMatrix, distCoeffs, poseInv);
+        mRobot.draw(imCam,mCalibration.cameraMatrix, mCalibration.distCoeffs, poseInv);
         imshow(window_name,imCam);
         
         //pass to next camera

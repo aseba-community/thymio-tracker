@@ -1,5 +1,5 @@
-//class to define object model based on list of 3D edges
-//edges are directed: when moves from pt1 to pt2 want black on the right
+//Viewer object, to visualize 3D objects in a sort of doom like fashion.
+
 #pragma once
 
 #include <iostream>
@@ -20,7 +20,7 @@ class Visualization3D
 {
 public:
     //constructor
-    Visualization3D();
+    Visualization3D(tt::IntrinsicCalibration *_mPtrCalibration);
     ~Visualization3D();
     
     void addObject(tt::Object3D &_obj);
@@ -35,8 +35,7 @@ public:
     cv::Mat imBackground;
     cv::Mat imCurrent;
     //camera calibration of viewer
-    cv::Mat cameraMatrix;
-    cv::Mat distCoeffs;
+    tt::IntrinsicCalibration *mPtrCalibration;
     //current position of camera
     cv::Affine3d cameraPose;
 

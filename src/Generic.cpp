@@ -6,7 +6,7 @@ using namespace std;
 
 namespace thymio_tracker
 {
-
+    
 void readCalibrationFromFileStorage(cv::FileStorage &fs, IntrinsicCalibration &calibration)
 {
     fs["camera_matrix"] >> calibration.cameraMatrix;

@@ -420,9 +420,11 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
     auto lmDetectionsIt = mDetectionInfo.landmarkDetections.cbegin();
     auto landmarksIt = mLandmarks.cbegin();
     auto colorIt = colorPalette.cbegin();
+    int cpt = -1;
     int cpt_plot = 0;
     for(; landmarksIt != mLandmarks.cend(); ++landmarksIt, ++lmDetectionsIt, ++colorIt)
     {
+        cpt ++;
         const Landmark& landmark = *landmarksIt;
         const cv::Mat& h = lmDetectionsIt->getHomography();
         
@@ -463,7 +465,7 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
 
         //print confidence
         char confStr[100];
-        sprintf(confStr, "c[%d]: %0.1f", cpt_plot,lmDetectionsIt->getConfidence());
+        sprintf(confStr, "c[%d]: %0.1f", cpt,lmDetectionsIt->getConfidence());
         putText(*output, confStr,
                     cv::Point2i(output->size().width - 100,20+20*cpt_plot),
                     cv::FONT_HERSHEY_COMPLEX_SMALL,

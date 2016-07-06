@@ -31,11 +31,10 @@ Landmark Landmark::fromFileStorage(cv::FileStorage& fs)
     cv::read(fs["real_size"], realSize);
     cv::read(fs["image"], image);
 
-    
     if(image.empty())
         throw std::runtime_error("Could not load image data");
     
-    return Landmark(image, keypoints, descriptors, cv::Size(realSize[0], realSize[1]));
+    return Landmark(image, keypoints, descriptors, cv::Size2f(realSize[0], realSize[1]));
 }
 
 Landmark::Landmark(const cv::Mat& image,
@@ -160,11 +159,12 @@ void Landmark::find(const cv::Mat& image,
     {
         //use standard Pnp: define model
         std::vector<cv::Point3f> mModelPoints(4);
-        //divide everything by 2x100 to get half size in meter
-        mModelPoints[3] = cv::Point3f(-mRealSize.width/200., -mRealSize.height/200.,0.);
-        mModelPoints[2] = cv::Point3f(mRealSize.width/200., -mRealSize.height/200.,0.);
-        mModelPoints[1] = cv::Point3f(mRealSize.width/200., mRealSize.height/200.,0.);
-        mModelPoints[0] = cv::Point3f(-mRealSize.width/200., mRealSize.height/200.,0.);
+        //divide everything by 2 to get half size in meter
+        mModelPoints[3] = cv::Point3f(-mRealSize.width/2., -mRealSize.height/2.,0.);
+        mModelPoints[2] = cv::Point3f(mRealSize.width/2., -mRealSize.height/2.,0.);
+        mModelPoints[1] = cv::Point3f(mRealSize.width/2., mRealSize.height/2.,0.);
+        mModelPoints[0] = cv::Point3f(-mRealSize.width/2., mRealSize.height/2.,0.);
+
 
         //project corners in image
         std::vector<cv::Point2f> mCornersInScene;

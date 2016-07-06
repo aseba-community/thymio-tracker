@@ -164,7 +164,7 @@ void Robot::findFromBlobGroupsAndGH(const cv::Mat& image,
                                mDetectionInfo.blobs,
                                mDetectionInfo.blobPairs);
     
-    // get triplet by checking homography and inertia
+    // get triplet by checking how squished the triangle is and if corresponds to inertia of blobs
     mGrouping.getTripletsFromPairs(mDetectionInfo.blobs,
                                    mDetectionInfo.blobPairs,
                                    mDetectionInfo.blobTriplets);

@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
     std::vector<std::vector<cv::Point2f> > imagePoints;//projection of 3d vertices
 
     //input stream
-    VideoSourceLive videoSource(EmbeddedCam);
+    VideoSourceLive videoSource;
     videoSource.resizeSource(0.5);
     
     cv::namedWindow( window_name, cv::WINDOW_AUTOSIZE );

@@ -11,18 +11,12 @@
 
 namespace tt = thymio_tracker;
 
-enum CameraType {NexusCam,
-		  EmbeddedCam,
-		  UndefinedCam
-};
 
 class VideoSource
 {
 public:
 	//constructor with calibration
-    VideoSource(CameraType _camType=UndefinedCam);
-    VideoSource(const std::string& calibrationFile);
-    void init(const std::string& calibrationFile);
+    VideoSource();
 	
 	//acquire a new frame
 	virtual void grabNewFrame()=0;
@@ -38,26 +32,22 @@ public:
     bool isOver(){return false;}
 
  //attributes:
-    //camera intrinsic calibration
-    tt::IntrinsicCalibration mCalibration;
-    
     //current image
     cv::Mat img;
     
     //resized img if resized
     cv::Mat imgResized;
-    //output img size
-    //Size imgSize; //now in camera intrinsic calibration
     
     //did we ask the image to be resized
     bool resized;
+    cv::Size img_size;
 };
 
 class VideoSourceSeq : public VideoSource
 {
 public:
-    //constructor with calibration
-    VideoSourceSeq(const char *_printfPath, CameraType _camType, int id0=0);
+    //constructor with calibration: parameters are the sequence filename in sprintf style, id0 is the first frame number
+    VideoSourceSeq(const char *_printfPath, int id0=0);
     
     void grabNewFrame();
     int getFrameId(){return frameId;};
@@ -76,7 +66,7 @@ class VideoSourceLive : public VideoSource
 {
 public:
     //constructor with calibration
-    VideoSourceLive(CameraType _camType);
+    VideoSourceLive();
     
     void grabNewFrame();
     

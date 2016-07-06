@@ -619,6 +619,7 @@ void GHscale::loadFromStream(std::istream& is)
             for(int j=0;j<nbBinPerDim.y;j++)
                 for(int k=0;k<nbBinPerDim.z;k++)
                 is.read((char *)&HashTable[i*(nbBinPerDim.y*nbBinPerDim.z*nbIds) + j*nbBinPerDim.z*nbIds + k*nbIds + id], sizeof(float));
+
 }
 
 void GHscale::extractBlobs(const cv::Mat& input, vector<KeyPoint> &blobs) const

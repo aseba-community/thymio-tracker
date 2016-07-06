@@ -1,7 +1,14 @@
-/* In this program, an image sequence which the robot placed on an Aruco board is used as well as 
+/* 
+
+In this program, an image sequence which the robot placed on an Aruco board is used as well as 
 the robot GT position computed using ARuco lib, to learn the appearance of the robot. 
 Several 3D planar surfaces have been defined in ThymioBlobModel from Models.hpp, in this program 
-we learn their texture by backprojecting the images from the sequence into the surface and averaging them*/
+we learn their texture by backprojecting the images from the sequence into the surface and averaging them
+
+Default usage:
+learnSurfaces ../data/calibration/nexus_camera_calib.xml /Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png /Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard.bin modelSurfaces.xml.gz 2
+
+*/
 
 #include "ThymioTracker.h"
 #include "VideoSource.hpp"
@@ -10,27 +17,49 @@ static const char window_name[] = "Tracker";
 
 namespace tt = thymio_tracker;
 
+void print_usage(const char* command)
+{
+    std::cerr << "Usage:\n\t" << command << " <calib file> <seq files> <pose file> <output file> [<offset>]" << std::endl;
+}
 
 //work offline on recorded sequence
 int main(int argc, char** argv)
 {
+    if(argc < 5 || argc > 6)
+    {
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    std::string calibFilename = argv[1];
+    std::string seqFilename = argv[2];
+    std::string poseFilename = argv[3];
+    std::string outFilename = argv[4];
+    
+    int offset = 0;
+    if(argc >= 6)
+        offset = std::stoi(argv[5]);
+
+
     int firstFrame = 2;
     tt::ThymioBlobModel mRobot;
-    std::cout<<"allocate"<<std::endl;
+    //allocate space to the surfaces to store the texture
     mRobot.allocateSurfaceLearning();
 
     //get sequence
-    VideoSourceSeq videoSource("/Users/amaurydame/Data/Thymio/onBoard/seq/image-%04d.png",NexusCam,firstFrame+2);
+    VideoSourceSeq videoSource(seqFilename.c_str(),firstFrame+offset);
     videoSource.resizeSource(0.5);
 
-    //get pose computed in aruco
-    std::vector<int> founds;
-    std::vector<cv::Vec3d> rvecs;
+    //get calib
+    tt::IntrinsicCalibration mCalibration(calibFilename);
+
+    //for each image of the sequence, we have:
+    std::vector<int> founds;//pose computed in the image or not (sometimes the board is not found)
+    std::vector<cv::Vec3d> rvecs;//pose of the board (not the robot !)
     std::vector<cv::Vec3d> tvecs;
 
-    cv::FileStorage store("/Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard.bin", cv::FileStorage::READ);
-    //cv::FileStorage store("/Users/amaurydame/Data/Thymio/onBoard/thymioOnBoard_offCentered.bin", cv::FileStorage::READ);
-    //cv::FileStorage store("/Users/amaurydame/Libs/aruco-1.3.0/build/utils/detections.bin", cv::FileStorage::READ);
+    //read the xml file which stores this values
+    cv::FileStorage store(poseFilename, cv::FileStorage::READ);
     cv::FileNode n1 = store["founds"];
     cv::read(n1,founds);
     cv::FileNode n2 = store["rvecs"];
@@ -46,7 +75,6 @@ int main(int argc, char** argv)
 
     
     while(!videoSource.isOver())
-    //while(cpt<10)
     {
         videoSource.grabNewFrame();
         cv::Mat inputImage = videoSource.getFramePointer();
@@ -55,14 +83,14 @@ int main(int argc, char** argv)
         cv::cvtColor(inputImage, inputGray, CV_RGB2GRAY);
 
         //use board pose to compute robots pose
+        //here the robot was placed in the middle of the board
         cv::Affine3d boardPose = cv::Affine3d(rvecs[cpt],tvecs[cpt]);
         cv::Affine3d robotPose = boardPose*cv::Affine3d().translate(cv::Vec3d(0.,0.,-0.022))*cv::Affine3d().rotate(cv::Vec3d(0.,M_PI,0.));
 
-        //tracker.update(inputGray);
         if(founds[cpt]==1)
         {
-            mRobot.learnAppearance(inputGray, videoSource.mCalibration, robotPose);
-            mRobot.draw(inputImage, videoSource.mCalibration, robotPose);
+            mRobot.learnAppearance(inputGray, mCalibration, robotPose);
+            mRobot.draw(inputImage, mCalibration, robotPose);
         }
             
         
@@ -74,7 +102,9 @@ int main(int argc, char** argv)
         if(key == 27 || key == 'q')
             break;
     }
-    mRobot.writeSurfaceLearned();
+
+    //save the model to an xml file
+    mRobot.writeSurfaceLearned(outFilename);
 
     
     return 0;

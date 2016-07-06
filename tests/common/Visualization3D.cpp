@@ -47,12 +47,8 @@ void CallBackFuncVizu3d(int event, int x, int y, int flags, void* userdata)
     }
     
 }
-Visualization3D::Visualization3D()
+Visualization3D::Visualization3D(tt::IntrinsicCalibration *_mPtrCalibration)
 {
-    //set intrinsic camera parameters, load it for now
-    FileStorage fs;    fs.open("/Users/amaurydame/Data/nexus/CamCalib/nexus_camera_calib.xml", FileStorage::READ);
-    fs["camera_matrix"] >> cameraMatrix;fs["distortion_coefficients"] >> distCoeffs;
-
     //create visualization window
     windowName = "Visualization 3D";
     
@@ -61,8 +57,8 @@ Visualization3D::Visualization3D()
     cameraPose = Affine3d().rotate(Vec3d(CV_PI/3, 0.0, 0.0)).rotate(Vec3d(0.0, 0.0, 0.0)).translate(Vec3d(0.0, 0.0, 0.7));
     
     //create background
-    imBackground= Mat(405, 720, CV_8UC3, Scalar(0,0,0));
-    tt::resizeCameraMatrix(cameraMatrix,Size(1920,1080),imBackground.size());
+    mPtrCalibration = _mPtrCalibration;
+     imBackground= Mat(mPtrCalibration->imageSize.height, mPtrCalibration->imageSize.width, CV_8UC3, Scalar(0,0,0));
     
     //create window
     namedWindow( windowName, WINDOW_AUTOSIZE );
@@ -84,7 +80,7 @@ void Visualization3D::draw()
     imCurrent=imBackground.clone();
     
     //draw objects
-    for(unsigned int o=0;o<mObjects.size();o++)mObjects[o].draw(imCurrent,cameraMatrix, distCoeffs, cameraPose);
+    for(unsigned int o=0;o<mObjects.size();o++)mObjects[o].draw(imCurrent,mPtrCalibration->cameraMatrix, mPtrCalibration->distCoeffs, cameraPose);
     imshow(windowName,imCurrent);
 
 }

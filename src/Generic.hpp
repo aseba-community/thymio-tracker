@@ -10,11 +10,52 @@
 namespace thymio_tracker
 {
 
+enum CameraType {NexusCam,
+		  EmbeddedCam,
+		  UndefinedCam
+};
+
 struct IntrinsicCalibration {
     cv::Size imageSize;
     cv::Mat cameraMatrix;
     cv::Mat distCoeffs;
-    IntrinsicCalibration(){};
+
+    IntrinsicCalibration(const std::string& calibrationFile)
+    {
+    	init(calibrationFile);
+    }
+    IntrinsicCalibration(CameraType _camType = UndefinedCam)
+    {
+	    switch (_camType)
+	    {
+	        case NexusCam:
+	            init("../data/calibration/nexus_camera_calib.xml");
+	            break;
+	        case EmbeddedCam:
+	            init("../data/calibration/embedded_camera_calib.xml");
+	            break;
+	        default:
+	            init("../data/calibration/default_camera_calib.xml");
+	            break;
+	    }    	
+    }
+
+    void init(const std::string& calibrationFile)
+    {
+    	cv::FileStorage fs;
+	    fs.open(calibrationFile, cv::FileStorage::READ);
+
+	    if(!fs.isOpened())
+	        throw std::runtime_error("Calibration file not found!");
+	    
+	    imageSize.width = (int) fs["image_width"];
+	    imageSize.height = (int) fs["image_height"];
+	    fs["camera_matrix"] >> cameraMatrix;
+	    fs["distortion_coefficients"] >> distCoeffs;
+	    
+	    fs.release();
+    }
+
 } ;
 
 struct DetectionGH {

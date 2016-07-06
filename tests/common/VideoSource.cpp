@@ -7,80 +7,43 @@
 using namespace std;
 using namespace cv;
 
-VideoSource::VideoSource(CameraType _camType)
-{
-    switch (_camType)
-    {
-        case NexusCam:
-            init("../data/calibration/nexus_camera_calib.xml");
-            break;
-        case EmbeddedCam:
-            init("../data/calibration/embedded_camera_calib.xml");
-            break;
-        default:
-            init("../data/calibration/default_camera_calib.xml");
-            break;
-    }
-}
-
-VideoSource::VideoSource(const std::string& calibrationFile)
-{
-    init(calibrationFile);
-}
-
-void VideoSource::init(const std::string& calibrationFile)
+VideoSource::VideoSource()
 {
     resized=false;
-    
-    char cwd[200];
-    getcwd(cwd, 199);
-    std::cerr << cwd << std::endl;
-    
-    FileStorage fs;
-    fs.open(calibrationFile, FileStorage::READ);
-
-    if(!fs.isOpened())
-        throw std::runtime_error("Calibration file not found!");
-    
-    mCalibration.imageSize.width = (int) fs["image_width"];
-    mCalibration.imageSize.height = (int) fs["image_height"];
-    fs["camera_matrix"] >> mCalibration.cameraMatrix;
-    fs["distortion_coefficients"] >> mCalibration.distCoeffs;
-    
-    fs.release();
 }
+
 
 void VideoSource::resizeSource(Size _newSize)
 {
     resized=true;
     
-    //have to change camera calibration
-    tt::resizeCameraMatrix(mCalibration.cameraMatrix, mCalibration.imageSize, _newSize);
-    
     //change output image size
-    mCalibration.imageSize=_newSize;
+    img_size=_newSize;
 }
+
 void VideoSource::resizeSource(float _r)
 {
     resized=true;
     
     //change output iamge size
-    Size sourceSize=mCalibration.imageSize;
-    mCalibration.imageSize.width=_r*sourceSize.width;
-    mCalibration.imageSize.height=_r*sourceSize.height;
-
-    //have to change camera calibration
-    tt::resizeCameraMatrix(mCalibration.cameraMatrix,sourceSize,mCalibration.imageSize);
+    Size sourceSize=img_size;
+    img_size.width=_r*sourceSize.width;
+    img_size.height=_r*sourceSize.height;
 }
 
 void VideoSource::resizeImage()
 {
-    resize(img, imgResized, mCalibration.imageSize, 0, 0);
+    resize(img, imgResized, img_size, 0, 0);
 }
 
-VideoSourceLive::VideoSourceLive(CameraType _camType):VideoSource(_camType)
+VideoSourceLive::VideoSourceLive()
 {
+    resized=false;
     captureDevice.open(0);
+
+    //init iamge size
+    captureDevice>>img;
+    img_size = img.size();
 }
 
 void VideoSourceLive::grabNewFrame()
@@ -89,10 +52,11 @@ void VideoSourceLive::grabNewFrame()
     if(resized)resizeImage();
 }
 
-VideoSourceSeq::VideoSourceSeq(const char *_printfPath, CameraType _camType, int id0)
-    : VideoSource(_camType)
-    , printfPath(_printfPath)
+VideoSourceSeq::VideoSourceSeq(const char *_printfPath, int id0):
+    printfPath(_printfPath)
 {
+    resized=false;
+
     //if resized version of input has been saved then calibration has to be resized too
     //load first image 
     char fileName[200];
@@ -106,10 +70,8 @@ VideoSourceSeq::VideoSourceSeq(const char *_printfPath, CameraType _camType, int
     else
         img=imread(fileName);
 
-    if(img.size().width != mCalibration.imageSize.width)
-        rescaleCalibration(mCalibration,img.size());
-
     frameId=id0;
+    img_size = img.size();
     end_sequence=false;
 }
 

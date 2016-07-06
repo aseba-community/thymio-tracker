@@ -4,8 +4,7 @@ set(tools_SOURCES
         learnSurfaces.cpp
         calibrate.cpp
         trainGH.cpp
-        landmark.cpp
-        landmark_simple.cpp)
+        landmark.cpp)
 
 foreach(source ${tools_SOURCES})
   # Compute the name of the binary to create

@@ -167,8 +167,7 @@ class Object3D
 {
 public:
     //constructor
-    Object3D();
-    ~Object3D();
+    Object3D(){};
     
     // TODO: Remove all this from Object3D? Object3D should not draw itself.
     
@@ -205,7 +204,7 @@ public:
     //use an image and corresponding robot pose to update surface appearances
     void learnAppearance(cv::Mat &img, const IntrinsicCalibration &_mCalib, const cv::Affine3d& poseCam);
     //all board sequence has been used => save appearance
-    void writeSurfaceLearned();
+    void writeSurfaceLearned(const std::string& robotFilePath);
     void readSurfaceLearned(cv::FileStorage& robotModelStorage);
 
     //temporary tracking function for develop, will have to be moved to Robot if works

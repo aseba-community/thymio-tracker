@@ -64,7 +64,7 @@ private:
     std::vector<cv::KeyPoint> mKeypoints;
     std::vector<cv::Point2f> mKeypointPos;
     cv::Mat mDescriptors;
-    cv::Size2f mRealSize;//in cm
+    cv::Size2f mRealSize;//in m
     
     cv::BFMatcher mMatcher;
 };
