@@ -98,16 +98,17 @@ through detection or tracking at the previous frame, the previous pose of the la
 do frame to frame tracking, doing the hypothesis that the movement in the iamge should not be too large.
 
 For robustness and speed reasons, first the KLT approach is used for all the detected keypoints. This 
-means that each keypoint is searched in the current image using its apeparance in the previous frame
+means that each keypoint is searched in the current image using its appearance in the previous frame
 (and not the landmark reference appearance). This approach has the advantage to be fast to compute and
 robust to  progressive illumination changes. However this approach has the disadvantage to be sensitive 
 to drift. To correct the drift problem a subsample of the tracked features is picked randomly, and, for 
 each of those features points, the estimation of its current location is refined using the model appearance
-warped to the current landmark pose and an NCC template matching approach. As for every frame a new subset 
-is picked, after a few tracked frames, all the landmark features will have been visited and their drift corrected.
-At every frame, the tracker also searches for new features from the model to track and for non valid tracked features: a subsample of the non detected feature points are searched in the current image using NCC similarity 
-measure and a subsample of the tracked ones are checked to verify if their NCC score is high enough to 
-continue the tracking.
+warped and "mipmapped " to the current landmark pose and an NCC template matching approach. As for every 
+frame a new subset is picked, after a few tracked frames, all the landmark features will have been visited and 
+their drift corrected. At every frame, the tracker also searches for new features from the model to track and 
+for non valid tracked features: a subsample of the non detected feature points are searched in the current image 
+using NCC similarity measure and a subsample of the tracked ones are checked to verify if their NCC score is high 
+enough to continue the tracking.
 
 At this stage we end up with a set of tracked reference keypoints and their estimated location in the 
 current image. A RANSAC and PnP method is used then estimate the 3D pose of each landmark with respect 
