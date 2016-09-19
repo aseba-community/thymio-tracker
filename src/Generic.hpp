@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <vector>
+#include <stdexcept>
 
 namespace thymio_tracker
 {
