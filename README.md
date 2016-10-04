@@ -143,7 +143,7 @@ has been acquired using aruco library and an AR board (aruco has also as only de
 
 To be able to track new landmark, use the ./landmark program from the tools folder.
 Provide as first parameter the input image of the new landmark and as second parameter
-the xml.gz file to be outputed and then added to the Config.xml file loaded by the 
+the xml or xml.gz file to be outputed and then added to the Config.xml file loaded by the 
 ThymioTracker object.
 
 
