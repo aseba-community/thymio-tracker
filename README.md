@@ -3,7 +3,7 @@
 Thymio tracker is a C++ visual tracker for AR Thymio.
 The only dependency is OpenCV. The code has been tested using OpenCV-3.1.0.
 
-\SECTION Default Tracker Functionalities
+## Default Tracker Functionalities
 
 Thymio tracker can be divided into two main tracking applications:
  - robot tracking, 
@@ -13,7 +13,7 @@ As the main objective is to do AR, the tracker has to deliver the 3D pose of
 the camera with respect to the robot and landmarks. To do so the camera has to
 be calibrated.
 
-/subsection Camera Calibration
+### Camera Calibration
 
 ThymioTracker uses the standard openCV xml calibration files. To generate such
 a calibration, use either openCV's example codes, or use the ./calibrate binary.
@@ -27,7 +27,7 @@ the xml output file which path has to be provided as only parameter to the progr
 The path to the external calibration can then be defined in the Config.xml file
 which is loaded by the ThymioTracker object (See the Config.xml example file).
 
-/subsection Robot Detection and tracking
+### Robot Detection and tracking
 
 The robot detection approch is based on the blob structure of the top surface of the robot.
 If the pose of the robot at the previous frame is not known, then the blobs of the current 
@@ -84,7 +84,7 @@ To estimate if the tracker diverged, a score based on the sum of the pose comput
 mutual information is used and thresholded. If the sum of the information provided by all our
 accepted matches is below a threshold the we consider the tracker lost.
 
-/subsection Landmarks detection and tracking
+### Landmarks detection and tracking
 
 To detect the landmarks, we use the BRISK feature point extraction and matching method which 
 is fast and robust in the case of textured landmarks as the ones we use. As the detection is
@@ -115,20 +115,20 @@ current image. A RANSAC and PnP method is used then estimate the 3D pose of each
 to the camera.
 
 
-/SECTION Definition of new tracking models
+## Definition of new tracking models
 
 This section explains how to use the tracker for new landmarks or for a different
 robot model.
 
-/subsection New robot model
+### New robot model
 
-/subsubsection New blob configuration
+#### New blob configuration
 
 As the geometric hashing method used for the robot detection uses the blob configuration,
 the hash table of the geometric hashing has to be updated. To do so, when the blob configuration
 has been modified in Mdels.cpp (function ThymioBlobModel::setBlobModel()), use the ./trainGH program.
 
-/subsubsection New appearance model
+#### New appearance model
 
 As the tracking works using a set of planar surfaces which texture is learned, if the appearance
 of the robot changes or if one wants to use more planar surfaces, then the texture of the planar
@@ -139,7 +139,7 @@ an image sequence and the corresponding poses of the robot (the robot to camera 
 transformation matrix). The model which is currently defined in the modelSurfaces.xml.gz file
 has been acquired using aruco library and an AR board (aruco has also as only dependency OpenCV).
 
-/subsection New landmarks
+### New landmarks
 
 To be able to track new landmark, use the ./landmark program from the tools folder.
 Provide as first parameter the input image of the new landmark and as second parameter
