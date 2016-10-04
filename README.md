@@ -29,11 +29,11 @@ which is loaded by the ThymioTracker object (See the Config.xml example file).
 
 ### Robot Detection and tracking
 
-The robot detection approch is based on the blob structure of the top surface of the robot.
+The robot detection approach is based on the blob structure of the top surface of the robot.
 If the pose of the robot at the previous frame is not known, then the blobs of the current 
 image are extracted. 
 
-To estimate if the robot blobs from the model correspond to the detected blob there 
+To estimate if the robot blobs from the model correspond to the detected blobs there 
 need to be some matching. As no texture information is available from the patch surrounding 
 the blobs, the standard feature descriptors are useless. To create a feature descriptor 
 suitable in this case, we use geometric hashing: the descriptor of each feature is defined 
@@ -42,26 +42,26 @@ An Overview]. To make the matching process faster, not all the blobs detected in
 are used in the GH method: as the model follows a very specific pattern (they are grouped in 
 isosceles right triangle or squares), a method has been designed to use this pattern and select 
 only the blobs from the current image which suit this pattern.
-As the blob detectors gives us an estiamtion of the position of the blob in the image as well as
+As the blob detectors gives us an estimation of the position of the blob in the image as well as
 its scale, not only the position has been used in GH (like in most GH approaches), but the scale 
 is also taken into account resulting in a 3D LUT in the GH method.
 
-The descriptors of each blob of the model has been precomptued using the trainGH program,
+The descriptors of each blob of the model has been precomputed using the trainGH program,
 see the next section to change the blob configuration (the model) and therefore update the descriptors.
 As the calibration, the geometric hashing based descriptors are stored in an xml file 
 accessed throught config.xml or given directly to ThymioTracker as Filestorage parameter.
 
-Once the blobs are matched, a RANSAC like approach is used to find the corresponding 
-robots pose and the robot tracking can start.
+Once the blobs are matched, a RANSAC-like approach is used to find the corresponding 
+robot's pose and the robot tracking can start.
 
 As the geometric hashing matching is not robust to large perspective deformation and
-as the blobs extraction is also sensitive to the fronto parallelity of the top surface,
+as the blobs extraction is also sensitive to the fronto-parallelity of the top surface,
 the detection approach would not be suitable to estimate a consistent robot pose throughout
-a sequence. For this another approach which takes advantage of the temporal consistency
+a sequence. For this another approach, which takes advantage of the temporal consistency,
 is used for tracking.
 
 To track the robot, a set of planar surfaces having some texture information have been 
-defined and learned to model the robot's appearance. As in the trackign context the pose 
+defined and learned to model the robot's appearance. As in the tracking context the pose 
 at the previous frame is known, we can use this pose to approximate the current robot
 location. This pose is used to project each model surface onto its approximated location.
 Those surfaces are then used in a tracking approach which can be divided in two steps:
@@ -76,13 +76,13 @@ of mutual information (MI). MI is used here as it has been shown to be robust to
 variations, occlusions and give a nice picky optimum. 
 
 Once we estimated the center location of each model surface in the current image, those are 
-used to do a RANSAC like pose estimation. One specificity here is that each surface match
+used to do a RANSAC-like pose estimation. One specificity here is that each surface match
 is weighted in the PnP optimisation depending on how much information it provides and how
-much fronto parallel it is.
+much fronto-parallel it is.
 
 To estimate if the tracker diverged, a score based on the sum of the pose computation inliers
 mutual information is used and thresholded. If the sum of the information provided by all our
-accepted matches is below a threshold the we consider the tracker lost.
+accepted matches is below a threshold, then we consider that the tracker lost.
 
 ### Landmarks detection and tracking
 
@@ -93,9 +93,9 @@ still quite demanding in terms of computational load, the detection task is perf
 
 While doing a reasonable job at detecting, the BRISK approach does not use the temporal consistancy
 available in our image sequences and therefore perform too pourly in terms of tracking for AR.
-To aleviate the problem, a separate tracking approach has been designed: if a landmark was found 
+To alleviate the problem, a separate tracking approach has been designed: if a landmark was found 
 through detection or tracking at the previous frame, the previous pose of the landmark is used to
-do frame to frame tracking, doing the hypothesis that the movement in the iamge should not be too large.
+do frame to frame tracking, doing the hypothesis that the movement in the image should not be too large.
 
 For robustness and speed reasons, first the KLT approach is used for all the detected keypoints. This 
 means that each keypoint is searched in the current image using its appearance in the previous frame
@@ -106,7 +106,7 @@ each of those features points, the estimation of its current location is refined
 warped and "mipmapped " to the current landmark pose and an NCC template matching approach. As for every 
 frame a new subset is picked, after a few tracked frames, all the landmark features will have been visited and 
 their drift corrected. At every frame, the tracker also searches for new features from the model to track and 
-for non valid tracked features: a subsample of the non detected feature points are searched in the current image 
+for non-valid tracked features: a subsample of the non-detected feature points are searched in the current image 
 using NCC similarity measure and a subsample of the tracked ones are checked to verify if their NCC score is high 
 enough to continue the tracking.
 
@@ -145,9 +145,3 @@ To be able to track new landmark, use the ./landmark program from the tools fold
 Provide as first parameter the input image of the new landmark and as second parameter
 the xml or xml.gz file to be outputed and then added to the Config.xml file loaded by the 
 ThymioTracker object.
-
-
-
-
-
-
