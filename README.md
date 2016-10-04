@@ -15,17 +15,28 @@ be calibrated.
 
 ### Camera Calibration
 
-ThymioTracker uses the standard openCV xml calibration files. To generate such
-a calibration, use either openCV's example codes, or use the ./calibrate binary.
-The ./calibrate binary uses the online capture, it detects the assymetric grid
-pattern pattern-a4.pdf which can be found in the data folder, if a few detection
-are succefull in a row, then the image is stored to compute the calibration later.
+ThymioTracker uses the standard openCV xml calibration files. 
+
+- On a desktop: to generate such a calibration, use either openCV's example codes, 
+or use the ./calibrate binary. The ./calibrate binary uses the online capture, it detects 
+the assymetric grid pattern pattern-a4.pdf which can be found in the data folder, if a few 
+detection are succefull in a row, then the image is stored to compute the calibration later.
 This is repeated until enough calibration images are acquired.
 
 Once enough images are acquired the calibration is computed and stored in 
 the xml output file which path has to be provided as only parameter to the program.
 The path to the external calibration can then be defined in the Config.xml file
 which is loaded by the ThymioTracker object (See the Config.xml example file).
+
+- On a mobile device: to estimate and generate the calibration parameters and file, the tracker can be
+used as the landmarks can be used as calibration paterns. To do so, at the creation of the ThymioTracker 
+object, a CalibrationInfo object is also created which can be used to estimate the calibration online. 
+For this run the tracker as described in the following sections, once you want to integrate a new image
+and the information from the tracker corresponding to it to the calibration constraints (sets of 3D to 2D 
+matches) use the function upadteCalibration() from the tracker. Once the number of frames asked before
+calibration (nbFramesForCalibration) is reached  (getNbFramesToCalibration() == 0) then the calibration 
+of the tracker is updated and the calibration file can be retrieved using the writeCalibration function.
+
 
 ### Robot Detection and tracking
 
