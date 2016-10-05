@@ -153,6 +153,14 @@ has been acquired using aruco library and an AR board (aruco has also as only de
 ### New landmarks
 
 To be able to track new landmark, use the ./landmark program from the tools folder.
-Provide as first parameter the input image of the new landmark and as second parameter
-the xml or xml.gz file to be outputed and then added to the Config.xml file loaded by the 
-ThymioTracker object.
+The first parameter is the input image of the new landmark, the second parameter
+is the the xml or xml.gz output file, the third parameter is the scale with which the image is 
+going to be rescaled with before extracting the BRISK keypoint which will be used for the detection
+(such rescaling is well suited in our problem as we often have as a template an image with many details
+which most of the time won't be seen in our acquired images. Prefer to use this scale factor instead of
+rescaling by hand as this scaling method uses gaussian pyramids and is not a simple nearest neigbor 
+subsampling. One setting which worked well in terms of robustness and time consuption was to use a scaling 
+factor of 0.5 with an input image of size 300x300 resulting in a rescaled image of about 150x150 pixels 
+used by BRISK). The 4th and 5th parameters are the width and height of the template in meters in the real 
+world. 
+Once the xml or xml.gz file is created simply add it to the Config.xml file loaded by the ThymioTracker object.
