@@ -9,4 +9,4 @@ Contributors include:
 
 From [EPFL Mobots](http://mobots.epfl.ch/)
 
-* [Martin Voelkle](http://sampla.ch)
+* [Martin Voelkle](https://github.com/marvelous)
