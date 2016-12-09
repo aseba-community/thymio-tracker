@@ -8,6 +8,8 @@ using namespace std;
 namespace thymio_tracker
 {
 
+#define M_PI (std::atan(1)*4)
+
 Vec3d toVec(Point3f _p)
 {
     return Vec3d(_p.x,_p.y,_p.z);
