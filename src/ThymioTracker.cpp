@@ -1,9 +1,11 @@
 
 #include "ThymioTracker.h"
+#include "../aseba/common/msg/msg.h"
 
 #include <vector>
 #include <stdexcept>
 #include <fstream>
+#include <memory>
 
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
@@ -195,6 +197,8 @@ void ThymioTracker::init(cv::FileStorage& calibrationStorage,
     // Load landmarks
     for(auto& landmarkStorage : landmarkStorages)
         mLandmarks.push_back(Landmark::fromFileStorage(landmarkStorage));
+
+    connect("tcp:localhost;33333");
 }
 
 void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
@@ -216,8 +220,8 @@ void ThymioTracker::updateRobot(const cv::Mat& input,
         mRobot.find(input,mDetectionInfo.prevImageRobot,mDetectionInfo.mRobotDetection);
 
     input.copyTo(mDetectionInfo.prevImageRobot);
-    
 
+    step();
 }
 
 void ThymioTracker::writeCalibration(cv::FileStorage& output)
@@ -325,6 +329,91 @@ bool ThymioTracker::updateCalibration()
     }
 }
 
+static struct Shapes {
+    struct Line {
+        size_t pt1;
+        size_t pt2;
+        cv::Scalar color;
+        int thickness = 1;
+        int lineType = cv::LINE_8;
+        int shift = 0;
+    };
+    struct ArrowedLine: public Line {
+        double tipLength = 0.1;
+    };
+    std::vector<cv::Point3f> points;
+    std::vector<Line> lines;
+    std::vector<ArrowedLine> arrowedLines;
+    std::vector<std::pair<cv::Point3f, size_t>> proxValuePoints;
+    Shapes() {
+        auto polarToCart = [](float angle) {
+            // angle 0 is pointing north (y axis)
+            return cv::Point2f(std::sin(angle), std::cos(angle));
+        };
+        auto pushPoint = [this](cv::Point3f point) {
+            auto index = points.size();
+            points.push_back(point);
+            return index;
+        };
+        auto proxSensor = [this, pushPoint](cv::Point2f position2d, cv::Point2f direction2d) {
+            auto position3d = cv::Point3f(position2d) + cv::Point3f(0, 0, 0.013);
+            auto positionIndex = pushPoint(position3d);
+
+            // this point will be computed before drawing
+            auto valueIndex = pushPoint(position3d);
+            proxValuePoints.push_back({position3d, valueIndex});
+
+            Line valueLine;
+            valueLine.pt1 = positionIndex;
+            valueLine.pt2 = valueIndex;
+            valueLine.color = {255, 255, 255};
+            valueLine.thickness = 5;
+            lines.push_back(valueLine);
+
+            ArrowedLine arrowedLine;
+            arrowedLine.pt1 = positionIndex;
+            arrowedLine.pt2 = pushPoint(position3d + cv::Point3f(direction2d * 0.10));
+            arrowedLine.color = {0, 0, 255};
+            arrowedLine.thickness = 2;
+            arrowedLines.push_back(arrowedLine);
+        };
+
+        constexpr auto nbRoundCut = 2;
+        for (auto i = -nbRoundCut; i <= nbRoundCut; ++i) {
+            auto angle = float(i * M_PI / (4.7 * nbRoundCut));
+            auto direction = polarToCart(angle);
+            auto position = direction * 0.08;
+            proxSensor(position, direction);
+        }
+        proxSensor({+0.03, -0.0295}, {0, -1});
+        proxSensor({-0.03, -0.0295}, {0, -1});
+    }
+} shapes;
+
+/*
+# declare event prox.horizontal(7)
+onevent prox
+emit prox.horizontal(prox.horizontal)
+*/
+void ThymioTracker::incomingData(Dashel::Stream* stream)
+{
+    auto message = std::unique_ptr<Aseba::Message>(Aseba::Message::receive(stream));
+    auto userMessage = dynamic_cast<Aseba::UserMessage*>(message.get());
+    if (!userMessage) return;
+
+    if (userMessage->type != 0) return;
+    if (userMessage->data.size() != shapes.proxValuePoints.size()) return;
+
+    static auto diff = cv::Point3f(0, 0, 0.1) / 5000;
+
+    auto data = userMessage->data.begin();
+    for (auto& pair : shapes.proxValuePoints) {
+        auto value = *data;
+        shapes.points[pair.second] = pair.first + diff * value;
+        ++data;
+    }
+}
+
 void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation) const
 {
     // mDetectionInfo.image.copyTo(*output);
@@ -353,72 +442,6 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
         const auto& distCoeffs = mCalibration.distCoeffs;
         const auto& cameraPose = mDetectionInfo.mRobotDetection.getPose();
         //mRobot.model().draw(img, cameraMatrix, distCoeffs, cameraPose);
-
-        static struct Shapes {
-          struct Line {
-            size_t pt1;
-            size_t pt2;
-            cv::Scalar color;
-            int thickness = 1;
-            int lineType = cv::LINE_8;
-            int shift = 0;
-          };
-          struct ArrowedLine: public Line {
-            double tipLength = 0.1;
-          };
-          std::vector<cv::Point3f> points;
-          std::vector<Line> lines;
-          std::vector<ArrowedLine> arrowedLines;
-          std::vector<std::pair<cv::Point3f, size_t>> proxValuePoints;
-          Shapes() {
-            constexpr int nbRoundCut = 2;
-            auto polarToCart = [](float angle) {
-              // angle 0 is pointing north (y axis)
-              return cv::Point2f(std::sin(angle), std::cos(angle));
-            };
-            auto pushPoint = [this](cv::Point3f point) {
-              auto index = points.size();
-              points.push_back(point);
-              return index;
-            };
-            auto proxSensor = [this, pushPoint](cv::Point2f position2d, cv::Point2f direction2d) {
-              auto position3d = cv::Point3f(position2d) + cv::Point3f(0, 0, 0.013);
-              auto positionIndex = pushPoint(position3d);
-
-              // this point will be computed before drawing
-              auto valueIndex = pushPoint(position3d);
-              proxValuePoints.push_back({position3d, valueIndex});
-
-              Line valueLine;
-              valueLine.pt1 = positionIndex;
-              valueLine.pt2 = valueIndex;
-              valueLine.color = {255, 255, 255};
-              valueLine.thickness = 5;
-              lines.push_back(valueLine);
-
-              ArrowedLine arrowedLine;
-              arrowedLine.pt1 = positionIndex;
-              arrowedLine.pt2 = pushPoint(position3d + cv::Point3f(direction2d * 0.10));
-              arrowedLine.color = {0, 0, 255};
-              arrowedLine.thickness = 2;
-              arrowedLines.push_back(arrowedLine);
-            };
-            for (int i = -nbRoundCut; i <= nbRoundCut; ++i) {
-                auto angle = float(i * M_PI / (4.7 * nbRoundCut));
-                auto direction = polarToCart(angle);
-                auto position = direction * 0.08;
-                proxSensor(position, direction);
-            }
-
-            proxSensor({+0.03, -0.0295}, {0, -1});
-            proxSensor({-0.03, -0.0295}, {0, -1});
-          }
-        } shapes;
-
-        // update prox values
-        for (auto& proxValuePoint : shapes.proxValuePoints) {
-          shapes.points[proxValuePoint.second] = proxValuePoint.first + cv::Point3f(0, 0, 0.01);
-        }
 
         static std::vector<cv::Point3f> objectPoints;
         objectPoints.clear();
