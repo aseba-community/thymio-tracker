@@ -346,7 +346,101 @@ void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientatio
     //                     cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
     
     if(mDetectionInfo.mRobotDetection.isFound())
-        mRobot.model().draw(*output, mCalibration, mDetectionInfo.mRobotDetection.getPose());
+    {
+        const auto& robotPose = mRobot.model().pose;
+        auto& img = *output;
+        const auto& cameraMatrix = mCalibration.cameraMatrix;
+        const auto& distCoeffs = mCalibration.distCoeffs;
+        const auto& cameraPose = mDetectionInfo.mRobotDetection.getPose();
+        //mRobot.model().draw(img, cameraMatrix, distCoeffs, cameraPose);
+
+        static struct Shapes {
+          struct Line {
+            size_t pt1;
+            size_t pt2;
+            cv::Scalar color;
+            int thickness = 1;
+            int lineType = cv::LINE_8;
+            int shift = 0;
+          };
+          struct ArrowedLine: public Line {
+            double tipLength = 0.1;
+          };
+          std::vector<cv::Point3f> points;
+          std::vector<Line> lines;
+          std::vector<ArrowedLine> arrowedLines;
+          std::vector<std::pair<cv::Point3f, size_t>> proxValuePoints;
+          Shapes() {
+            constexpr int nbRoundCut = 2;
+            auto polarToCart = [](float angle) {
+              // angle 0 is pointing north (y axis)
+              return cv::Point2f(std::sin(angle), std::cos(angle));
+            };
+            auto pushPoint = [this](cv::Point3f point) {
+              auto index = points.size();
+              points.push_back(point);
+              return index;
+            };
+            auto proxSensor = [this, pushPoint](cv::Point2f position2d, cv::Point2f direction2d) {
+              auto position3d = cv::Point3f(position2d) + cv::Point3f(0, 0, 0.013);
+              auto positionIndex = pushPoint(position3d);
+
+              // this point will be computed before drawing
+              auto valueIndex = pushPoint(position3d);
+              proxValuePoints.push_back({position3d, valueIndex});
+
+              Line valueLine;
+              valueLine.pt1 = positionIndex;
+              valueLine.pt2 = valueIndex;
+              valueLine.color = {255, 255, 255};
+              valueLine.thickness = 5;
+              lines.push_back(valueLine);
+
+              ArrowedLine arrowedLine;
+              arrowedLine.pt1 = positionIndex;
+              arrowedLine.pt2 = pushPoint(position3d + cv::Point3f(direction2d * 0.10));
+              arrowedLine.color = {0, 0, 255};
+              arrowedLine.thickness = 2;
+              arrowedLines.push_back(arrowedLine);
+            };
+            for (int i = -nbRoundCut; i <= nbRoundCut; ++i) {
+                auto angle = float(i * M_PI / (4.7 * nbRoundCut));
+                auto direction = polarToCart(angle);
+                auto position = direction * 0.08;
+                proxSensor(position, direction);
+            }
+
+            proxSensor({+0.03, -0.0295}, {0, -1});
+            proxSensor({-0.03, -0.0295}, {0, -1});
+          }
+        } shapes;
+
+        // update prox values
+        for (auto& proxValuePoint : shapes.proxValuePoints) {
+          shapes.points[proxValuePoint.second] = proxValuePoint.first + cv::Point3f(0, 0, 0.01);
+        }
+
+        static std::vector<cv::Point3f> objectPoints;
+        objectPoints.clear();
+        for (auto& point : shapes.points) {
+          objectPoints.push_back(robotPose * point);
+        }
+
+        static std::vector<cv::Point2f> imagePoints;
+        imagePoints.clear();
+        cv::projectPoints(objectPoints, cameraPose.rvec(), cameraPose.translation(), cameraMatrix, distCoeffs, imagePoints);
+
+        for (auto& line : shapes.lines) {
+          const auto& pt1 = imagePoints[line.pt1];
+          const auto& pt2 = imagePoints[line.pt2];
+          cv::line(img, pt1, pt2, line.color, line.thickness, line.lineType, line.shift);
+        }
+        for (auto& line : shapes.arrowedLines) {
+          const auto& pt1 = imagePoints[line.pt1];
+          const auto& pt2 = imagePoints[line.pt2];
+          cv::arrowedLine(img, pt1, pt2, line.color, line.thickness, line.lineType, line.shift, line.tipLength);
+        }
+    }
     else
         putText(*output, "Lost",
                 cv::Point2i(10,10),
