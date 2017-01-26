@@ -37,6 +37,14 @@ set(ThymioTracker_SOURCES
     src/TrackingFcts.cpp
     src/Calibrator.hpp
     src/Calibrator.cpp
+    dashel/dashel/dashel-common.cpp
+    dashel/dashel/dashel-posix.cpp
+    aseba/common/utils/FormatableString.cpp
+    aseba/common/utils/utils.cpp
+    aseba/common/utils/HexFile.cpp
+    aseba/common/utils/BootloaderInterface.cpp
+    aseba/common/msg/msg.cpp
+    aseba/common/msg/NodesManager.cpp
     )
 
 if(ANDROID_WRAPPER)
@@ -111,6 +119,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-long-long -Wno-vla
 
 include_directories(${PROJECT_SOURCE_DIR}/src
                     ${PROJECT_SOURCE_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/dashel
                     # ${PROJECT_SOURCE_DIR}/brisk/include
                     # ${PROJECT_SOURCE_DIR}/brisk/agast/include
                     ${OpenCV_INCLUDE_DIRS})
