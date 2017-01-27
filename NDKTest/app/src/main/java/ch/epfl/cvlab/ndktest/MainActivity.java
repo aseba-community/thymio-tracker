@@ -6,19 +6,15 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 
-// import ch.epfl.cvlab.arthymio.ARThymio;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
-
-import ch.epfl.cvlab.thymiotracker.ThymioTracker;
-import ch.epfl.cvlab.calibrator.Calibrator;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -28,23 +24,23 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
 
-public class MainActivity
+import java.io.File;
+
+public abstract class MainActivity
         extends AppCompatActivity
         implements CvCameraViewListener, SensorEventListener {
 
-    private static final String TAG = "NDKTest::MainActivity";
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     private CameraBridgeViewBase mOpenCvCameraView;
 
-    private ThymioTracker mThymioTracker;
-    private Calibrator mCalibrator;
+    protected File trackerDirectory;
 
-    private Mat mGrayImage = null;
+    protected Mat mGrayImage = null;
     private SensorManager mSensorManager = null;
     private Sensor mRotationSensor = null;
-    private Mat mRotationMatrix = new Mat(3, 3, CvType.CV_32FC1);
+    protected Mat mRotationMatrix = new Mat(3, 3, CvType.CV_32FC1);
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -76,11 +72,9 @@ public class MainActivity
         super.onCreate(savedInstanceState);
         // setContentView(R.layout.activity_main);
 
-        final String extStorageDir = Environment.getExternalStorageDirectory().getPath();
-        Log.d(TAG, "Storage Dir is " + extStorageDir);
-
-        //mThymioTracker = new ThymioTracker(extStorageDir + "/ThymioTracker/");
-        mCalibrator = new Calibrator(extStorageDir + "/ThymioTracker/newCalib.xml");
+        final File storageDirectory = Environment.getExternalStorageDirectory();
+        Log.d(TAG, "Storage Dir is " + storageDirectory.getPath());
+        trackerDirectory = new File(storageDirectory, "ThymioTracker");
 
         mOpenCvCameraView = new JavaCameraView(this, -1);
         mOpenCvCameraView.setMaxFrameSize(800, 600);
@@ -142,26 +136,6 @@ public class MainActivity
     }
 
     public void onCameraViewStopped() {
-    }
-
-    public Mat onCameraFrame(Mat inputFrame) {
-        // Log.d(TAG, "Rows: " + ARThymio.get_rows(inputFrame));
-        Imgproc.cvtColor(inputFrame, mGrayImage, Imgproc.COLOR_BGR2GRAY);
-        // Log.d(TAG, "Input image size: " + inputFrame.rows() + " x " + inputFrame.cols());
-
-        // ARThymio.process(inputFrame, mGrayImage, mRotationMatrix);
-
-        //mThymioTracker.update(mGrayImage);
-        //mThymioTracker.drawLastDetection(inputFrame, mRotationMatrix);
-
-        mCalibrator.update(mGrayImage);
-        mCalibrator.drawState(inputFrame);
-
-
-//        if (mGrayImage.size() != inputFrame.size())
-//            Imgproc.resize(mGrayImage, mGrayImage, inputFrame.size());
-
-        return inputFrame;
     }
 
     static {

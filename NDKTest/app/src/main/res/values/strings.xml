@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">NDKTest</string>
+    <string name="calibrator_label">Thymio Calibrator</string>
+    <string name="tracker_label">Thymio Tracker</string>
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
