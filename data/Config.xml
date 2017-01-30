@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<calibrationFile>"nexus_camera_calib.xml"</calibrationFile>
+<calibrationFile>"calibration.xml"</calibrationFile>
 <geomHashingFile>"GHscale_Arth_Perspective.xml"</geomHashingFile>
 <robotModelFile>"modelSurfaces.xml"</robotModelFile>
-<landmarkFiles>
-  "landmarks/marker.xml.gz" "landmarks/ziggu.xml.gz"</landmarkFiles>
+<landmarkFiles></landmarkFiles>
 </opencv_storage>
