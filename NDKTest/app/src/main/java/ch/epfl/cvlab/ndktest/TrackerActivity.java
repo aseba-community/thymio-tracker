@@ -29,4 +29,10 @@ public class TrackerActivity
 
 		return inputFrame;
 	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		mThymioTracker.finalize();
+	}
 }

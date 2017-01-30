@@ -30,4 +30,10 @@ public class CalibratorActivity
 
 		return inputFrame;
 	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		mCalibrator.finalize();
+	}
 }
