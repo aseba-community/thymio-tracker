@@ -19,9 +19,9 @@ namespace thymio_tracker
 class Calibrator
 {
 public:
-    Calibrator(const std::string& calibFileName);
-    Calibrator(cv::FileStorage* calibFileName);
-    void init(cv::FileStorage* calibStorage);
+    Calibrator(const std::string& filename);
+    Calibrator(cv::FileStorage* storage);
+    void init();
 
     //process a new frame: try detecting calibration pattern...
     void update(const cv::Mat& input);
@@ -41,8 +41,8 @@ private:
     std::vector<std::vector<cv::Point2f> > imagePoints;//projection of 3d vertices
 
     //where to store the calibration xml file
-    cv::FileStorage fs;
-    cv::FileStorage *fsPtr;
+    std::string filename;
+    cv::FileStorage* storage;
 
     //for display
     bool found;//pattern found in current frame

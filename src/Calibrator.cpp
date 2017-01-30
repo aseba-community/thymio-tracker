@@ -16,22 +16,14 @@ namespace thymio_tracker
 {
 
 
-Calibrator::Calibrator(const std::string& calibFileName)
+Calibrator::Calibrator(const std::string& filename) : filename(filename), storage()
 {
-    fs.open(calibFileName, cv::FileStorage::WRITE);
-
-    //std::ofstream myfile;
-    //myfile.open (calibFileName);
-    //myfile << "Writing this to a file.\n";
-    //myfile.close();      
-
-    init(&fs);
-
+    init();
 }
 
-Calibrator::Calibrator(cv::FileStorage* calibStorage)
+Calibrator::Calibrator(cv::FileStorage* storage) : filename(), storage(storage)
 {
-    init(calibStorage);
+    init();
 }
 
 static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f>& corners)
@@ -44,10 +36,8 @@ static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::
 }
 
 
-void Calibrator::init(cv::FileStorage* calibStorage)
+void Calibrator::init()
 {
-    fsPtr = calibStorage;
-
     calibrated = false;
     cpt_found_in_a_row = 0;
     nb_required_images = 10;
@@ -98,11 +88,17 @@ void Calibrator::update(const cv::Mat& inputImage)
         std::cout<<"camera calibration done ... RMS = "<<rms<<std::endl;
 
         //save to file
+        auto fsPtr = storage;
+        if (storage == nullptr) {
+            fsPtr = new cv::FileStorage(filename, cv::FileStorage::WRITE);
+        }
         cv::write(*fsPtr,"camera_matrix", cameraMatrix);
         cv::write(*fsPtr,"distortion_coefficients", distortionCoefficients);
         cv::write(*fsPtr,"image_width", inputImage.size().width);
         cv::write(*fsPtr,"image_height", inputImage.size().height);
-        fsPtr->release();        
+        if (storage == nullptr) {
+            delete fsPtr;
+        }
 
         calibrated = true;
     }
