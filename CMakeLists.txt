@@ -127,6 +127,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src
 if(ANDROID_WRAPPER)
     
     add_library(thymiotracker MODULE ${ThymioTracker_SOURCES})
+    # http://stackoverflow.com/a/32399514/3766378
+    string(REPLACE "<CMAKE_SHARED_LIBRARY_SONAME_CXX_FLAG><TARGET_SONAME>" "" CMAKE_CXX_CREATE_SHARED_MODULE "${CMAKE_CXX_CREATE_SHARED_MODULE}")
     
 else(ANDROID_WRAPPER)
     
