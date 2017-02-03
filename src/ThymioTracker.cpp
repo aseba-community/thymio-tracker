@@ -108,6 +108,10 @@ ThymioTracker::ThymioTracker(const std::string& configPath)
     fs["robotModelFile"]>> robotModelFile;
     robotModelFile = configPath + robotModelFile;
 
+    std::string dashelTarget;
+    fs["dashelTarget"] >> dashelTarget;
+    connect(dashelTarget);
+
     std::vector<std::string> landmarkFiles;
     cv::FileNode nLm = fs["landmarkFiles"];
     cv::FileNodeIterator it = nLm.begin(), it_end = nLm.end(); // Go through the node
@@ -197,8 +201,6 @@ void ThymioTracker::init(cv::FileStorage& calibrationStorage,
     // Load landmarks
     for(auto& landmarkStorage : landmarkStorages)
         mLandmarks.push_back(Landmark::fromFileStorage(landmarkStorage));
-
-    connect("tcp:localhost;33333");
 }
 
 void ThymioTracker::resizeCalibration(const cv::Size& imgSize)
