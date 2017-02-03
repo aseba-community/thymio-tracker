@@ -1,6 +1,6 @@
 
 #include "ThymioTracker.h"
-#include "../aseba/common/msg/msg.h"
+#include "aseba/common/msg/msg.h"
 
 #include <vector>
 #include <stdexcept>

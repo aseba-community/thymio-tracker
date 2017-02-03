@@ -125,6 +125,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src
                     ${PROJECT_SOURCE_DIR}/dashel
                     # ${PROJECT_SOURCE_DIR}/brisk/include
                     # ${PROJECT_SOURCE_DIR}/brisk/agast/include
+                    ${PROJECT_SOURCE_DIR}
                     ${OpenCV_INCLUDE_DIRS})
 
 if(ANDROID_WRAPPER)
