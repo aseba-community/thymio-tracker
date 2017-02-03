@@ -16,6 +16,7 @@
 #include "Landmark.hpp"
 #include "Robot.hpp"
 #include "dashel/dashel.h"
+#include "aseba/common/msg/NodesManager.h"
 
 namespace thymio_tracker
 {
@@ -75,7 +76,7 @@ private:
 };
 
 
-class ThymioTracker: public Dashel::Hub
+class ThymioTracker: public Dashel::Hub, public Aseba::NodesManager
 {
 public:
     ThymioTracker(const std::string& configPath);
@@ -106,7 +107,10 @@ public:
     //            const cv::Mat* deviceOrientation=0){updateLandmarks(input,deviceOrientation);};
     //void update(const cv::Mat& input,
     //            const cv::Mat* deviceOrientation=0){updateRobot(input,deviceOrientation);};
+    void connectionCreated(Dashel::Stream* stream) override;
     void incomingData(Dashel::Stream* stream) override;
+    void sendMessage(const Aseba::Message& message) override;
+    void nodeDescriptionReceived(unsigned nodeId) override;
     void drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation=0) const;
 
     
@@ -144,6 +148,8 @@ private:
     
     Timer mTimer;
     // cv::Ptr<cv::xfeatures2d::DAISY> mFeatureExtractor;
+
+    Dashel::Stream* stream;
 };
 
 }

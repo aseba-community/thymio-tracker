@@ -392,14 +392,17 @@ static struct Shapes {
     }
 } shapes;
 
-/*
-# declare event prox.horizontal(7)
-onevent prox
-emit prox.horizontal(prox.horizontal)
-*/
+void ThymioTracker::connectionCreated(Dashel::Stream* stream)
+{
+    this->stream = stream;
+    pingNetwork();
+}
+
 void ThymioTracker::incomingData(Dashel::Stream* stream)
 {
     auto message = std::unique_ptr<Aseba::Message>(Aseba::Message::receive(stream));
+    processMessage(message.get());
+
     auto userMessage = dynamic_cast<Aseba::UserMessage*>(message.get());
     if (!userMessage) return;
 
@@ -414,6 +417,43 @@ void ThymioTracker::incomingData(Dashel::Stream* stream)
         shapes.points[pair.second] = pair.first + diff * value;
         ++data;
     }
+}
+
+void ThymioTracker::sendMessage(const Aseba::Message& message)
+{
+    message.serialize(stream);
+}
+
+void ThymioTracker::nodeDescriptionReceived(unsigned nodeId)
+{
+    Aseba::Compiler compiler;
+    compiler.setTargetDescription(getDescription(nodeId));
+
+    Aseba::CommonDefinitions commonDefinitions;
+    commonDefinitions.events.push_back(Aseba::NamedValue(L"prox.horizontal", 7));
+    compiler.setCommonDefinitions(&commonDefinitions);
+
+    std::wstring source(LR"EOS(
+onevent prox
+emit prox.horizontal(prox.horizontal)
+)EOS");
+    std::wistringstream input(source);
+
+    Aseba::BytecodeVector bytecode;
+    unsigned allocatedVariablesCount;
+    Aseba::Error error;
+    bool result = compiler.compile(input, bytecode, allocatedVariablesCount, error);
+    if (!result) throw error;
+
+    std::vector<Aseba::Message*> messages;
+    Aseba::sendBytecode(messages, nodeId, std::vector<uint16>(bytecode.begin(), bytecode.end()));
+    for (auto message: messages) {
+        sendMessage(*message);
+        delete message;
+    }
+
+    Aseba::Run run(nodeId);
+    sendMessage(run);
 }
 
 void ThymioTracker::drawLastDetection(cv::Mat* output, cv::Mat* deviceOrientation) const

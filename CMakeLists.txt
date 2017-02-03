@@ -45,6 +45,18 @@ set(ThymioTracker_SOURCES
     aseba/common/utils/BootloaderInterface.cpp
     aseba/common/msg/msg.cpp
     aseba/common/msg/NodesManager.cpp
+    aseba/compiler/compiler.cpp
+    aseba/compiler/errors.cpp
+    aseba/compiler/identifier-lookup.cpp
+    aseba/compiler/lexer.cpp
+    aseba/compiler/parser.cpp
+    aseba/compiler/analysis.cpp
+    aseba/compiler/tree-build.cpp
+    aseba/compiler/tree-expand.cpp
+    aseba/compiler/tree-dump.cpp
+    aseba/compiler/tree-typecheck.cpp
+    aseba/compiler/tree-optimize.cpp
+    aseba/compiler/tree-emit.cpp
     )
 
 if(ANDROID_WRAPPER)
