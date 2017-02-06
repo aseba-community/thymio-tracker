@@ -348,16 +348,16 @@ static struct Shapes {
     std::vector<ArrowedLine> arrowedLines;
     std::vector<std::pair<cv::Point3f, size_t>> proxValuePoints;
     Shapes() {
-        auto polarToCart = [](float angle) {
+        auto polarToCart = [&](float angle) {
             // angle 0 is pointing north (y axis)
             return cv::Point2f(std::sin(angle), std::cos(angle));
         };
-        auto pushPoint = [this](cv::Point3f point) {
+        auto pushPoint = [&](cv::Point3f point) {
             auto index = points.size();
             points.push_back(point);
             return index;
         };
-        auto proxSensor = [this, pushPoint](cv::Point2f position2d, cv::Point2f direction2d) {
+        auto proxSensor = [&](cv::Point2f position2d, cv::Point2f direction2d) {
             auto position3d = cv::Point3f(position2d) + cv::Point3f(0, 0, 0.013);
             auto positionIndex = pushPoint(position3d);
 
@@ -372,12 +372,35 @@ static struct Shapes {
             valueLine.thickness = 5;
             lines.push_back(valueLine);
 
+            auto arrowLength = float(0.10);
             ArrowedLine arrowedLine;
             arrowedLine.pt1 = positionIndex;
-            arrowedLine.pt2 = pushPoint(position3d + cv::Point3f(direction2d * 0.10));
+            arrowedLine.pt2 = pushPoint(position3d + cv::Point3f(direction2d * arrowLength));
             arrowedLine.color = {0, 0, 255};
             arrowedLine.thickness = 2;
             arrowedLines.push_back(arrowedLine);
+
+            auto rayAngle = float(2*M_PI * 10/360);
+            auto rayLength = float(0.9 * arrowLength);
+            auto cone = polarToCart(rayAngle) * rayLength;
+            auto rayCount = 6u;
+            for (size_t rayIndex = 0; rayIndex < rayCount; ++rayIndex) {
+                auto angleCircle = float(2*M_PI * rayIndex/rayCount);
+                auto coordCircle = polarToCart(angleCircle) * cone.x;
+                auto angleHoriz = std::atan2(direction2d.y, direction2d.x) + std::atan2(cone.y, coordCircle.x);
+                auto rayDirection2d = polarToCart(-angleHoriz);
+                auto rayHoriz = rayDirection2d * std::sqrt(cone.y * cone.y + coordCircle.x * coordCircle.x);
+                auto dx = rayHoriz.x;
+                auto dy = rayHoriz.y;
+                auto dz = coordCircle.y;
+
+                Line line;
+                line.pt1 = positionIndex;
+                line.pt2 = pushPoint(position3d - cv::Point3f {dx, dy, dz});
+                line.color = {0, 0, 255};
+                line.thickness = 1;
+                lines.push_back(line);
+            }
         };
 
         constexpr auto nbRoundCut = 2;
