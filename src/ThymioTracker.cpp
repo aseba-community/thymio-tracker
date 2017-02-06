@@ -358,24 +358,30 @@ static struct Shapes {
             return index;
         };
         auto proxSensor = [&](cv::Point2f position2d, cv::Point2f direction2d) {
+            auto normal2d = cv::Point2f{-direction2d.y, direction2d.x};
             auto position3d = cv::Point3f(position2d) + cv::Point3f(0, 0, 0.013);
-            auto positionIndex = pushPoint(position3d);
+
+            auto receptor = position3d + cv::Point3f(normal2d * 0.002);
+            auto receptorIndex = pushPoint(receptor);
 
             // this point will be computed before drawing
-            auto valueIndex = pushPoint(position3d);
-            proxValuePoints.push_back({position3d, valueIndex});
+            auto valueIndex = pushPoint(receptor);
+            proxValuePoints.push_back({receptor, valueIndex});
 
             Line valueLine;
-            valueLine.pt1 = positionIndex;
+            valueLine.pt1 = receptorIndex;
             valueLine.pt2 = valueIndex;
             valueLine.color = {255, 255, 255};
             valueLine.thickness = 5;
             lines.push_back(valueLine);
 
+            auto emitter = position3d - cv::Point3f(normal2d * 0.002);
+            auto emitterIndex = pushPoint(emitter);
+
             auto arrowLength = float(0.10);
             ArrowedLine arrowedLine;
-            arrowedLine.pt1 = positionIndex;
-            arrowedLine.pt2 = pushPoint(position3d + cv::Point3f(direction2d * arrowLength));
+            arrowedLine.pt1 = emitterIndex;
+            arrowedLine.pt2 = pushPoint(emitter + cv::Point3f(direction2d * arrowLength));
             arrowedLine.color = {0, 0, 255};
             arrowedLine.thickness = 2;
             arrowedLines.push_back(arrowedLine);
@@ -395,8 +401,8 @@ static struct Shapes {
                 auto dz = coordCircle.y;
 
                 Line line;
-                line.pt1 = positionIndex;
-                line.pt2 = pushPoint(position3d - cv::Point3f {dx, dy, dz});
+                line.pt1 = emitterIndex;
+                line.pt2 = pushPoint(emitter - cv::Point3f {dx, dy, dz});
                 line.color = {0, 0, 255};
                 line.thickness = 1;
                 lines.push_back(line);
