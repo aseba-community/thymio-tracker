@@ -30,5 +30,6 @@ build arm armeabi-v7a
 build arm64 arm64-v8a
 
 pushd NDKTest
+ANDROID_HOME="$ANDROID_SDK" \
 ./gradlew build
 popd
