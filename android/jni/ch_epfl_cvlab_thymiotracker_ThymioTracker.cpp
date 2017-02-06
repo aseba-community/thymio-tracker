@@ -3,6 +3,8 @@
 
 #include "ThymioTracker.h"
 
+#include <android/log.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,8 +32,18 @@ JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNat
   (JNIEnv * env, jobject, jstring _configFile)
 {
     std::string configFile = GetJStringContent(env, _configFile);
-    
-    return reinterpret_cast<long>(new ThymioTracker(configFile));
+
+    try {
+        return reinterpret_cast<long>(new ThymioTracker(configFile));
+    } catch (Dashel::DashelException exception) {
+        auto source(exception.source);
+        auto sysError(exception.sysError);
+        auto strError(strerror(sysError));
+        auto reason(exception.what());
+        auto stream(static_cast<void*>(exception.stream));
+        __android_log_print(ANDROID_LOG_FATAL, "ThymioTracker", "DashelException %i %i %s %s %p", source, sysError, strError, reason, stream);
+        throw exception;
+    }
 }
 
 JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNativeInstance__Ljava_lang_String_2Ljava_lang_String_2
