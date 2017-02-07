@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
-<dashelTarget>"tcp:localhost;33333"</dashelTarget>
+<dashelTarget>"android:"</dashelTarget>
 <calibrationFile>"calibration.xml"</calibrationFile>
 <geomHashingFile>"GHscale_Arth_Perspective.xml"</geomHashingFile>
 <robotModelFile>"modelSurfaces.xml"</robotModelFile>

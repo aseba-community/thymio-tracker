@@ -2,6 +2,7 @@
 #include "ch_epfl_cvlab_thymiotracker_ThymioTracker.h"
 
 #include "ThymioTracker.h"
+#include "aseba/transport/dashel_plugins/dashel-plugins.h"
 
 #include <android/log.h>
 
@@ -33,6 +34,7 @@ JNIEXPORT jlong JNICALL Java_ch_epfl_cvlab_thymiotracker_ThymioTracker_createNat
 {
     std::string configFile = GetJStringContent(env, _configFile);
 
+    Dashel::initPlugins();
     try {
         return reinterpret_cast<long>(new ThymioTracker(configFile));
     } catch (Dashel::DashelException exception) {

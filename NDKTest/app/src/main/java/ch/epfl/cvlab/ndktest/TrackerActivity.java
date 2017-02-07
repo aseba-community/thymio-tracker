@@ -2,6 +2,7 @@ package ch.epfl.cvlab.ndktest;
 
 import android.os.Bundle;
 
+import org.mobsya.thymiovpl.DashelSerial;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
@@ -18,6 +19,7 @@ public class TrackerActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		DashelSerial.activity = this;
 		mThymioTracker = new ThymioTracker(trackerDirectory.getPath() + "/");
 	}
 
@@ -34,5 +36,6 @@ public class TrackerActivity
 	protected void onDestroy() {
 		super.onDestroy();
 		mThymioTracker.finalize();
+		DashelSerial.activity = null;
 	}
 }

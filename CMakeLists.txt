@@ -115,6 +115,7 @@ if(ANDROID_WRAPPER)
         ${ThymioTracker_SOURCES}
         ch_epfl_cvlab_thymiotracker_ThymioTracker.h
         ch_epfl_cvlab_calibrator_Calibrator.h
+        aseba/transport/dashel_plugins/android.cpp
         android/jni/ch_epfl_cvlab_thymiotracker_ThymioTracker.cpp
         android/jni/ch_epfl_cvlab_calibrator_Calibrator.cpp)
 
