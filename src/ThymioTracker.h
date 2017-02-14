@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 #include <ctime>
+#include <memory>
+#include <thread>
 
 
 
@@ -87,7 +89,7 @@ public:
                   cv::FileStorage& geomHashing,
                   cv::FileStorage& robotModel,
                   std::vector<cv::FileStorage>& landmarkStorages);
-    ~ThymioTracker(){}
+    ~ThymioTracker();
     
     //detection information updates, => use that to perform calibration
     bool updateCalibration();
@@ -107,6 +109,8 @@ public:
     //            const cv::Mat* deviceOrientation=0){updateLandmarks(input,deviceOrientation);};
     //void update(const cv::Mat& input,
     //            const cv::Mat* deviceOrientation=0){updateRobot(input,deviceOrientation);};
+
+    void run(std::string target);
     void connectionCreated(Dashel::Stream* stream) override;
     void incomingData(Dashel::Stream* stream) override;
     void sendMessage(const Aseba::Message& message) override;
@@ -149,6 +153,7 @@ private:
     Timer mTimer;
     // cv::Ptr<cv::xfeatures2d::DAISY> mFeatureExtractor;
 
+    std::unique_ptr<std::thread> thread;
     Dashel::Stream* stream;
 };
 

@@ -5,7 +5,6 @@
 #include <vector>
 #include <stdexcept>
 #include <fstream>
-#include <memory>
 
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
@@ -110,7 +109,7 @@ ThymioTracker::ThymioTracker(const std::string& configPath)
 
     std::string dashelTarget;
     fs["dashelTarget"] >> dashelTarget;
-    connect(dashelTarget);
+    this->thread.reset(new std::thread(&ThymioTracker::run, this, std::move(dashelTarget)));
 
     std::vector<std::string> landmarkFiles;
     cv::FileNode nLm = fs["landmarkFiles"];
@@ -181,6 +180,12 @@ ThymioTracker::ThymioTracker(cv::FileStorage& calibrationStorage,
                              std::vector<cv::FileStorage>& landmarkStorages)
 {
     init(calibrationStorage, geomHashingStorage, robotModelStorage, landmarkStorages);
+}
+
+ThymioTracker::~ThymioTracker()
+{
+    stop();
+    thread->join();
 }
 
 void ThymioTracker::init(cv::FileStorage& calibrationStorage,
@@ -420,6 +425,12 @@ static struct Shapes {
         proxSensor({-0.03, -0.0295}, {0, -1});
     }
 } shapes;
+
+void ThymioTracker::run(std::string target)
+{
+    connect(target);
+    Dashel::Hub::run();
+}
 
 void ThymioTracker::connectionCreated(Dashel::Stream* stream)
 {
