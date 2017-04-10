@@ -387,7 +387,7 @@ static struct Shapes {
             ArrowedLine arrowedLine;
             arrowedLine.pt1 = emitterIndex;
             arrowedLine.pt2 = pushPoint(emitter + cv::Point3f(direction2d * arrowLength));
-            arrowedLine.color = {0, 0, 255};
+            arrowedLine.color = {255, 0, 0};
             arrowedLine.thickness = 2;
             arrowedLines.push_back(arrowedLine);
 
@@ -408,7 +408,7 @@ static struct Shapes {
                 Line line;
                 line.pt1 = emitterIndex;
                 line.pt2 = pushPoint(emitter - cv::Point3f {dx, dy, dz});
-                line.color = {0, 0, 255};
+                line.color = {255, 0, 0};
                 line.thickness = 1;
                 lines.push_back(line);
             }
@@ -421,8 +421,8 @@ static struct Shapes {
             auto position = direction * 0.08;
             proxSensor(position, direction);
         }
-        proxSensor({+0.03, -0.0295}, {0, -1});
         proxSensor({-0.03, -0.0295}, {0, -1});
+        proxSensor({+0.03, -0.0295}, {0, -1});
     }
 } shapes;
 
