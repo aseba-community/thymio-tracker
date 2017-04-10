@@ -227,8 +227,6 @@ void ThymioTracker::updateRobot(const cv::Mat& input,
         mRobot.find(input,mDetectionInfo.prevImageRobot,mDetectionInfo.mRobotDetection);
 
     input.copyTo(mDetectionInfo.prevImageRobot);
-
-    step();
 }
 
 void ThymioTracker::writeCalibration(cv::FileStorage& output)
