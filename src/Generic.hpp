@@ -36,7 +36,7 @@ struct IntrinsicCalibration {
 	            init("../data/calibration/embedded_camera_calib.xml");
 	            break;
 	        default:
-	            imageSize = cv::Size(640,480);
+                    imageSize = cv::Size(853,480);
 
 	            cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
      			cameraMatrix.at<double>(0,0) = 800.0;
