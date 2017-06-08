@@ -289,6 +289,7 @@ bool ThymioTracker::updateCalibration()
             std::vector<cv::Point3f> lmObjectPoints;
             std::vector<cv::Point2f> lmImagePoints;
 
+            // FIXME: will break non-square landmarks
             float scale = landmarksIt->getRealSize().width/landmarksIt->getImage().size().width;
             auto correspIt = lmDetectionsIt->getCorrespondences().cbegin();
             for(; correspIt != lmDetectionsIt->getCorrespondences().cend(); ++correspIt)
@@ -312,6 +313,7 @@ bool ThymioTracker::updateCalibration()
         cv::Mat distortionCoefficients = cv::Mat::zeros(8, 1, CV_64F); // There are 8 distortion coefficients
         cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
 
+        // FIXME: put this into a RANSAC loop for robustness
         int flags = 0;
         double rms = calibrateCamera(mCalibrationInfo.objectPoints, mCalibrationInfo.imagePoints, mCalibration.imageSize, mCalibration.cameraMatrix,
                       mCalibration.distCoeffs, rotationVectors, translationVectors, flags|CV_CALIB_FIX_K4|CV_CALIB_FIX_K5);
