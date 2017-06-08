@@ -21,7 +21,7 @@ struct IntrinsicCalibration {
     cv::Mat cameraMatrix;
     cv::Mat distCoeffs;
 
-    IntrinsicCalibration(const std::string& calibrationFile)
+    IntrinsicCalibration(const std::string& calibrationFile): IntrinsicCalibration()
     {
     	init(calibrationFile);
     }
@@ -38,10 +38,12 @@ struct IntrinsicCalibration {
 	        default:
                     imageSize = cv::Size(853,480);
 
-	            cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
-     			cameraMatrix.at<double>(0,0) = 800.0;
-     			cameraMatrix.at<double>(1,1) = 600.0;
-     			cameraMatrix.at<double>(2,2) = 1.0;
+                    cameraMatrix = cv::Mat::zeros(3, 3, CV_64F);
+                        cameraMatrix.at<double>(0,0) = imageSize.width / 2; // f_x
+                        cameraMatrix.at<double>(1,1) = imageSize.width / 2; // f_y
+                        cameraMatrix.at<double>(2,2) = 1.0;
+                        cameraMatrix.at<double>(0,2) = imageSize.width / 2; // c_x
+                        cameraMatrix.at<double>(1,2) = imageSize.height / 2;// c_y
 
      			distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
 	            break;
